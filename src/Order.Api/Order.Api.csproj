@@ -1,0 +1,26 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <IsPackable>true</IsPackable>
+        <UserSecretsId>36d3aabc-1075-47d7-9b3b-c1feebf8f3bd</UserSecretsId>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="AWSSDK.S3" />
+        <PackageReference Include="Microsoft.AspNetCore.Authentication" />
+        <PackageReference Include="Microsoft.AspNetCore.Mvc" />
+        <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+        <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+          <PrivateAssets>all</PrivateAssets>
+          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+        </PackageReference>
+        <PackageReference Include="Swashbuckle.AspNetCore" />
+    </ItemGroup>
+
+    <ItemGroup>
+        <ProjectReference Include="..\Order.Application\Order.Application.csproj" />
+        <ProjectReference Include="..\Order.Infrastructure\Order.Infrastructure.csproj" />
+        <ProjectReference Include="..\Order.shared\order.shared.csproj" />
+    </ItemGroup>
+
+</Project>
