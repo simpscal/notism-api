@@ -1,0 +1,17 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+    <PropertyGroup>
+        <TargetFramework>net8.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
+
+    <ItemGroup>
+        <PackageReference Include="Ardalis.SmartEnum" />
+        <PackageReference Include="MediatR" />
+        <PackageReference Include="throw" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <ProjectReference Include="..\Notism.shared\Notism.shared.csproj" />
+    </ItemGroup>
+</Project>
