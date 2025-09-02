@@ -14,4 +14,8 @@
     <ItemGroup>
       <ProjectReference Include="..\Notism.shared\Notism.shared.csproj" />
     </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="Common/Enums/" />
+    </ItemGroup>
 </Project>
