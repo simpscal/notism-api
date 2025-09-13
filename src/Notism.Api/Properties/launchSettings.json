@@ -33,7 +33,7 @@
       "commandName": "IISExpress",
       "launchBrowser": false,
       "launchUrl": "swagger",
-      "applicationUrl": "http://localhost:5000, https://localhost:5000",
+      "applicationUrl": "http://localhost:5000",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       }
@@ -46,7 +46,7 @@
         "ASPNETCORE_ENVIRONMENT": "Development"
       },
       "publishAllPorts": true,
-      "httpPort": 5001
+      "httpPort": 5000
     }
   }
 }
