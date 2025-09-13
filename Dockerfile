@@ -25,10 +25,6 @@ RUN dotnet publish --no-restore -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:9.0
 
-ENV ASPNETCORE_HTTP_PORTS=5000
-
-EXPOSE 5000
-
 WORKDIR /app
 
 COPY --from=publish /app/publish .
