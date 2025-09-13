@@ -20,7 +20,7 @@
     <ItemGroup>
         <ProjectReference Include="..\Notism.Application\Notism.Application.csproj" />
         <ProjectReference Include="..\Notism.Infrastructure\Notism.Infrastructure.csproj" />
-        <ProjectReference Include="..\Notism.shared\Notism.shared.csproj" />
+        <ProjectReference Include="..\Notism.Shared\Notism.Shared.csproj" />
     </ItemGroup>
 
 </Project>

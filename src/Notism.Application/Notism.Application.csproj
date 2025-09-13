@@ -1,7 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
     <ItemGroup>
         <ProjectReference Include="..\Notism.Domain\Notism.Domain.csproj" />
-        <ProjectReference Include="..\Notism.shared\Notism.shared.csproj" />
+        <ProjectReference Include="..\Notism.Shared\Notism.Shared.csproj" />
     </ItemGroup>
 
     <ItemGroup>

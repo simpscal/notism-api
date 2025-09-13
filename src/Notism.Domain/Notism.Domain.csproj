@@ -12,7 +12,7 @@
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Notism.shared\Notism.shared.csproj" />
+      <ProjectReference Include="..\Notism.Shared\Notism.Shared.csproj" />
     </ItemGroup>
 
     <ItemGroup>
