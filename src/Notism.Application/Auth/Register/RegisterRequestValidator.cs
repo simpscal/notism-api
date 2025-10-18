@@ -1,10 +1,10 @@
 using FluentValidation;
 
-namespace Notism.Application.Auth.Queries.Login;
+namespace Notism.Application.Auth.Register;
 
-public class LoginQueryValidator : AbstractValidator<LoginQuery>
+public class RegisterRequestValidator : AbstractValidator<RegisterRequest>
 {
-    public LoginQueryValidator()
+    public RegisterRequestValidator()
     {
         RuleFor(x => x.Email).NotEmpty().EmailAddress();
         RuleFor(x => x.Password).NotEmpty().NotNull().MinimumLength(8);

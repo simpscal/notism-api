@@ -17,7 +17,7 @@
 
 ```
 ┌─────────────────────────────────────────┐
-│              API Layer                  │  ← Controllers, Middleware, DTOs
+│              API Layer                  │  ← Minimal APIs, Middleware, Endpoints
 ├─────────────────────────────────────────┤
 │          Application Layer              │  ← Use Cases, Event Handlers
 ├─────────────────────────────────────────┤
@@ -349,86 +349,92 @@ public class OrderItemDto
 
 ### 🌐 API Layer (Presentation)
 
-**Purpose**: Handles external communication, translates between external formats and application DTOs, and coordinates with use cases for specific operations.
+**Purpose**: Handles external communication using Minimal APIs, directly using application request/response models without additional mapping layers, and coordinates with use cases for specific operations.
 
 #### Responsibilities
 
-- **Controllers** - Handle HTTP requests and coordinate with specific use cases
-- **Request/Response Models** - External API contracts
+- **Minimal API Endpoints** - Handle HTTP requests using feature-based endpoint organization
+- **Request/Response Models** - Use application layer models directly (no DTO mapping)
 - **Authentication** - User authentication and authorization
-- **Input Validation** - Validate incoming requests
-- **Error Handling** - Convert exceptions to appropriate HTTP responses
+- **Input Validation** - Validate incoming requests (handled by application layer)
+- **Error Handling** - Convert exceptions to appropriate HTTP responses via middleware
 - **API Documentation** - OpenAPI/Swagger documentation
-- **Response Mapping** - AutoMapper usage for DTO ↔ Request/Response mapping
 
 #### What Belongs Here
 
 ```csharp
-// ✅ Controller coordinating with Use Cases
-[ApiController]
-[Route("api/[controller]")]
-public class OrdersController : ControllerBase
+// ✅ Minimal API Endpoints using feature-based organization
+public static class AuthEndpoints
 {
-    private readonly PlaceOrderUseCase _placeOrderUseCase;
-    private readonly ConfirmOrderUseCase _confirmOrderUseCase;
-    private readonly GetOrderUseCase _getOrderUseCase;
-    private readonly GetCustomerOrdersUseCase _getCustomerOrdersUseCase;
-    private readonly IMapper _mapper;
-
-    public OrdersController(
-        PlaceOrderUseCase placeOrderUseCase,
-        ConfirmOrderUseCase confirmOrderUseCase,
-        GetOrderUseCase getOrderUseCase,
-        GetCustomerOrdersUseCase getCustomerOrdersUseCase,
-        IMapper mapper)
+    public static void MapAuthEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        _placeOrderUseCase = placeOrderUseCase;
-        _confirmOrderUseCase = confirmOrderUseCase;
-        _getOrderUseCase = getOrderUseCase;
-        _getCustomerOrdersUseCase = getCustomerOrdersUseCase;
-        _mapper = mapper;
-    }
+        var auth = endpoints.MapGroup("/api/auth")
+            .WithTags("Authentication")
+            .WithOpenApi();
 
-    /// <summary>
-    /// Place a new order
-    /// </summary>
-    [HttpPost]
-    public async Task<ActionResult<OrderResponse>> PlaceOrder([FromBody] PlaceOrderRequest request)
+        // Login endpoint - uses application models directly
+        auth.MapPost("/login", async (
+            LoginRequest request,
+            IMediator mediator) =>
+        {
+            // Direct use of application request model (no mapping needed)
+            var result = await mediator.Send(request);
+            
+            return result.IsSuccess 
+                ? Results.Ok(result.Value) 
+                : Results.BadRequest(new { message = result.Error });
+        })
+        .WithName("Login")
+        .WithSummary("Authenticate user and return JWT token")
+        .Produces<LoginResponse>(200)
+        .Produces<ErrorResponse>(400);
+
+        // Register endpoint - uses application models directly  
+        auth.MapPost("/register", async (
+            RegisterRequest request,
+            IMediator mediator) =>
+        {
+            // Direct use of application request model (no mapping needed)
+            var result = await mediator.Send(request);
+            
+            return result.IsSuccess
+                ? Results.Created($"/api/users/{result.Value.Id}", result.Value)
+                : Results.BadRequest(new { message = result.Error });
+        })
+        .WithName("Register")
+        .WithSummary("Register a new user account")
+        .Produces<RegisterResponse>(201)
+        .Produces<ErrorResponse>(400);
+    }
+}
+
+// ✅ Feature-based endpoint organization
+public static class OrderEndpoints
+{
+    public static void MapOrderEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        // 1. Map request to command using AutoMapper
-        var command = _mapper.Map<PlaceOrderCommand>(request);
+        var orders = endpoints.MapGroup("/api/orders")
+            .WithTags("Orders")
+            .WithOpenApi();
 
-        // 2. Execute use case
-        var result = await _placeOrderUseCase.ExecuteAsync(command);
+        orders.MapPost("/", async (
+            PlaceOrderRequest request,
+            IMediator mediator) =>
+        {
+            var result = await mediator.Send(request);
+            return result.IsSuccess
+                ? Results.Created($"/api/orders/{result.Value.Id}", result.Value)
+                : Results.BadRequest(new { message = result.Error });
+        });
 
-        // 3. Handle result
-        if (!result.IsSuccess)
-            return BadRequest(new ErrorResponse { Message = result.Error });
-
-        // 4. Map DTO to response using AutoMapper
-        var response = _mapper.Map<OrderResponse>(result.Value);
-        return CreatedAtAction(nameof(GetOrder), new { id = response.Id }, response);
-    }
-
-    /// <summary>
-    /// Get order by ID
-    /// </summary>
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<OrderResponse>> GetOrder(Guid id)
-    {
-        var result = await _getOrderUseCase.ExecuteAsync(id);
-
-        if (!result.IsSuccess)
-            return NotFound();
-
-        var response = _mapper.Map<OrderResponse>(result.Value);
-        return Ok(response);
-    }
-
-    /// <summary>
-    /// Confirm order
-    /// </summary>
-    [HttpPost("{id:guid}/confirm")]
+        orders.MapGet("/{id:guid}", async (
+            Guid id,
+            IMediator mediator) =>
+        {
+            var query = new GetOrderQuery(id);
+            var result = await mediator.Send(query);
+            return result.IsSuccess ? Results.Ok(result.Value) : Results.NotFound();
+        });
     public async Task<ActionResult<OrderResponse>> ConfirmOrder(Guid id)
     {
         var result = await _confirmOrderUseCase.ExecuteAsync(id);
@@ -438,46 +444,6 @@ public class OrdersController : ControllerBase
 
         var response = _mapper.Map<OrderResponse>(result.Value);
         return Ok(response);
-    }
-
-    /// <summary>
-    /// Get orders for a customer
-    /// </summary>
-    [HttpGet("customer/{customerId:guid}")]
-    public async Task<ActionResult<IEnumerable<OrderResponse>>> GetCustomerOrders(Guid customerId)
-    {
-        var result = await _getCustomerOrdersUseCase.ExecuteAsync(customerId);
-
-        if (!result.IsSuccess)
-            return BadRequest(new ErrorResponse { Message = result.Error });
-
-        var response = _mapper.Map<IEnumerable<OrderResponse>>(result.Value);
-        return Ok(response);
-    }
-}
-
-// ✅ AutoMapper Profile - DTO to Request/Response mapping
-public class ApiMappingProfile : Profile
-{
-    public ApiMappingProfile()
-    {
-        // Request to Command mapping
-        CreateMap<PlaceOrderRequest, PlaceOrderCommand>()
-            .ForMember(dest => dest.ShippingAddress, opt => opt.MapFrom(src => src.ShippingAddress));
-
-        CreateMap<OrderItemRequest, OrderItemCommand>();
-
-        CreateMap<AddressRequest, Address>();
-
-        // DTO to Response mapping
-        CreateMap<OrderDto, OrderResponse>()
-            .ForMember(dest => dest.Items, opt => opt.MapFrom(src => src.Items));
-
-        CreateMap<OrderItemDto, OrderItemResponse>();
-
-        CreateMap<CustomerDto, CustomerResponse>();
-
-        CreateMap<ProductDto, ProductResponse>();
     }
 }
 
@@ -927,15 +893,15 @@ Application → Infrastructure
 ### AutoMapper Dependencies
 
 ```
-✅ AutoMapper Usage (Simplified):
+✅ AutoMapper Usage (Simplified - Minimal APIs):
 - IMapper injected only into Use Cases (Application Layer)
 - Mapping Profiles defined only in Application layer
 - Application Layer: Domain ↔ Response mapping (eliminates DTOs)
-- API Layer: No mapping needed (uses Request/Response directly)
+- API Layer: Uses Request/Response models directly with MediatR (no mapping needed)
 
 ❌ AutoMapper Forbidden:
 - Direct AutoMapper usage in Domain Layer
-- Mapping between nearly identical models (Request ↔ Command)
+- Mapping in API Layer (Minimal APIs use application models directly)
 - Multiple mapping profiles for the same transformation
 - Complex mapping configurations for simple property copying
 ```
@@ -944,10 +910,9 @@ Application → Infrastructure
 
 ```csharp
 // ✅ Shared layer can be referenced by all layers
-// Program.cs - Dependency Registration
+// Program.cs - Dependency Registration (Minimal APIs)
 services.AddAutoMapper(
-    typeof(OrderMappingProfile),    // Application layer profiles
-    typeof(ApiMappingProfile)       // API layer profiles
+    typeof(AuthMappingProfile)      // Application layer profiles only
 );
 
 // Application Layer using Shared
@@ -1067,55 +1032,66 @@ public class GetCustomerOrdersUseCase
 }
 ```
 
-### API Layer - Controller Implementation with AutoMapper
+### API Layer - Minimal API Implementation with MediatR
 
-#### Controllers Coordinating with Use Cases
+#### Endpoints Using Application Models Directly
 
 ```csharp
-[ApiController]
-[Route("api/[controller]")]
-public class CustomersController : ControllerBase
+public static class CustomerEndpoints
 {
-    private readonly RegisterCustomerUseCase _registerCustomerUseCase;
-    private readonly GetCustomerUseCase _getCustomerUseCase;
-    private readonly UpdateCustomerUseCase _updateCustomerUseCase;
-    private readonly IMapper _mapper;
-
-    public CustomersController(
-        RegisterCustomerUseCase registerCustomerUseCase,
-        GetCustomerUseCase getCustomerUseCase,
-        UpdateCustomerUseCase updateCustomerUseCase,
-        IMapper mapper)
+    public static void MapCustomerEndpoints(this IEndpointRouteBuilder endpoints)
     {
-        _registerCustomerUseCase = registerCustomerUseCase;
-        _getCustomerUseCase = getCustomerUseCase;
-        _updateCustomerUseCase = updateCustomerUseCase;
-        _mapper = mapper;
+        var customers = endpoints.MapGroup("/api/customers")
+            .WithTags("Customers")
+            .WithOpenApi();
+
+        customers.MapPost("/", async (
+            RegisterCustomerRequest request,
+            IMediator mediator) =>
+        {
+            // Use application request model directly (no mapping)
+            var result = await mediator.Send(request);
+
+            return result.IsSuccess
+                ? Results.Created($"/api/customers/{result.Value.Id}", result.Value)
+                : Results.BadRequest(new { message = result.Error });
+        })
+        .WithName("RegisterCustomer")
+        .Produces<RegisterCustomerResponse>(201)
+        .Produces<ErrorResponse>(400);
+
+        customers.MapGet("/{id:guid}", async (
+            Guid id,
+            IMediator mediator) =>
+        {
+            var query = new GetCustomerQuery(id);
+            var result = await mediator.Send(query);
+
+            return result.IsSuccess 
+                ? Results.Ok(result.Value) 
+                : Results.NotFound();
+        })
+        .WithName("GetCustomer")
+        .Produces<CustomerResponse>(200)
+        .Produces(404);
     }
+}
 
-    [HttpPost]
-    public async Task<ActionResult<CustomerResponse>> RegisterCustomer([FromBody] RegisterCustomerRequest request)
-    {
-        // Map request to command
-        var command = _mapper.Map<RegisterCustomerCommand>(request);
+// ✅ Program.cs - Endpoint Registration
+var builder = WebApplication.CreateBuilder(args);
 
-        // Execute use case
-        var result = await _registerCustomerUseCase.ExecuteAsync(command);
+// Add services
+builder.Services.AddMediatR(cfg => cfg.RegisterServicesFromAssembly(typeof(Program).Assembly));
+builder.Services.AddAutoMapper(typeof(AuthMappingProfile));
 
-        if (!result.IsSuccess)
-            return BadRequest(new ErrorResponse { Message = result.Error });
+var app = builder.Build();
 
-        // Map DTO to response
-        var response = _mapper.Map<CustomerResponse>(result.Value);
-        return CreatedAtAction(nameof(GetCustomer), new { id = response.Id }, response);
-    }
+// Map endpoints
+app.MapAuthEndpoints();
+app.MapCustomerEndpoints();
+app.MapOrderEndpoints();
 
-    [HttpGet("{id:guid}")]
-    public async Task<ActionResult<CustomerResponse>> GetCustomer(Guid id)
-    {
-        var result = await _getCustomerUseCase.ExecuteAsync(id);
-
-        if (!result.IsSuccess)
+app.Run();
             return NotFound();
 
         var response = _mapper.Map<CustomerResponse>(result.Value);
@@ -1393,25 +1369,14 @@ CompanyName.ProjectName/
 │   │       └── ServiceCollectionExtensions.cs
 │   │
 │   └── CompanyName.ProjectName.API/                 # 🌐 API Layer
-│       ├── Controllers/
-│       │   ├── OrdersController.cs                  # Coordinates with Order UseCases
-│       │   ├── CustomersController.cs               # Coordinates with Customer UseCases
-│       │   ├── ProductsController.cs                # Coordinates with Product UseCases
-│       │   └── PaymentsController.cs                # Coordinates with Payment UseCases
+│       ├── Endpoints/
+│       │   ├── AuthEndpoints.cs                     # Authentication endpoints (Login, Register)
+│       │   ├── OrderEndpoints.cs                    # Order management endpoints
+│       │   ├── CustomerEndpoints.cs                 # Customer management endpoints
+│       │   └── ProductEndpoints.cs                  # Product catalog endpoints
 │       │
 │       ├── Models/
-│       │   ├── Requests/
-│       │   │   ├── PlaceOrderRequest.cs
-│       │   │   ├── RegisterCustomerRequest.cs
-│       │   │   ├── CreateProductRequest.cs
-│       │   │   └── ProcessPaymentRequest.cs
-│       │   │
-│       │   └── Responses/
-│       │       ├── OrderResponse.cs
-│       │       ├── CustomerResponse.cs
-│       │       ├── ProductResponse.cs
-│       │       ├── PaymentResponse.cs
-│       │       └── ErrorResponse.cs
+│       │   └── ErrorResponse.cs                     # API error response model
 │       │
 │       ├── Mappings/                                # AutoMapper Profiles
 │       │   ├── ApiMappingProfile.cs                 # Request/Response ↔ DTO
@@ -1509,28 +1474,15 @@ public class OrderMappingProfile : Profile
     }
 }
 
-// ✅ API Layer Mapping Profile - DTO to Request/Response
-public class ApiMappingProfile : Profile
-{
-    public ApiMappingProfile()
-    {
-        // Request to Command
-        CreateMap<PlaceOrderRequest, PlaceOrderCommand>();
-        
-        // DTO to Response
-        CreateMap<OrderDto, OrderResponse>();
-        CreateMap<OrderItemDto, OrderItemResponse>();
-    }
-}
+// ✅ No API Layer Mapping Profile Needed - Minimal APIs use application models directly
 
-// ✅ Dependency Registration
+// ✅ Dependency Registration (Minimal APIs)
 public static class ServiceCollectionExtensions
 {
     public static IServiceCollection AddMappingProfiles(this IServiceCollection services)
     {
         services.AddAutoMapper(
-            typeof(OrderMappingProfile),    // Application layer
-            typeof(ApiMappingProfile)       // API layer
+            typeof(OrderMappingProfile)     // Application layer only
         );
         
         return services;

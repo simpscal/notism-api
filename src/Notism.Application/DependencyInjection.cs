@@ -5,8 +5,6 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
 using Notism.Application.Common.Interceptors;
-using Notism.Application.Common.Middlewares;
-using Notism.Application.Common.Utilities;
 
 namespace Notism.Application;
 
@@ -14,8 +12,6 @@ public static class DependencyInjection
 {
     public static IApplicationBuilder UseApplication(this IApplicationBuilder app)
     {
-        app.UseMiddleware<ExceptionValidatorMiddleware>();
-
         return app;
     }
 
@@ -54,8 +50,6 @@ public static class DependencyInjection
 
     private static IServiceCollection AddUtilities(this IServiceCollection services)
     {
-        services.AddSingleton<TokenUtility>();
-
         return services;
     }
 }

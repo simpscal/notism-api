@@ -6,18 +6,14 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
-using Notism.Api.Services;
-using Notism.Shared.Interfaces;
-
 namespace Notism.Api;
 
 public static class DependencyInjection
 {
     public static IServiceCollection AddApi(this IServiceCollection services, IConfiguration configuration)
     {
-        services.AddMvc();
-        services.AddControllers();
         services.AddEndpointsApiExplorer();
+        services.AddAuthorization();
 
         services.AddSwaggerConfiguration();
         services.AddJwtAuthentication(configuration);
@@ -87,8 +83,6 @@ public static class DependencyInjection
 
     private static IServiceCollection AddAWSS3(this IServiceCollection services)
     {
-        services.AddSingleton<IFileStorageService, S3Service>();
-
         services.AddSingleton<IAmazonS3>(sp =>
         {
             var configuration = sp.GetRequiredService<IConfiguration>();
