@@ -19,8 +19,13 @@ var app = builder.Build();
 
     if (app.Environment.IsDevelopment())
     {
+        app.UseCors("DevelopmentCorsPolicy");
         app.UseSwagger();
         app.UseSwaggerUI();
+    }
+    else
+    {
+        app.UseCors("ProductionCorsPolicy");
     }
 
     app.UseHttpsRedirection();

@@ -1,0 +1,107 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Launch Notism API (HTTP)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/Notism.Api/bin/Debug/net9.0/Notism.Api.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/Notism.Api",
+            "console": "integratedTerminal",
+            "stopAtEntry": false,
+            "launchBrowser": {
+                "enabled": true,
+                "args": "http://localhost:5000/swagger",
+                "osx": {
+                    "command": "open"
+                }
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5000"
+            }
+        },
+        {
+            "name": "Launch Notism API (HTTPS)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/Notism.Api/bin/Debug/net9.0/Notism.Api.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/Notism.Api",
+            "console": "integratedTerminal",
+            "stopAtEntry": false,
+            "launchBrowser": {
+                "enabled": true,
+                "args": "https://localhost:5000/swagger",
+                "osx": {
+                    "command": "open"
+                }
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "https://localhost:5000"
+            }
+        },
+        {
+            "name": "Launch Notism API (Both HTTP & HTTPS)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/Notism.Api/bin/Debug/net9.0/Notism.Api.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/Notism.Api",
+            "console": "integratedTerminal",
+            "stopAtEntry": false,
+            "launchBrowser": {
+                "enabled": true,
+                "args": "https://localhost:5000/swagger",
+                "osx": {
+                    "command": "open"
+                }
+            },
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5000;https://localhost:5000"
+            }
+        },
+        {
+            "name": "Launch Notism API (Debug Console)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/Notism.Api/bin/Debug/net9.0/Notism.Api.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/Notism.Api",
+            "console": "internalConsole",
+            "stopAtEntry": false,
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development",
+                "ASPNETCORE_URLS": "http://localhost:5000"
+            }
+        },
+        {
+            "name": "Launch Notism API (Production)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/src/Notism.Api/bin/Debug/net9.0/Notism.Api.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/src/Notism.Api",
+            "console": "integratedTerminal",
+            "stopAtEntry": false,
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Production",
+                "ASPNETCORE_URLS": "http://localhost:5000"
+            }
+        },
+        {
+            "name": "Attach to Notism API",
+            "type": "coreclr",
+            "request": "attach",
+            "processId": "${command:pickProcess}"
+        }
+    ]
+}

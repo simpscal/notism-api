@@ -17,10 +17,36 @@ public static class DependencyInjection
 
         services.AddSwaggerConfiguration();
         services.AddJwtAuthentication(configuration);
+        services.AddCorsConfiguration();
 
         services.AddProblemDetails();
 
         services.AddAWSS3();
+
+        return services;
+    }
+
+    private static IServiceCollection AddCorsConfiguration(this IServiceCollection services)
+    {
+        services.AddCors(options =>
+        {
+            options.AddPolicy("DevelopmentCorsPolicy", builder =>
+            {
+                builder
+                    .AllowAnyOrigin()
+                    .AllowAnyMethod()
+                    .AllowAnyHeader();
+            });
+
+            options.AddPolicy("ProductionCorsPolicy", builder =>
+            {
+                builder
+                    .WithOrigins("https://localhost:3000", "https://yourdomain.com")
+                    .AllowAnyMethod()
+                    .AllowAnyHeader()
+                    .AllowCredentials();
+            });
+        });
 
         return services;
     }

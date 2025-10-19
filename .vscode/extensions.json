@@ -1,0 +1,19 @@
+{
+    "recommendations": [
+        "ms-dotnettools.csharp",
+        "ms-dotnettools.csdevkit",
+        "ms-dotnettools.vscode-dotnet-runtime",
+        "ms-dotnettools.vscodeintellicode-csharp",
+        "jmrog.vscode-nuget-package-manager",
+        "formulahendry.dotnet-test-explorer",
+        "ms-vscode.vscode-json",
+        "editorconfig.editorconfig",
+        "ms-azuretools.vscode-docker",
+        "humao.rest-client",
+        "eamodio.gitlens",
+        "PKief.material-icon-theme",
+        "streetsidesoftware.code-spell-checker",
+        "bradlc.vscode-tailwindcss",
+        "ms-vscode.powershell"
+    ]
+}
