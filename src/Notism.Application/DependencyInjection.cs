@@ -1,10 +1,11 @@
 using FluentValidation;
-using FluentValidation.AspNetCore;
+
+using MediatR;
 
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
-using Notism.Application.Common.Interceptors;
+using Notism.Application.Common.Behaviors;
 
 namespace Notism.Application;
 
@@ -29,14 +30,14 @@ public static class DependencyInjection
             options.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
         });
 
+        services.AddTransient(typeof(IPipelineBehavior<,>), typeof(ValidationBehavior<,>));
+
         return services;
     }
 
     private static IServiceCollection AddValidations(this IServiceCollection services)
     {
-        services.AddFluentValidationAutoValidation();
         services.AddValidatorsFromAssemblyContaining(typeof(DependencyInjection));
-        services.AddSingleton<IValidatorInterceptor, ThrowingValidatorInterceptor>();
 
         return services;
     }

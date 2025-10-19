@@ -1,32 +1,45 @@
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
+
 using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
+
 using Notism.Application.Common.Interfaces;
+using Notism.Domain.RefreshToken;
 using Notism.Domain.User;
+using Notism.Domain.User.Specifications;
+using Notism.Shared.Exceptions;
 
 namespace Notism.Infrastructure.Services;
 
 public class TokenService : ITokenService
 {
     private readonly IConfiguration _configuration;
+    private readonly IRefreshTokenRepository _refreshTokenRepository;
+    private readonly IUserRepository _userRepository;
 
-    public TokenService(IConfiguration configuration)
+    public TokenService(
+        IConfiguration configuration,
+        IRefreshTokenRepository refreshTokenRepository,
+        IUserRepository userRepository)
     {
         _configuration = configuration;
+        _refreshTokenRepository = refreshTokenRepository;
+        _userRepository = userRepository;
     }
 
-    public Task<TokenResult> GenerateTokenAsync(User user)
+    public async Task<TokenResult> GenerateTokenAsync(User user)
     {
-        var secretKey = _configuration["JwtSettings:Secret"]
-            ?? throw new InvalidOperationException("JWT Secret is not configured");
-        var issuer = _configuration["JwtSettings:Issuer"] ?? "Notism.Api";
-        var audience = _configuration["JwtSettings:Audience"] ?? "Notism.Client";
-        var expirationMinutes = int.Parse(_configuration["JwtSettings:TokenExpirationInMinutes"] ?? "60");
+        var secret = _configuration["JwtSettings:Secret"]!;
+        var issuer = _configuration["JwtSettings:Issuer"]!;
+        var audience = _configuration["JwtSettings:Audience"]!;
+        var expirationMinutes = int.Parse(_configuration["JwtSettings:TokenExpirationInMinutes"]!);
+        var refreshExpirationDays = int.Parse(_configuration["JwtSettings:RefreshTokenExpirationInDays"]!);
 
-        var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
-        var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var key = Encoding.ASCII.GetBytes(secret);
+        var credentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
         {
@@ -47,12 +60,48 @@ public class TokenService : ITokenService
         var tokenHandler = new JwtSecurityTokenHandler();
         var tokenString = tokenHandler.WriteToken(token);
 
+        // Generate refresh token
+        var refreshToken = GenerateRefreshToken();
+        var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(refreshExpirationDays);
+
+        var refreshTokenEntity = RefreshToken.Create(refreshToken, user.Id, refreshTokenExpiresAt);
+        await _refreshTokenRepository.AddAsync(refreshTokenEntity);
+        await _refreshTokenRepository.SaveChangesAsync();
+
         var result = new TokenResult
         {
             Token = tokenString,
             ExpiresAt = expiresAt,
+            RefreshToken = refreshToken,
+            RefreshTokenExpiresAt = refreshTokenExpiresAt,
         };
 
-        return Task.FromResult(result);
+        return result;
+    }
+
+    public async Task<TokenResult> RefreshTokenAsync(string refreshToken)
+    {
+        var refreshTokenEntity = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
+
+        if (refreshTokenEntity == null || !refreshTokenEntity.IsValid())
+        {
+            throw new InvalidRefreshTokenException("Invalid refresh token");
+        }
+
+        var user = await _userRepository.FindByExpressionAsync(new UserByIdSpecification(refreshTokenEntity.UserId)) ?? throw new InvalidRefreshTokenException("User not found");
+
+        refreshTokenEntity.Revoke();
+        await _refreshTokenRepository.SaveChangesAsync();
+
+        return await GenerateTokenAsync(user);
+    }
+
+    private string GenerateRefreshToken()
+    {
+        var randomNumber = new byte[64];
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomNumber);
+
+        return Convert.ToBase64String(randomNumber);
     }
 }

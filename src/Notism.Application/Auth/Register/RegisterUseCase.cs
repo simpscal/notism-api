@@ -51,6 +51,8 @@ public class RegisterUseCase : IRequestHandler<RegisterRequest, Result<RegisterR
         var response = _mapper.Map<RegisterResponse>(user);
         response.Token = token.Token;
         response.ExpiresAt = token.ExpiresAt;
+        response.RefreshToken = token.RefreshToken;
+        response.RefreshTokenExpiresAt = token.RefreshTokenExpiresAt;
 
         return Result<RegisterResponse>.Success(response);
     }

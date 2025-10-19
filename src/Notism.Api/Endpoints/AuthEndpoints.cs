@@ -2,6 +2,7 @@ using MediatR;
 
 using Notism.Api.Models;
 using Notism.Application.Auth.Login;
+using Notism.Application.Auth.RefreshToken;
 using Notism.Application.Auth.Register;
 
 namespace Notism.Api.Endpoints;
@@ -29,6 +30,14 @@ public static class AuthEndpoints
             .AllowAnonymous()
             .Produces<RegisterResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
+
+        group.MapPost("/refresh", RefreshTokenAsync)
+            .WithName("RefreshToken")
+            .WithSummary("Refresh JWT token using refresh token")
+            .WithDescription("Exchanges a valid refresh token for a new JWT token and refresh token")
+            .AllowAnonymous()
+            .Produces<RefreshTokenResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
     }
 
     private static async Task<IResult> LoginAsync(
@@ -41,6 +50,14 @@ public static class AuthEndpoints
 
     private static async Task<IResult> RegisterAsync(
         RegisterRequest request,
+        IMediator mediator)
+    {
+        var result = await mediator.Send(request);
+        return Results.Ok(result.Value);
+    }
+
+    private static async Task<IResult> RefreshTokenAsync(
+        RefreshTokenRequest request,
         IMediator mediator)
     {
         var result = await mediator.Send(request);

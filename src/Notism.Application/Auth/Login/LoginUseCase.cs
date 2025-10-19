@@ -50,6 +50,8 @@ public class LoginUseCase : IRequestHandler<LoginRequest, Result<LoginResponse>>
         var response = _mapper.Map<LoginResponse>(user);
         response.Token = token.Token;
         response.ExpiresAt = token.ExpiresAt;
+        response.RefreshToken = token.RefreshToken;
+        response.RefreshTokenExpiresAt = token.RefreshTokenExpiresAt;
 
         return Result<LoginResponse>.Success(response);
     }
