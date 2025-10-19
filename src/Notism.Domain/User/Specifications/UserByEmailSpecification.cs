@@ -4,22 +4,17 @@ using Notism.Domain.User.ValueObjects;
 
 namespace Notism.Domain.User.Specifications;
 
-public class ExistingUserSpecification : Specification<User>
+public class UserByEmailSpecification : Specification<User>
 {
     private readonly Email _email;
 
-    public ExistingUserSpecification(string email)
+    public UserByEmailSpecification(string email)
     {
         _email = Email.Create(email);
     }
 
-    public ExistingUserSpecification(Email email)
-    {
-        _email = email;
-    }
-
     public override Expression<Func<User, bool>> ToExpression()
     {
-        return user => user.Email.Value.ToLower() == _email.Value.ToLower();
+        return user => user.Email.Equals(_email);
     }
 }

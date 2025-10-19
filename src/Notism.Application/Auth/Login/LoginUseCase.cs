@@ -2,6 +2,7 @@ using AutoMapper;
 using MediatR;
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.User;
+using Notism.Domain.User.Specifications;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Models;
 
@@ -29,7 +30,8 @@ public class LoginUseCase : IRequestHandler<LoginRequest, Result<LoginResponse>>
     public async Task<Result<LoginResponse>> Handle(LoginRequest request, CancellationToken cancellationToken)
     {
         // 1. Find user by email
-        var user = await _userRepository.GetByEmailAsync(request.Email);
+        var userByEmailSpec = new UserByEmailSpecification(request.Email);
+        var user = await _userRepository.FindByExpressionAsync(userByEmailSpec);
         if (user == null)
         {
             throw new ResultFailureException("Invalid email or password");

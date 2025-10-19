@@ -28,21 +28,4 @@ public class UserRepository : Repository<User>, IUserRepository
 
         return Task.FromResult(userForPersistence);
     }
-
-    public async Task<User?> GetByEmailAsync(string email)
-    {
-        return await _dbSet
-            .FirstOrDefaultAsync(u => u.Email.Value == email);
-    }
-
-    public async Task<User?> GetByEmailAsync(Email email)
-    {
-        return await GetByEmailAsync(email.Value);
-    }
-
-    public async Task<bool> EmailExistsAsync(Email email)
-    {
-        return await _dbSet
-            .AnyAsync(u => u.Email.Value.ToLower() == email.Value.ToLower());
-    }
 }

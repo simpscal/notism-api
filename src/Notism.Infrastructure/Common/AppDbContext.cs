@@ -1,14 +1,12 @@
 using Microsoft.EntityFrameworkCore;
 
-using Notism.Application.Common.Interfaces;
 using Notism.Domain.User;
 using Notism.Domain.User.ValueObjects;
 
 namespace Notism.Infrastructure.Common;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options, IPasswordService passwordService) : DbContext(options)
+public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
 {
-    private readonly IPasswordService _passwordService = passwordService;
     public DbSet<User> Users { get; set; }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -23,7 +21,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IPasswordServi
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Configure User entity
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(u => u.Id);

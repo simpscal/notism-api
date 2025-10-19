@@ -27,8 +27,8 @@ public class RegisterUseCase : IRequestHandler<RegisterRequest, Result<RegisterR
     public async Task<Result<RegisterResponse>> Handle(RegisterRequest request, CancellationToken cancellationToken)
     {
         // 1. Check if user already exists
-        var existingUserSpecification = new ExistingUserSpecification(request.Email);
-        var existingUser = await _userRepository.FindByExpressionAsync(existingUserSpecification);
+        var userByEmailSpec = new UserByEmailSpecification(request.Email);
+        var existingUser = await _userRepository.FindByExpressionAsync(userByEmailSpec);
 
         if (existingUser != null)
         {
