@@ -14,15 +14,18 @@ public class ResetPasswordUseCase : IRequestHandler<ResetPasswordRequest, Result
     private readonly IRepository<PasswordResetToken> _passwordResetTokenRepository;
     private readonly IUserRepository _userRepository;
     private readonly IPasswordService _passwordService;
+    private readonly IUnitOfWork _unitOfWork;
 
     public ResetPasswordUseCase(
         IRepository<PasswordResetToken> passwordResetTokenRepository,
         IUserRepository userRepository,
-        IPasswordService passwordService)
+        IPasswordService passwordService,
+        IUnitOfWork unitOfWork)
     {
         _passwordResetTokenRepository = passwordResetTokenRepository;
         _userRepository = userRepository;
         _passwordService = passwordService;
+        _unitOfWork = unitOfWork;
     }
 
     public async Task<Result<ResetPasswordResponse>> Handle(
@@ -37,19 +40,31 @@ public class ResetPasswordUseCase : IRequestHandler<ResetPasswordRequest, Result
             throw new ResultFailureException("Invalid or expired reset token");
         }
 
-        var user = await _userRepository.FindByExpressionAsync(new UserByIdSpecification(resetToken.UserId)) ?? throw new ResultFailureException("User not found");
-
-        var hashedPassword = _passwordService.HashPassword(request.NewPassword);
-        var updatedUser = user.ResetPassword(hashedPassword);
-
-        resetToken.MarkAsUsed();
-
-        _userRepository.Update(updatedUser);
-        await _passwordResetTokenRepository.SaveChangesAsync();
-
-        return Result<ResetPasswordResponse>.Success(new ResetPasswordResponse
+        try
         {
-            Message = "Password has been successfully reset.",
-        });
+            await _unitOfWork.ExecuteInTransactionAsync(async () =>
+            {
+                var user = await _userRepository.FindByExpressionAsync(new UserByIdSpecification(resetToken.UserId)) ?? throw new ResultFailureException("User not found");
+
+                var hashedPassword = _passwordService.HashPassword(request.NewPassword);
+                var updatedUser = user.ResetPassword(hashedPassword);
+
+                resetToken.MarkAsUsed();
+
+                _userRepository.Update(updatedUser);
+
+                await _userRepository.SaveChangesAsync();
+                await _passwordResetTokenRepository.SaveChangesAsync();
+            });
+
+            return Result<ResetPasswordResponse>.Success(new ResetPasswordResponse
+            {
+                Message = "Password has been successfully reset.",
+            });
+        }
+        catch
+        {
+            throw new ResultFailureException("Failed to reset password. Please try again.");
+        }
     }
 }
