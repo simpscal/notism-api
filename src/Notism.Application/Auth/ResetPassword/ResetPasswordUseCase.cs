@@ -32,8 +32,9 @@ public class ResetPasswordUseCase : IRequestHandler<ResetPasswordRequest, Result
         ResetPasswordRequest request,
         CancellationToken cancellationToken)
     {
-        var tokenSpec = new PasswordResetTokenByTokenSpecification(request.Token);
-        var resetToken = await _passwordResetTokenRepository.FindByExpressionAsync(tokenSpec) ?? throw new ResultFailureException("Invalid or expired reset token");
+        var resetToken = await _passwordResetTokenRepository.FindByExpressionAsync(
+            new PasswordResetTokenByTokenSpecification(request.Token))
+        ?? throw new ResultFailureException("Invalid or expired reset token");
 
         if (!resetToken.IsValid())
         {
