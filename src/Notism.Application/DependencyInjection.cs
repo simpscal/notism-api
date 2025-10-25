@@ -11,11 +11,6 @@ namespace Notism.Application;
 
 public static class DependencyInjection
 {
-    public static IApplicationBuilder UseApplication(this IApplicationBuilder app)
-    {
-        return app;
-    }
-
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
         services.AddMediatR().AddValidations().AddMappers().AddUtilities();

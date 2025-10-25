@@ -14,8 +14,6 @@ var builder = WebApplication.CreateBuilder(args);
 
 var app = builder.Build();
 {
-    app.UseApplication();
-    app.UseMiddleware<ResultFailureMiddleware>();
 
     if (app.Environment.IsDevelopment())
     {
@@ -31,6 +29,7 @@ var app = builder.Build();
     app.UseHttpsRedirection();
     app.UseAuthentication();
     app.UseAuthorization();
+    app.UseMiddleware<ResultFailureMiddleware>();
 
     app.MapAuthEndpoints();
 
