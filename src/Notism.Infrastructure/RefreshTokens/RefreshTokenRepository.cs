@@ -12,18 +12,6 @@ public class RefreshTokenRepository : Repository<RefreshToken>, IRefreshTokenRep
     {
     }
 
-    public async Task<RefreshToken> AddAsync(RefreshToken refreshToken)
-    {
-        await _dbSet.AddAsync(refreshToken);
-        return refreshToken;
-    }
-
-    public async Task<RefreshToken?> GetByTokenAsync(string token)
-    {
-        return await _dbSet
-            .FirstOrDefaultAsync(rt => rt.Token == token);
-    }
-
     public async Task RevokeAllUserTokensAsync(Guid userId)
     {
         await _dbSet

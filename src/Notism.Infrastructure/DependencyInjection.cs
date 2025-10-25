@@ -3,6 +3,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using Notism.Application.Common.Interfaces;
+using Notism.Domain.Common.Interfaces;
 using Notism.Domain.RefreshToken;
 using Notism.Domain.User;
 using Notism.Infrastructure.Common;
@@ -21,10 +22,14 @@ public static class DependencyInjection
                 options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")),
             ServiceLifetime.Transient);
 
+        services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IPasswordService, PasswordService>();
+        services.AddScoped<IEmailService, EmailService>();
 
         return services;
     }

@@ -38,6 +38,12 @@ public class Repository<T>(AppDbContext appDbContext) : IRepository<T>
         return new PagedResult<T>() { TotalCount = totalCount, Items = items, };
     }
 
+    public async Task<T> AddAsync(T entity)
+    {
+        await _dbSet.AddAsync(entity);
+        return entity;
+    }
+
     public async Task<int> SaveChangesAsync()
     {
         var result = await appDbContext.SaveChangesAsync();

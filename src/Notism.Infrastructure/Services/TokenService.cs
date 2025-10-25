@@ -8,6 +8,7 @@ using Microsoft.IdentityModel.Tokens;
 
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.RefreshToken;
+using Notism.Domain.RefreshToken.Specifications;
 using Notism.Domain.User;
 using Notism.Domain.User.Specifications;
 using Notism.Shared.Exceptions;
@@ -81,7 +82,8 @@ public class TokenService : ITokenService
 
     public async Task<TokenResult> RefreshTokenAsync(string refreshToken)
     {
-        var refreshTokenEntity = await _refreshTokenRepository.GetByTokenAsync(refreshToken);
+        var refreshTokenSpec = new RefreshTokenByTokenSpecification(refreshToken);
+        var refreshTokenEntity = await _refreshTokenRepository.FindByExpressionAsync(refreshTokenSpec);
 
         if (refreshTokenEntity == null || !refreshTokenEntity.IsValid())
         {

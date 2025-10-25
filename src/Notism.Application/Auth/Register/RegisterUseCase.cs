@@ -1,5 +1,7 @@
 using AutoMapper;
+
 using MediatR;
+
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.User;
 using Notism.Domain.User.Specifications;
@@ -12,15 +14,18 @@ public class RegisterUseCase : IRequestHandler<RegisterRequest, Result<RegisterR
 {
     private readonly IUserRepository _userRepository;
     private readonly ITokenService _tokenService;
+    private readonly IPasswordService _passwordService;
     private readonly IMapper _mapper;
 
     public RegisterUseCase(
         IUserRepository userRepository,
         ITokenService tokenService,
+        IPasswordService passwordService,
         IMapper mapper)
     {
         _userRepository = userRepository;
         _tokenService = tokenService;
+        _passwordService = passwordService;
         _mapper = mapper;
     }
 
@@ -35,9 +40,12 @@ public class RegisterUseCase : IRequestHandler<RegisterRequest, Result<RegisterR
             throw new ResultFailureException("User with this email already exists");
         }
 
-        // 2. Create new user
+        // 2. Create new user with hashed password
+        var hashedPassword = _passwordService.HashPassword(request.Password);
         var user = User.Create(request.Email, request.Password);
-        await _userRepository.AddAsync(user);
+        var userWithHashedPassword = user.WithHashedPassword(hashedPassword);
+
+        await _userRepository.AddAsync(userWithHashedPassword);
 
         if (await _userRepository.SaveChangesAsync() < 1)
         {
@@ -45,10 +53,10 @@ public class RegisterUseCase : IRequestHandler<RegisterRequest, Result<RegisterR
         }
 
         // 3. Generate JWT token
-        var token = await _tokenService.GenerateTokenAsync(user);
+        var token = await _tokenService.GenerateTokenAsync(userWithHashedPassword);
 
         // 4. Map to response using AutoMapper
-        var response = _mapper.Map<RegisterResponse>(user);
+        var response = _mapper.Map<RegisterResponse>(userWithHashedPassword);
         response.Token = token.Token;
         response.ExpiresAt = token.ExpiresAt;
         response.RefreshToken = token.RefreshToken;

@@ -33,4 +33,19 @@ public class User : AggregateRoot
 
         return copy;
     }
+
+    public void RequestPasswordReset(string resetToken, DateTime expiresAt)
+    {
+        AddDomainEvent(new PasswordResetRequestedEvent(Id, Email, resetToken, expiresAt));
+    }
+
+    public User ResetPassword(string newHashedPassword)
+    {
+        var copy = (User)MemberwiseClone();
+        copy.Password = Password.Create(newHashedPassword);
+        copy.ClearDomainEvents();
+        copy.AddDomainEvent(new PasswordResetCompletedEvent(Id, Email));
+
+        return copy;
+    }
 }

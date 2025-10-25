@@ -10,6 +10,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 {
     public DbSet<User> Users { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -77,6 +78,33 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.HasIndex(rt => rt.UserId);
             entity.HasIndex(rt => new { rt.UserId, rt.IsRevoked });
+        });
+
+        modelBuilder.Entity<PasswordResetToken>(entity =>
+        {
+            entity.HasKey(prt => prt.Id);
+
+            entity.Property(prt => prt.Token)
+                .HasMaxLength(255)
+                .IsRequired();
+
+            entity.HasIndex(prt => prt.Token)
+                .IsUnique();
+
+            entity.Property(prt => prt.UserId)
+                .IsRequired();
+
+            entity.Property(prt => prt.ExpiresAt)
+                .IsRequired();
+
+            entity.Property(prt => prt.IsUsed)
+                .IsRequired();
+
+            entity.Property(prt => prt.CreatedAt)
+                .IsRequired();
+
+            entity.HasIndex(prt => prt.UserId);
+            entity.HasIndex(prt => new { prt.UserId, prt.IsUsed, prt.ExpiresAt });
         });
 
         base.OnModelCreating(modelBuilder);

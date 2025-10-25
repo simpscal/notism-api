@@ -19,13 +19,9 @@ public class UserRepository : Repository<User>, IUserRepository
         _passwordService = passwordService;
     }
 
-    public Task<User> AddAsync(User user)
+    public User Update(User user)
     {
-        var hashedPassword = _passwordService.HashPassword(user.Password);
-        var userForPersistence = user.WithHashedPassword(hashedPassword);
-
-        _appDbContext.Users.Add(userForPersistence);
-
-        return Task.FromResult(userForPersistence);
+        _dbSet.Update(user);
+        return user;
     }
 }

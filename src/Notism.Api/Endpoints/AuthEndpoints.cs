@@ -4,6 +4,8 @@ using Notism.Api.Models;
 using Notism.Application.Auth.Login;
 using Notism.Application.Auth.RefreshToken;
 using Notism.Application.Auth.Register;
+using Notism.Application.Auth.RequestPasswordReset;
+using Notism.Application.Auth.ResetPassword;
 
 namespace Notism.Api.Endpoints;
 
@@ -38,6 +40,22 @@ public static class AuthEndpoints
             .AllowAnonymous()
             .Produces<RefreshTokenResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
+
+        group.MapPost("/request-password-reset", RequestPasswordResetAsync)
+            .WithName("RequestPasswordReset")
+            .WithSummary("Request a password reset token")
+            .WithDescription("Sends a password reset email with a secure token to the user's email address")
+            .AllowAnonymous()
+            .Produces<RequestPasswordResetResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
+
+        group.MapPost("/reset-password", ResetPasswordAsync)
+            .WithName("ResetPassword")
+            .WithSummary("Reset password using reset token")
+            .WithDescription("Resets the user's password using a valid reset token")
+            .AllowAnonymous()
+            .Produces<ResetPasswordResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
     }
 
     private static async Task<IResult> LoginAsync(
@@ -58,6 +76,22 @@ public static class AuthEndpoints
 
     private static async Task<IResult> RefreshTokenAsync(
         RefreshTokenRequest request,
+        IMediator mediator)
+    {
+        var result = await mediator.Send(request);
+        return Results.Ok(result.Value);
+    }
+
+    private static async Task<IResult> RequestPasswordResetAsync(
+        RequestPasswordResetRequest request,
+        IMediator mediator)
+    {
+        var result = await mediator.Send(request);
+        return Results.Ok(result.Value);
+    }
+
+    private static async Task<IResult> ResetPasswordAsync(
+        ResetPasswordRequest request,
         IMediator mediator)
     {
         var result = await mediator.Send(request);
