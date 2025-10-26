@@ -13,20 +13,20 @@ using Notism.Shared.Models;
 
 namespace Notism.Application.Auth.RequestPasswordReset;
 
-public class RequestPasswordResetUseCase : IRequestHandler<RequestPasswordResetRequest, Result<RequestPasswordResetResponse>>
+public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetRequest, Result<RequestPasswordResetResponse>>
 {
     private readonly IRepository<Domain.User.User> _userRepository;
     private readonly IRepository<PasswordResetToken> _passwordResetTokenRepository;
     private readonly IEmailService _emailService;
     private readonly IUnitOfWork _unitOfWork;
-    private readonly ILogger<RequestPasswordResetUseCase> _logger;
+    private readonly ILogger<RequestPasswordResetHandler> _logger;
 
-    public RequestPasswordResetUseCase(
+    public RequestPasswordResetHandler(
         IRepository<Domain.User.User> userRepository,
         IRepository<PasswordResetToken> passwordResetTokenRepository,
         IEmailService emailService,
         IUnitOfWork unitOfWork,
-        ILogger<RequestPasswordResetUseCase> logger)
+        ILogger<RequestPasswordResetHandler> logger)
     {
         _userRepository = userRepository;
         _passwordResetTokenRepository = passwordResetTokenRepository;

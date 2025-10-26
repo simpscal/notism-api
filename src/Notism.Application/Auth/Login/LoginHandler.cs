@@ -8,16 +8,16 @@ using Notism.Domain.User.Specifications;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Models;
 
-namespace Notism.Application.Auth.Register;
+namespace Notism.Application.Auth.Login;
 
-public class RegisterUseCase : IRequestHandler<RegisterRequest, Result<RegisterResponse>>
+public class LoginHandler : IRequestHandler<LoginRequest, Result<LoginResponse>>
 {
     private readonly IUserRepository _userRepository;
     private readonly ITokenService _tokenService;
     private readonly IPasswordService _passwordService;
     private readonly IMapper _mapper;
 
-    public RegisterUseCase(
+    public LoginHandler(
         IUserRepository userRepository,
         ITokenService tokenService,
         IPasswordService passwordService,
@@ -29,37 +29,28 @@ public class RegisterUseCase : IRequestHandler<RegisterRequest, Result<RegisterR
         _mapper = mapper;
     }
 
-    public async Task<Result<RegisterResponse>> Handle(RegisterRequest request, CancellationToken cancellationToken)
+    public async Task<Result<LoginResponse>> Handle(LoginRequest request, CancellationToken cancellationToken)
     {
-        // 1. Check if user already exists
-        var existingUser = await _userRepository.FindByExpressionAsync(new UserByEmailSpecification(request.Email));
+        // 1. Find user by email
+        var user = await _userRepository.FindByExpressionAsync(new UserByEmailSpecification(request.Email))
+        ?? throw new ResultFailureException("Invalid email or password");
 
-        if (existingUser != null)
+        // 2. Verify password
+        if (!_passwordService.VerifyPassword(user.Password, request.Password))
         {
-            throw new ResultFailureException("User with this email already exists");
-        }
-
-        // 2. Create new user with hashed password
-        var hashedPassword = _passwordService.HashPassword(request.Password);
-        var user = Domain.User.User.Create(request.Email, hashedPassword);
-
-        await _userRepository.AddAsync(user);
-
-        if (await _userRepository.SaveChangesAsync() < 1)
-        {
-            throw new ResultFailureException("There was an error creating the user");
+            throw new ResultFailureException("Invalid email or password");
         }
 
         // 3. Generate JWT token
         var token = await _tokenService.GenerateTokenAsync(user);
 
         // 4. Map to response using AutoMapper
-        var response = _mapper.Map<RegisterResponse>(user);
+        var response = _mapper.Map<LoginResponse>(user);
         response.Token = token.Token;
         response.ExpiresAt = token.ExpiresAt;
         response.RefreshToken = token.RefreshToken;
         response.RefreshTokenExpiresAt = token.RefreshTokenExpiresAt;
 
-        return Result<RegisterResponse>.Success(response);
+        return Result<LoginResponse>.Success(response);
     }
 }

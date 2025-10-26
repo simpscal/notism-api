@@ -11,14 +11,14 @@ using Notism.Shared.Models;
 
 namespace Notism.Application.User.UpdateProfile;
 
-public class UpdateUserProfileUseCase : IRequestHandler<UpdateUserProfileRequest, Result<UpdateUserProfileResponse>>
+public class UpdateUserProfileHandler : IRequestHandler<UpdateUserProfileRequest, Result<UpdateUserProfileResponse>>
 {
     private readonly IRepository<Domain.User.User> _userRepository;
-    private readonly ILogger<UpdateUserProfileUseCase> _logger;
+    private readonly ILogger<UpdateUserProfileHandler> _logger;
 
-    public UpdateUserProfileUseCase(
+    public UpdateUserProfileHandler(
         IRepository<Domain.User.User> userRepository,
-        ILogger<UpdateUserProfileUseCase> logger)
+        ILogger<UpdateUserProfileHandler> logger)
     {
         _userRepository = userRepository;
         _logger = logger;

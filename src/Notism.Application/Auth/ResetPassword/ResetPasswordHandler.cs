@@ -9,22 +9,22 @@ using Notism.Shared.Models;
 
 namespace Notism.Application.Auth.ResetPassword;
 
-public class ResetPasswordUseCase : IRequestHandler<ResetPasswordRequest, Result<ResetPasswordResponse>>
+public class ResetPasswordHandler : IRequestHandler<ResetPasswordRequest, Result<ResetPasswordResponse>>
 {
-    private readonly IRepository<PasswordResetToken> _passwordResetTokenRepository;
-    private readonly IUserRepository _userRepository;
+    private readonly IRepository<Domain.User.User> _userRepository;
     private readonly IPasswordService _passwordService;
+    private readonly IRepository<PasswordResetToken> _passwordResetTokenRepository;
     private readonly IUnitOfWork _unitOfWork;
 
-    public ResetPasswordUseCase(
-        IRepository<PasswordResetToken> passwordResetTokenRepository,
-        IUserRepository userRepository,
+    public ResetPasswordHandler(
+        IRepository<Domain.User.User> userRepository,
         IPasswordService passwordService,
+        IRepository<PasswordResetToken> passwordResetTokenRepository,
         IUnitOfWork unitOfWork)
     {
-        _passwordResetTokenRepository = passwordResetTokenRepository;
         _userRepository = userRepository;
         _passwordService = passwordService;
+        _passwordResetTokenRepository = passwordResetTokenRepository;
         _unitOfWork = unitOfWork;
     }
 
@@ -51,8 +51,6 @@ public class ResetPasswordUseCase : IRequestHandler<ResetPasswordRequest, Result
                 var updatedUser = user.ResetPassword(hashedPassword);
 
                 resetToken.MarkAsUsed();
-
-                _userRepository.Update(updatedUser);
 
                 await _userRepository.SaveChangesAsync();
                 await _passwordResetTokenRepository.SaveChangesAsync();

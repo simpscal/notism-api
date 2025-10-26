@@ -6,11 +6,11 @@ using Notism.Shared.Models;
 
 namespace Notism.Application.Auth.RefreshToken;
 
-public class RefreshTokenUseCase : IRequestHandler<RefreshTokenRequest, Result<TokenResult>>
+public class RefreshTokenHandler : IRequestHandler<RefreshTokenRequest, Result<TokenResult>>
 {
     private readonly ITokenService _tokenService;
 
-    public RefreshTokenUseCase(ITokenService tokenService)
+    public RefreshTokenHandler(ITokenService tokenService)
     {
         _tokenService = tokenService;
     }
