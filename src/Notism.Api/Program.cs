@@ -31,6 +31,7 @@ var app = builder.Build();
     app.UseMiddleware<ResultFailureMiddleware>();
 
     app.MapAuthEndpoints();
+    app.MapUserEndpoints();
 
     app.Run();
 }

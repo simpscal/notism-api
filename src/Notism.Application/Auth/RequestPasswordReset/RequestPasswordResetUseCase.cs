@@ -15,14 +15,14 @@ namespace Notism.Application.Auth.RequestPasswordReset;
 
 public class RequestPasswordResetUseCase : IRequestHandler<RequestPasswordResetRequest, Result<RequestPasswordResetResponse>>
 {
-    private readonly IRepository<User> _userRepository;
+    private readonly IRepository<Domain.User.User> _userRepository;
     private readonly IRepository<PasswordResetToken> _passwordResetTokenRepository;
     private readonly IEmailService _emailService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<RequestPasswordResetUseCase> _logger;
 
     public RequestPasswordResetUseCase(
-        IRepository<User> userRepository,
+        IRepository<Domain.User.User> userRepository,
         IRepository<PasswordResetToken> passwordResetTokenRepository,
         IEmailService emailService,
         IUnitOfWork unitOfWork,

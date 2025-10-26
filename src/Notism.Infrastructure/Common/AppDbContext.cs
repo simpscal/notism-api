@@ -1,7 +1,9 @@
 using Microsoft.EntityFrameworkCore;
 
+using Notism.Application.Common.Utilities;
 using Notism.Domain.RefreshToken;
 using Notism.Domain.User;
+using Notism.Domain.User.Enums;
 using Notism.Domain.User.ValueObjects;
 
 namespace Notism.Infrastructure.Common;
@@ -45,6 +47,19 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasColumnName("PasswordHash")
                 .HasMaxLength(255)
                 .IsRequired();
+
+            entity.Property(u => u.Role)
+                .HasConversion(
+                    role => EnumConverter.ToCamelCase(role),
+                    value => EnumConverter.FromString<UserRole>(value) ?? UserRole.User)
+                .HasMaxLength(20)
+                .IsRequired();
+
+            entity.Property(u => u.FirstName)
+                .HasMaxLength(50);
+
+            entity.Property(u => u.LastName)
+                .HasMaxLength(50);
 
             entity.Property(u => u.CreatedAt)
                 .IsRequired();

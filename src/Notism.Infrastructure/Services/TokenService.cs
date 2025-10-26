@@ -7,6 +7,7 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.IdentityModel.Tokens;
 
 using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Utilities;
 using Notism.Domain.RefreshToken;
 using Notism.Domain.RefreshToken.Specifications;
 using Notism.Domain.User;
@@ -31,7 +32,7 @@ public class TokenService : ITokenService
         _userRepository = userRepository;
     }
 
-    public async Task<TokenResult> GenerateTokenAsync(User user)
+    public async Task<TokenResult> GenerateTokenAsync(Domain.User.User user)
     {
         var secret = _configuration["JwtSettings:Secret"]!;
         var issuer = _configuration["JwtSettings:Issuer"]!;
@@ -46,6 +47,7 @@ public class TokenService : ITokenService
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Role, EnumConverter.ToCamelCase(user.Role)),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
 
@@ -64,8 +66,8 @@ public class TokenService : ITokenService
         // Generate refresh token
         var refreshToken = GenerateRefreshToken();
         var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(refreshExpirationDays);
-
         var refreshTokenEntity = RefreshToken.Create(refreshToken, user.Id, refreshTokenExpiresAt);
+
         await _refreshTokenRepository.AddAsync(refreshTokenEntity);
         await _refreshTokenRepository.SaveChangesAsync();
 

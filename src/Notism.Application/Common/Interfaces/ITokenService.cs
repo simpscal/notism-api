@@ -4,7 +4,7 @@ namespace Notism.Application.Common.Interfaces;
 
 public interface ITokenService
 {
-    Task<TokenResult> GenerateTokenAsync(User user);
+    Task<TokenResult> GenerateTokenAsync(Domain.User.User user);
     Task<TokenResult> RefreshTokenAsync(string refreshToken);
 }
 

@@ -41,7 +41,7 @@ public class RegisterUseCase : IRequestHandler<RegisterRequest, Result<RegisterR
 
         // 2. Create new user with hashed password
         var hashedPassword = _passwordService.HashPassword(request.Password);
-        var user = User.Create(request.Email, hashedPassword);
+        var user = Domain.User.User.Create(request.Email, hashedPassword);
 
         await _userRepository.AddAsync(user);
 
