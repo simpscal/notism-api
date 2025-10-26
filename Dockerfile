@@ -27,6 +27,8 @@ FROM mcr.microsoft.com/dotnet/aspnet:9.0
 
 WORKDIR /app
 
+ENV ASPNETCORE_HTTP_PORTS=5000
+
 COPY --from=publish /app/publish .
 
 ENTRYPOINT ["dotnet", "Notism.Api.dll"]
