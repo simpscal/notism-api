@@ -18,4 +18,11 @@ public class RefreshTokenRepository : Repository<RefreshToken>, IRefreshTokenRep
             .Where(rt => rt.UserId == userId && !rt.IsRevoked && rt.ExpiresAt > DateTime.UtcNow)
             .ExecuteUpdateAsync(setters => setters.SetProperty(rt => rt.IsRevoked, true));
     }
+
+    public async Task<int> DeleteExpiredTokensAsync(DateTime cutoffDate)
+    {
+        return await _dbSet
+            .Where(rt => rt.ExpiresAt < cutoffDate || rt.IsRevoked)
+            .ExecuteDeleteAsync();
+    }
 }

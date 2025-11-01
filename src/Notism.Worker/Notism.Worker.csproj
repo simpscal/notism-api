@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UserSecretsId>dotnet-Notism.Worker-c3e86749-7eb0-4d6c-ab36-d4000752ef4c</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="../Notism.Domain/Notism.Domain.csproj" />
+    <ProjectReference Include="../Notism.Infrastructure/Notism.Infrastructure.csproj" />
+    <ProjectReference Include="../Notism.Shared/Notism.Shared.csproj" />
+  </ItemGroup>
+</Project>

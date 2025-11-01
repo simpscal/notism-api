@@ -5,4 +5,5 @@ namespace Notism.Domain.RefreshToken;
 public interface IRefreshTokenRepository : IRepository<RefreshToken>
 {
     Task RevokeAllUserTokensAsync(Guid userId);
+    Task<int> DeleteExpiredTokensAsync(DateTime cutoffDate);
 }

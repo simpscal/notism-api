@@ -44,6 +44,11 @@ public class Repository<T>(AppDbContext appDbContext) : IRepository<T>
         return entity;
     }
 
+    public void Remove(T entity)
+    {
+        _dbSet.Remove(entity);
+    }
+
     public async Task<int> SaveChangesAsync()
     {
         var result = await appDbContext.SaveChangesAsync();
