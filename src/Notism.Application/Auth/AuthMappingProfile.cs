@@ -11,14 +11,24 @@ public class AuthMappingProfile : Profile
     public AuthMappingProfile()
     {
         CreateMap<Domain.User.User, LoginResponse>()
-            .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.Id))
-            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
+            .ForMember(dest => dest.User, opt => opt.MapFrom(src => new LoginUserInfoResponse
+            {
+                UserId = src.Id,
+                Email = src.Email,
+                FirstName = src.FirstName,
+                LastName = src.LastName,
+            }))
             .ForMember(dest => dest.Token, opt => opt.Ignore()) // Set manually in handler
             .ForMember(dest => dest.ExpiresAt, opt => opt.Ignore()); // Set manually in handler
 
         CreateMap<Domain.User.User, RegisterResponse>()
-            .ForMember(dest => dest.UserId, opt => opt.MapFrom(src => src.Id))
-            .ForMember(dest => dest.Email, opt => opt.MapFrom(src => src.Email))
+             .ForMember(dest => dest.User, opt => opt.MapFrom(src => new RegisterUserInfoResponse
+             {
+                 UserId = src.Id,
+                 Email = src.Email,
+                 FirstName = src.FirstName,
+                 LastName = src.LastName,
+             }))
             .ForMember(dest => dest.Token, opt => opt.Ignore()) // Set manually in handler
             .ForMember(dest => dest.ExpiresAt, opt => opt.Ignore()); // Set manually in handler
     }

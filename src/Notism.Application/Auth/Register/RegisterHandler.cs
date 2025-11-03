@@ -4,6 +4,7 @@ using MediatR;
 
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.User;
+using Notism.Domain.User.Enums;
 using Notism.Domain.User.Specifications;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Models;
@@ -41,7 +42,7 @@ public class RegisterHandler : IRequestHandler<RegisterRequest, Result<RegisterR
 
         // 2. Create new user with hashed password
         var hashedPassword = _passwordService.HashPassword(request.Password);
-        var user = Domain.User.User.Create(request.Email, hashedPassword);
+        var user = Domain.User.User.Create(request.Email, hashedPassword, UserRole.User, request.FirstName, request.LastName);
 
         await _userRepository.AddAsync(user);
 
