@@ -1,10 +1,10 @@
 using System.Linq.Expressions;
 
-using Notism.Domain.Common.Interfaces;
+using Notism.Domain.Common.Specifications;
 
 namespace Notism.Domain.RefreshToken.Specifications;
 
-public class RefreshTokenByTokenSpecification : ISpecification<RefreshToken>
+public class RefreshTokenByTokenSpecification : Specification<RefreshToken>
 {
     private readonly string _token;
 
@@ -13,13 +13,8 @@ public class RefreshTokenByTokenSpecification : ISpecification<RefreshToken>
         _token = token;
     }
 
-    public Expression<Func<RefreshToken, bool>> ToExpression()
+    public override Expression<Func<RefreshToken, bool>> ToExpression()
     {
         return refreshToken => refreshToken.Token == _token;
-    }
-
-    public bool IsSatisfiedBy(RefreshToken entity)
-    {
-        return entity.Token == _token;
     }
 }
