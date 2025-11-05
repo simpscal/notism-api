@@ -1,11 +1,13 @@
 using MediatR;
 
 using Notism.Api.Models;
+using Notism.Api.Services;
 using Notism.Application.Auth.Login;
 using Notism.Application.Auth.RefreshToken;
 using Notism.Application.Auth.Register;
 using Notism.Application.Auth.RequestPasswordReset;
 using Notism.Application.Auth.ResetPassword;
+using Notism.Shared.Exceptions;
 
 namespace Notism.Api.Endpoints;
 
@@ -35,11 +37,14 @@ public static class AuthEndpoints
 
         group.MapPost("/refresh", RefreshTokenAsync)
             .WithName("RefreshToken")
-            .WithSummary("Refresh JWT token using refresh token")
-            .WithDescription("Exchanges a valid refresh token for a new JWT token and refresh token")
             .AllowAnonymous()
             .Produces<RefreshTokenResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
+
+        group.MapPost("/logout", LogoutAsync)
+            .WithName("Logout")
+            .AllowAnonymous()
+            .Produces(StatusCodes.Status200OK);
 
         group.MapPost("/request-password-reset", RequestPasswordResetAsync)
             .WithName("RequestPasswordReset")
@@ -60,26 +65,72 @@ public static class AuthEndpoints
 
     private static async Task<IResult> LoginAsync(
         LoginRequest request,
-        IMediator mediator)
+        IMediator mediator,
+        ICookieService cookieService,
+        HttpContext httpContext)
     {
         var result = await mediator.Send(request);
-        return Results.Ok(result.Value);
+
+        cookieService.SetRefreshTokenCookie(
+            httpContext,
+            result.Value!.RefreshToken,
+            result.Value!.RefreshTokenExpiresAt);
+
+        await cookieService.GenerateAntiForgeryTokenAsync(httpContext);
+
+        return Results.Ok(result.Value.Response);
     }
 
     private static async Task<IResult> RegisterAsync(
         RegisterRequest request,
-        IMediator mediator)
+        IMediator mediator,
+        ICookieService cookieService,
+        HttpContext httpContext)
     {
         var result = await mediator.Send(request);
-        return Results.Ok(result.Value);
+
+        cookieService.SetRefreshTokenCookie(
+            httpContext,
+            result.Value!.RefreshToken,
+            result.Value!.RefreshTokenExpiresAt);
+
+        await cookieService.GenerateAntiForgeryTokenAsync(httpContext);
+
+        return Results.Ok(result.Value.Response);
     }
 
     private static async Task<IResult> RefreshTokenAsync(
-        RefreshTokenRequest request,
-        IMediator mediator)
+        IMediator mediator,
+        ICookieService cookieService,
+        HttpContext httpContext)
     {
+        await cookieService.ValidateAntiForgeryTokenAsync(httpContext);
+
+        var refreshToken = cookieService.GetRefreshTokenFromCookie(httpContext);
+        if (string.IsNullOrEmpty(refreshToken))
+        {
+            throw new ResultFailureException("Refresh token not found");
+        }
+
+        var request = new RefreshTokenRequest { RefreshToken = refreshToken };
         var result = await mediator.Send(request);
-        return Results.Ok(result.Value);
+
+        var tokenResult = result.Value;
+        cookieService.SetRefreshTokenCookie(
+            httpContext,
+            tokenResult!.RefreshToken,
+            tokenResult!.RefreshTokenExpiresAt);
+
+        return Results.Ok(new { Token = tokenResult.Token, ExpiresAt = tokenResult.ExpiresAt });
+    }
+
+    private static IResult LogoutAsync(
+        ICookieService cookieService,
+        HttpContext httpContext)
+    {
+        cookieService.ClearRefreshTokenCookie(httpContext);
+
+        return Results.Ok(new { Message = "Logged out successfully" });
     }
 
     private static async Task<IResult> RequestPasswordResetAsync(

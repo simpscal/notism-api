@@ -6,11 +6,13 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
+using Notism.Api.Services;
+
 namespace Notism.Api;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddApi(this IServiceCollection services, IConfiguration configuration)
+    public static IServiceCollection AddApi(this IServiceCollection services, IConfiguration configuration, IWebHostEnvironment environment)
     {
         services.AddEndpointsApiExplorer();
         services.AddAuthorization();
@@ -18,10 +20,13 @@ public static class DependencyInjection
         services.AddSwaggerConfiguration();
         services.AddJwtAuthentication(configuration);
         services.AddCorsConfiguration();
+        services.AddAntiforgeryConfiguration(environment);
 
         services.AddProblemDetails();
 
         services.AddAWSS3();
+
+        services.AddScoped<ICookieService, CookieService>();
 
         return services;
     }
@@ -46,6 +51,23 @@ public static class DependencyInjection
                     .AllowAnyHeader()
                     .AllowCredentials();
             });
+        });
+
+        return services;
+    }
+
+    private static IServiceCollection AddAntiforgeryConfiguration(this IServiceCollection services, IWebHostEnvironment environment)
+    {
+        services.AddAntiforgery(options =>
+        {
+            options.HeaderName = "X-XSRF-TOKEN";
+            options.Cookie.Name = "X-CSRF-TOKEN";
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SecurePolicy = environment.IsDevelopment()
+                ? CookieSecurePolicy.SameAsRequest
+                : CookieSecurePolicy.Always;
+
+            options.Cookie.SameSite = SameSiteMode.Strict;
         });
 
         return services;

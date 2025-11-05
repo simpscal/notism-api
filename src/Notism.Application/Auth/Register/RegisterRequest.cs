@@ -4,7 +4,7 @@ using Notism.Shared.Models;
 
 namespace Notism.Application.Auth.Register;
 
-public class RegisterRequest : IRequest<Result<RegisterResponse>>
+public class RegisterRequest : IRequest<Result<(RegisterResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>>
 {
     public required string Email { get; set; }
 

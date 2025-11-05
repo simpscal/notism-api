@@ -7,7 +7,7 @@ using Notism.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
 {
     builder.Services
-        .AddApi(builder.Configuration)
+        .AddApi(builder.Configuration, builder.Environment)
         .AddApplication()
         .AddInfrastructure(builder.Configuration);
 }
@@ -26,8 +26,12 @@ var app = builder.Build();
     }
 
     app.UseHttpsRedirection();
+
     app.UseAuthentication();
     app.UseAuthorization();
+
+    app.UseAntiforgery();
+
     app.UseMiddleware<ResultFailureMiddleware>();
 
     app.MapAuthEndpoints();

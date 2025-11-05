@@ -10,7 +10,7 @@ using Notism.Shared.Models;
 
 namespace Notism.Application.Auth.Login;
 
-public class LoginHandler : IRequestHandler<LoginRequest, Result<LoginResponse>>
+public class LoginHandler : IRequestHandler<LoginRequest, Result<(LoginResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>>
 {
     private readonly IUserRepository _userRepository;
     private readonly ITokenService _tokenService;
@@ -29,7 +29,7 @@ public class LoginHandler : IRequestHandler<LoginRequest, Result<LoginResponse>>
         _mapper = mapper;
     }
 
-    public async Task<Result<LoginResponse>> Handle(LoginRequest request, CancellationToken cancellationToken)
+    public async Task<Result<(LoginResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>> Handle(LoginRequest request, CancellationToken cancellationToken)
     {
         // 1. Find user by email
         var user = await _userRepository.FindByExpressionAsync(new UserByEmailSpecification(request.Email))
@@ -48,9 +48,7 @@ public class LoginHandler : IRequestHandler<LoginRequest, Result<LoginResponse>>
         var response = _mapper.Map<LoginResponse>(user);
         response.Token = token.Token;
         response.ExpiresAt = token.ExpiresAt;
-        response.RefreshToken = token.RefreshToken;
-        response.RefreshTokenExpiresAt = token.RefreshTokenExpiresAt;
 
-        return Result<LoginResponse>.Success(response);
+        return Result<(LoginResponse, string, DateTime)>.Success((response, token.RefreshToken, token.RefreshTokenExpiresAt));
     }
 }
