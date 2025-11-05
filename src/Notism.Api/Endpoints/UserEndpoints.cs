@@ -2,6 +2,7 @@ using MediatR;
 
 using Notism.Api.Attributes;
 using Notism.Api.Models;
+using Notism.Application.User.GetProfile;
 using Notism.Application.User.UpdateProfile;
 
 namespace Notism.Api.Endpoints;
@@ -14,6 +15,16 @@ public static class UserEndpoints
             .WithTags("User Management")
             .WithOpenApi();
 
+        group.MapGet("/{userId:guid}/profile", GetUserProfileAsync)
+            .WithName("GetUserProfile")
+            .WithSummary("Get user profile")
+            .WithDescription("Retrieves a user's profile information.")
+            .RequireAuthorization()
+            .Produces<GetUserProfileResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+
         group.MapPut("/{userId:guid}/profile", UpdateUserProfileAsync)
             .WithName("UpdateUserProfile")
             .WithSummary("Update user profile (Admin only)")
@@ -24,6 +35,17 @@ public static class UserEndpoints
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
             .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+    }
+
+    private static async Task<IResult> GetUserProfileAsync(
+        Guid userId,
+        IMediator mediator,
+        CancellationToken cancellationToken)
+    {
+        var request = new GetUserProfileRequest { UserId = userId };
+        var result = await mediator.Send(request, cancellationToken);
+
+        return Results.Ok(result.Value);
     }
 
     [RequireAdmin]
