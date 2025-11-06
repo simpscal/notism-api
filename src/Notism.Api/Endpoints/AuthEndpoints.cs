@@ -1,3 +1,5 @@
+using System.Security.Claims;
+
 using MediatR;
 
 using Notism.Api.Models;
@@ -7,6 +9,7 @@ using Notism.Application.Auth.RefreshToken;
 using Notism.Application.Auth.Register;
 using Notism.Application.Auth.RequestPasswordReset;
 using Notism.Application.Auth.ResetPassword;
+using Notism.Application.User.GetProfile;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Api.Endpoints;
@@ -45,6 +48,15 @@ public static class AuthEndpoints
             .WithName("Logout")
             .AllowAnonymous()
             .Produces(StatusCodes.Status200OK);
+
+        group.MapGet("/reload", ReloadAsync)
+            .WithName("Reload")
+            .WithSummary("Get current user profile from access token")
+            .WithDescription("Returns the user profile associated with the provided access token")
+            .RequireAuthorization()
+            .Produces<GetUserProfileResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
 
         group.MapPost("/request-password-reset", RequestPasswordResetAsync)
             .WithName("RequestPasswordReset")
@@ -131,6 +143,23 @@ public static class AuthEndpoints
         cookieService.ClearRefreshTokenCookie(httpContext);
 
         return Results.Ok(new { Message = "Logged out successfully" });
+    }
+
+    private static async Task<IResult> ReloadAsync(
+        HttpContext httpContext,
+        IMediator mediator)
+    {
+        var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
+
+        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
+        {
+            throw new ResultFailureException("Invalid or missing user identifier in token");
+        }
+
+        var request = new GetUserProfileRequest { UserId = userId };
+        var result = await mediator.Send(request);
+
+        return Results.Ok(result.Value);
     }
 
     private static async Task<IResult> RequestPasswordResetAsync(
