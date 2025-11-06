@@ -35,7 +35,7 @@ public class GetUserProfileHandler : IRequestHandler<GetUserProfileRequest, Resu
 
         return Result<GetUserProfileResponse>.Success(new GetUserProfileResponse
         {
-            UserId = user.Id,
+            Id = user.Id,
             FirstName = user.FirstName,
             Email = user.Email?.Value ?? string.Empty,
             Role = EnumConverter.ToCamelCase(user.Role),

@@ -13,7 +13,7 @@ public class AuthMappingProfile : Profile
         CreateMap<Domain.User.User, LoginResponse>()
             .ForMember(dest => dest.User, opt => opt.MapFrom(src => new LoginUserInfoResponse
             {
-                UserId = src.Id,
+                Id = src.Id,
                 Email = src.Email,
                 FirstName = src.FirstName,
                 LastName = src.LastName,
@@ -24,7 +24,7 @@ public class AuthMappingProfile : Profile
         CreateMap<Domain.User.User, RegisterResponse>()
              .ForMember(dest => dest.User, opt => opt.MapFrom(src => new RegisterUserInfoResponse
              {
-                 UserId = src.Id,
+                 Id = src.Id,
                  Email = src.Email,
                  FirstName = src.FirstName,
                  LastName = src.LastName,

@@ -9,7 +9,7 @@ public class LoginResponse
 
 public class LoginUserInfoResponse
 {
-    public Guid UserId { get; set; }
+    public Guid Id { get; set; }
     public required string Email { get; set; }
     public string? FirstName { get; set; }
     public string? LastName { get; set; }
