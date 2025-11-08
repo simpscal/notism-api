@@ -1,3 +1,5 @@
+using Amazon.S3;
+
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -33,6 +35,22 @@ public static class DependencyInjection
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IPasswordService, PasswordService>();
         services.AddScoped<IEmailService, EmailService>();
+        services.AddScoped<IStorageService, S3StorageService>();
+
+        services.AddAWSS3(configuration);
+
+        return services;
+    }
+
+    private static IServiceCollection AddAWSS3(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.AddSingleton<IAmazonS3>(sp =>
+        {
+            return new AmazonS3Client(
+                configuration["AWS:AccessKey"],
+                configuration["AWS:SecretKey"],
+                Amazon.RegionEndpoint.GetBySystemName(configuration["AWS:Region"]));
+        });
 
         return services;
     }

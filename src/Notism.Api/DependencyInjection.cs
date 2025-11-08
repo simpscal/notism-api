@@ -1,7 +1,5 @@
 using System.Text;
 
-using Amazon.S3;
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
@@ -23,8 +21,6 @@ public static class DependencyInjection
         services.AddAntiforgeryConfiguration(environment);
 
         services.AddProblemDetails();
-
-        services.AddAWSS3();
 
         services.AddScoped<ICookieService, CookieService>();
 
@@ -125,21 +121,6 @@ public static class DependencyInjection
                         throw new Exception("Empty JWTSettings Secret"))),
                 };
             });
-
-        return services;
-    }
-
-    private static IServiceCollection AddAWSS3(this IServiceCollection services)
-    {
-        services.AddSingleton<IAmazonS3>(sp =>
-        {
-            var configuration = sp.GetRequiredService<IConfiguration>();
-
-            return new AmazonS3Client(
-                configuration["AWS:AccessKey"],
-                configuration["AWS:SecretKey"],
-                Amazon.RegionEndpoint.GetBySystemName(configuration["AWS:Region"]));
-        });
 
         return services;
     }

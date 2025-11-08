@@ -36,6 +36,7 @@ var app = builder.Build();
 
     app.MapAuthEndpoints();
     app.MapUserEndpoints();
+    app.MapStorageEndpoints();
 
     app.Run();
 }
