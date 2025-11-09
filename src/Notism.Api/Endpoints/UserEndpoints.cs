@@ -45,7 +45,7 @@ public static class UserEndpoints
         var request = new GetUserProfileRequest { UserId = userId };
         var result = await mediator.Send(request, cancellationToken);
 
-        return Results.Ok(result.Value);
+        return Results.Ok(result);
     }
 
     [RequireAdmin]
@@ -59,6 +59,6 @@ public static class UserEndpoints
 
         var result = await mediator.Send(request, cancellationToken);
 
-        return Results.Ok(result.Value);
+        return Results.Ok(result);
     }
 }

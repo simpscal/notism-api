@@ -9,11 +9,10 @@ using Notism.Domain.Common.Interfaces;
 using Notism.Domain.User;
 using Notism.Domain.User.Specifications;
 using Notism.Shared.Exceptions;
-using Notism.Shared.Models;
 
 namespace Notism.Application.Auth.RequestPasswordReset;
 
-public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetRequest, Result<RequestPasswordResetResponse>>
+public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetRequest, RequestPasswordResetResponse>
 {
     private readonly IRepository<Domain.User.User> _userRepository;
     private readonly IRepository<PasswordResetToken> _passwordResetTokenRepository;
@@ -35,7 +34,7 @@ public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetR
         _logger = logger;
     }
 
-    public async Task<Result<RequestPasswordResetResponse>> Handle(
+    public async Task<RequestPasswordResetResponse> Handle(
         RequestPasswordResetRequest request,
         CancellationToken cancellationToken)
     {
@@ -44,10 +43,10 @@ public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetR
         if (user is null)
         {
             // Don't reveal if email exists for security reasons
-            return Result<RequestPasswordResetResponse>.Success(new RequestPasswordResetResponse
+            return new RequestPasswordResetResponse
             {
                 Message = "If the email exists, a password reset link has been sent.",
-            });
+            };
         }
 
         // Check if there's already an active token for this user
@@ -82,10 +81,10 @@ public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetR
 
             _logger.LogInformation("Password reset email sent successfully for user {UserId}", user.Id);
 
-            return Result<RequestPasswordResetResponse>.Success(new RequestPasswordResetResponse
+            return new RequestPasswordResetResponse
             {
                 Message = "If the email exists, a password reset link has been sent.",
-            });
+            };
         }
         catch (Exception ex)
         {

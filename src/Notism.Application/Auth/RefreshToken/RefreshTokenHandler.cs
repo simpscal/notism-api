@@ -2,11 +2,10 @@ using MediatR;
 
 using Notism.Application.Common.Interfaces;
 using Notism.Shared.Exceptions;
-using Notism.Shared.Models;
 
 namespace Notism.Application.Auth.RefreshToken;
 
-public class RefreshTokenHandler : IRequestHandler<RefreshTokenRequest, Result<TokenResult>>
+public class RefreshTokenHandler : IRequestHandler<RefreshTokenRequest, TokenResult>
 {
     private readonly ITokenService _tokenService;
 
@@ -15,13 +14,13 @@ public class RefreshTokenHandler : IRequestHandler<RefreshTokenRequest, Result<T
         _tokenService = tokenService;
     }
 
-    public async Task<Result<TokenResult>> Handle(RefreshTokenRequest request, CancellationToken cancellationToken)
+    public async Task<TokenResult> Handle(RefreshTokenRequest request, CancellationToken cancellationToken)
     {
         try
         {
             var tokenResult = await _tokenService.RefreshTokenAsync(request.RefreshToken);
 
-            return Result<TokenResult>.Success(tokenResult);
+            return tokenResult;
         }
         catch (InvalidRefreshTokenException ex)
         {

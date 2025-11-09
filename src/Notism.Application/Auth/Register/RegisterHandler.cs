@@ -7,11 +7,10 @@ using Notism.Domain.User;
 using Notism.Domain.User.Enums;
 using Notism.Domain.User.Specifications;
 using Notism.Shared.Exceptions;
-using Notism.Shared.Models;
 
 namespace Notism.Application.Auth.Register;
 
-public class RegisterHandler : IRequestHandler<RegisterRequest, Result<(RegisterResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>>
+public class RegisterHandler : IRequestHandler<RegisterRequest, (RegisterResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
 {
     private readonly IUserRepository _userRepository;
     private readonly ITokenService _tokenService;
@@ -30,7 +29,7 @@ public class RegisterHandler : IRequestHandler<RegisterRequest, Result<(Register
         _mapper = mapper;
     }
 
-    public async Task<Result<(RegisterResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>> Handle(RegisterRequest request, CancellationToken cancellationToken)
+    public async Task<(RegisterResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)> Handle(RegisterRequest request, CancellationToken cancellationToken)
     {
         // 1. Check if user already exists
         var existingUser = await _userRepository.FindByExpressionAsync(new UserByEmailSpecification(request.Email));
@@ -59,6 +58,6 @@ public class RegisterHandler : IRequestHandler<RegisterRequest, Result<(Register
         response.Token = token.Token;
         response.ExpiresAt = token.ExpiresAt;
 
-        return Result<(RegisterResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>.Success((response, token.RefreshToken, token.RefreshTokenExpiresAt));
+        return (response, token.RefreshToken, token.RefreshTokenExpiresAt);
     }
 }

@@ -5,11 +5,10 @@ using Notism.Domain.Common.Interfaces;
 using Notism.Domain.User;
 using Notism.Domain.User.Specifications;
 using Notism.Shared.Exceptions;
-using Notism.Shared.Models;
 
 namespace Notism.Application.Auth.ResetPassword;
 
-public class ResetPasswordHandler : IRequestHandler<ResetPasswordRequest, Result<ResetPasswordResponse>>
+public class ResetPasswordHandler : IRequestHandler<ResetPasswordRequest, ResetPasswordResponse>
 {
     private readonly IRepository<Domain.User.User> _userRepository;
     private readonly IPasswordService _passwordService;
@@ -28,7 +27,7 @@ public class ResetPasswordHandler : IRequestHandler<ResetPasswordRequest, Result
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Result<ResetPasswordResponse>> Handle(
+    public async Task<ResetPasswordResponse> Handle(
         ResetPasswordRequest request,
         CancellationToken cancellationToken)
     {
@@ -51,9 +50,9 @@ public class ResetPasswordHandler : IRequestHandler<ResetPasswordRequest, Result
             resetToken.MarkAsUsed();
         });
 
-        return Result<ResetPasswordResponse>.Success(new ResetPasswordResponse
+        return new ResetPasswordResponse
         {
             Message = "Password has been successfully reset.",
-        });
+        };
     }
 }

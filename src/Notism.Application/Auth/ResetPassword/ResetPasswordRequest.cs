@@ -1,10 +1,8 @@
 using MediatR;
 
-using Notism.Shared.Models;
-
 namespace Notism.Application.Auth.ResetPassword;
 
-public class ResetPasswordRequest : IRequest<Result<ResetPasswordResponse>>
+public class ResetPasswordRequest : IRequest<ResetPasswordResponse>
 {
     public string Token { get; set; } = string.Empty;
     public string NewPassword { get; set; } = string.Empty;

@@ -85,12 +85,12 @@ public static class AuthEndpoints
 
         cookieService.SetRefreshTokenCookie(
             httpContext,
-            result.Value!.RefreshToken,
-            result.Value!.RefreshTokenExpiresAt);
+            result.RefreshToken,
+            result.RefreshTokenExpiresAt);
 
         await cookieService.GenerateAntiForgeryTokenAsync(httpContext);
 
-        return Results.Ok(result.Value.Response);
+        return Results.Ok(result.Response);
     }
 
     private static async Task<IResult> RegisterAsync(
@@ -103,12 +103,12 @@ public static class AuthEndpoints
 
         cookieService.SetRefreshTokenCookie(
             httpContext,
-            result.Value!.RefreshToken,
-            result.Value!.RefreshTokenExpiresAt);
+            result.RefreshToken,
+            result.RefreshTokenExpiresAt);
 
         await cookieService.GenerateAntiForgeryTokenAsync(httpContext);
 
-        return Results.Ok(result.Value.Response);
+        return Results.Ok(result.Response);
     }
 
     private static async Task<IResult> RefreshTokenAsync(
@@ -125,13 +125,12 @@ public static class AuthEndpoints
         }
 
         var request = new RefreshTokenRequest { RefreshToken = refreshToken };
-        var result = await mediator.Send(request);
+        var tokenResult = await mediator.Send(request);
 
-        var tokenResult = result.Value;
         cookieService.SetRefreshTokenCookie(
             httpContext,
-            tokenResult!.RefreshToken,
-            tokenResult!.RefreshTokenExpiresAt);
+            tokenResult.RefreshToken,
+            tokenResult.RefreshTokenExpiresAt);
 
         return Results.Ok(new { Token = tokenResult.Token, ExpiresAt = tokenResult.ExpiresAt });
     }
@@ -159,7 +158,7 @@ public static class AuthEndpoints
         var request = new GetUserProfileRequest { UserId = userId };
         var result = await mediator.Send(request);
 
-        return Results.Ok(result.Value);
+        return Results.Ok(result);
     }
 
     private static async Task<IResult> RequestPasswordResetAsync(
@@ -167,7 +166,7 @@ public static class AuthEndpoints
         IMediator mediator)
     {
         var result = await mediator.Send(request);
-        return Results.Ok(result.Value);
+        return Results.Ok(result);
     }
 
     private static async Task<IResult> ResetPasswordAsync(
@@ -175,6 +174,6 @@ public static class AuthEndpoints
         IMediator mediator)
     {
         var result = await mediator.Send(request);
-        return Results.Ok(result.Value);
+        return Results.Ok(result);
     }
 }

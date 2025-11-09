@@ -7,11 +7,10 @@ using Notism.Domain.Common.Interfaces;
 using Notism.Domain.User.Enums;
 using Notism.Domain.User.Specifications;
 using Notism.Shared.Exceptions;
-using Notism.Shared.Models;
 
 namespace Notism.Application.User.UpdateProfile;
 
-public class UpdateUserProfileHandler : IRequestHandler<UpdateUserProfileRequest, Result<UpdateUserProfileResponse>>
+public class UpdateUserProfileHandler : IRequestHandler<UpdateUserProfileRequest, UpdateUserProfileResponse>
 {
     private readonly IRepository<Domain.User.User> _userRepository;
     private readonly ILogger<UpdateUserProfileHandler> _logger;
@@ -24,7 +23,7 @@ public class UpdateUserProfileHandler : IRequestHandler<UpdateUserProfileRequest
         _logger = logger;
     }
 
-    public async Task<Result<UpdateUserProfileResponse>> Handle(
+    public async Task<UpdateUserProfileResponse> Handle(
         UpdateUserProfileRequest request,
         CancellationToken cancellationToken)
     {
@@ -44,7 +43,7 @@ public class UpdateUserProfileHandler : IRequestHandler<UpdateUserProfileRequest
 
         _logger.LogInformation("User profile updated successfully for user {UserId}", request.UserId);
 
-        return Result<UpdateUserProfileResponse>.Success(new UpdateUserProfileResponse
+        return new UpdateUserProfileResponse
         {
             UserId = updatedUser.Id,
             FirstName = updatedUser.FirstName,
@@ -52,6 +51,6 @@ public class UpdateUserProfileHandler : IRequestHandler<UpdateUserProfileRequest
             Email = updatedUser.Email?.Value ?? string.Empty,
             Role = EnumConverter.ToCamelCase(updatedUser.Role),
             Message = "User profile updated successfully",
-        });
+        };
     }
 }
