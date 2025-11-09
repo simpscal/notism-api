@@ -31,6 +31,7 @@ public class UnitOfWork : IUnitOfWork
         try
         {
             var result = await operation();
+            await _dbContext.SaveChangesAsync();
             await transaction.CommitAsync();
 
             return result;

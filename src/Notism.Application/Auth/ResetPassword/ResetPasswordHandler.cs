@@ -41,29 +41,19 @@ public class ResetPasswordHandler : IRequestHandler<ResetPasswordRequest, Result
             throw new ResultFailureException("Invalid or expired reset token");
         }
 
-        try
+        await _unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            await _unitOfWork.ExecuteInTransactionAsync(async () =>
-            {
-                var user = await _userRepository.FindByExpressionAsync(new UserByIdSpecification(resetToken.UserId)) ?? throw new ResultFailureException("User not found");
+            var user = await _userRepository.FindByExpressionAsync(new UserByIdSpecification(resetToken.UserId)) ?? throw new ResultFailureException("User not found");
 
-                var hashedPassword = _passwordService.HashPassword(request.NewPassword);
-                var updatedUser = user.ResetPassword(hashedPassword);
+            var hashedPassword = _passwordService.HashPassword(request.NewPassword);
+            user.ResetPassword(hashedPassword);
 
-                resetToken.MarkAsUsed();
+            resetToken.MarkAsUsed();
+        });
 
-                await _userRepository.SaveChangesAsync();
-                await _passwordResetTokenRepository.SaveChangesAsync();
-            });
-
-            return Result<ResetPasswordResponse>.Success(new ResetPasswordResponse
-            {
-                Message = "Password has been successfully reset.",
-            });
-        }
-        catch
+        return Result<ResetPasswordResponse>.Success(new ResetPasswordResponse
         {
-            throw new ResultFailureException("Failed to reset password. Please try again.");
-        }
+            Message = "Password has been successfully reset.",
+        });
     }
 }

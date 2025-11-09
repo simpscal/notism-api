@@ -14,15 +14,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 var app = builder.Build();
 {
+    app.UseCors(app.Environment.IsDevelopment() ? "DevelopmentCorsPolicy" : "ProductionCorsPolicy");
+
     if (app.Environment.IsDevelopment())
     {
-        app.UseCors("DevelopmentCorsPolicy");
         app.UseSwagger();
         app.UseSwaggerUI();
-    }
-    else
-    {
-        app.UseCors("ProductionCorsPolicy");
     }
 
     app.UseHttpsRedirection();

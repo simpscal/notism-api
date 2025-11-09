@@ -46,14 +46,10 @@ public class User : AggregateRoot
         AddDomainEvent(new PasswordResetRequestedEvent(Id, Email, resetToken, expiresAt));
     }
 
-    public User ResetPassword(string newHashedPassword)
+    public void ResetPassword(string newHashedPassword)
     {
-        var copy = (User)MemberwiseClone();
-        copy.Password = Password.Create(newHashedPassword);
-        copy.ClearDomainEvents();
-        copy.AddDomainEvent(new PasswordResetCompletedEvent(Id, Email));
-
-        return copy;
+        Password = Password.Create(newHashedPassword);
+        AddDomainEvent(new PasswordResetCompletedEvent(Id, Email));
     }
 
     public User UpdateProfile(string? firstName, string? lastName, string? email = null, UserRole? role = null)

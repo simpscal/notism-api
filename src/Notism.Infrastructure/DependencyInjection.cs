@@ -24,7 +24,7 @@ public static class DependencyInjection
         services.AddDbContext<AppDbContext>(
             options =>
                 options.UseNpgsql(configuration.GetConnectionString("DefaultConnection")),
-            ServiceLifetime.Transient);
+            ServiceLifetime.Scoped);
 
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
 
