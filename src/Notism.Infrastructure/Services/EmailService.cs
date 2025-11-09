@@ -14,6 +14,7 @@ public class EmailService : IEmailService
 {
     private readonly ILogger<EmailService> _logger;
     private readonly IResend _resendClient;
+    private readonly IConfiguration _configuration;
     private readonly string _fromEmail;
     private readonly string _fromName;
 
@@ -24,6 +25,7 @@ public class EmailService : IEmailService
     {
         _logger = logger;
         _resendClient = resendClient;
+        _configuration = configuration;
         _fromEmail = configuration["Email:FromEmail"] ?? throw new ArgumentNullException("Email:FromEmail configuration is missing");
         _fromName = configuration["Email:FromName"] ?? "Notism";
     }
@@ -31,9 +33,12 @@ public class EmailService : IEmailService
     public async Task SendPasswordResetEmailAsync(Email email, string resetToken)
     {
         var subject = "Reset Your Password";
+        var clientAppUrl = _configuration["ClientApp:Url"] ?? throw new ArgumentNullException("ClientApp:Url configuration is missing");
+        var resetUrl = $"{clientAppUrl}/auth/reset-password?token={resetToken}";
 
         var htmlContent = LoadEmailTemplate("PasswordReset.html")
             .Replace("{{RESET_TOKEN}}", resetToken)
+            .Replace("{{RESET_URL}}", resetUrl)
             .Replace("{{YEAR}}", DateTime.UtcNow.Year.ToString());
 
         var message = new EmailMessage
