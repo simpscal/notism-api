@@ -18,12 +18,7 @@ public class Email : ValueObject
             throw new ArgumentException("Email cannot be empty", nameof(email));
         }
 
-        if (!IsValid(email))
-        {
-            throw new ArgumentException("Invalid email format", nameof(email));
-        }
-
-        return new Email(email.ToLowerInvariant());
+        return !IsValid(email) ? throw new ArgumentException("Invalid email format", nameof(email)) : new Email(email.ToLowerInvariant());
     }
 
     public static implicit operator string(Email email) => email.Value;

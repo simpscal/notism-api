@@ -13,6 +13,8 @@ using Notism.Infrastructure.RefreshTokens;
 using Notism.Infrastructure.Services;
 using Notism.Infrastructure.Users;
 
+using Resend;
+
 namespace Notism.Infrastructure;
 
 public static class DependencyInjection
@@ -38,6 +40,7 @@ public static class DependencyInjection
         services.AddScoped<IStorageService, S3StorageService>();
 
         services.AddAWSS3(configuration);
+        services.AddResend(configuration);
 
         return services;
     }
@@ -51,6 +54,21 @@ public static class DependencyInjection
                 configuration["AWS:SecretKey"],
                 Amazon.RegionEndpoint.GetBySystemName(configuration["AWS:Region"]));
         });
+
+        return services;
+    }
+
+    private static IServiceCollection AddResend(this IServiceCollection services, IConfiguration configuration)
+    {
+        var apiKey = configuration["Resend:ApiKey"] ?? throw new ArgumentNullException("Resend:ApiKey configuration is missing");
+
+        services.AddOptions();
+        services.Configure<ResendClientOptions>(o =>
+        {
+            o.ApiToken = apiKey;
+        });
+        services.AddHttpClient<ResendClient>();
+        services.AddTransient<IResend, ResendClient>();
 
         return services;
     }
