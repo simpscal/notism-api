@@ -55,6 +55,9 @@ jobs:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ secrets.AWS_REGION }}
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
       - name: Login to Amazon ECR
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
@@ -64,17 +67,29 @@ jobs:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
         run: |
-          docker build \
+          # Use buildx for cross-platform builds (AMD64 runner building ARM64 image)
+          docker buildx build \
+            --platform linux/arm64 \
             --build-arg ASPNETCORE_ENVIRONMENT=${{ needs.prepare.outputs.dotnet-env }} \
             -t "$ECR_REGISTRY/$ECR_REPOSITORY:${{ env.IMAGE_TAG }}" \
+            --push \
             -f Dockerfile .
-          docker push "$ECR_REGISTRY/$ECR_REPOSITORY:${{ env.IMAGE_TAG }}"
+
+      - name: Fetch task definition
+        id: fetch-task-def
+        run: |
+          aws ecs describe-task-definition \
+            --task-definition ${{ secrets.ECS_TASK_DEFINITION }} \
+            --query 'taskDefinition' > task-definition-raw.json
+          # Remove read-only fields that cannot be used in task definition registration
+          jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy, .enableFaultInjection)' \
+            task-definition-raw.json > task-definition.json
 
       - name: Render task definition
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: ${{ secrets.ECS_TASK_DEFINITION }}
+          task-definition: task-definition.json
           container-name: ${{ secrets.ECS_CONTAINER_NAME }}
           image: ${{ steps.ecr-login.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ env.IMAGE_TAG }}
 
@@ -85,7 +100,7 @@ jobs:
           service: ${{ secrets.ECS_SERVICE }}
           cluster: ${{ secrets.ECS_CLUSTER }}
           wait-for-service-stability: true
-          propagate-tags: SERVICE
+          force-new-deployment: true
 
       - name: Clean up untagged images
         if: github.ref_name == 'main'
