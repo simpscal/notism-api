@@ -14,6 +14,7 @@ public class S3StorageService : IStorageService
     private readonly IConfiguration _configuration;
     private readonly ILogger<S3StorageService> _logger;
     private readonly string _bucketName;
+    private readonly string _region;
 
     public S3StorageService(
         IAmazonS3 s3Client,
@@ -24,6 +25,7 @@ public class S3StorageService : IStorageService
         _configuration = configuration;
         _logger = logger;
         _bucketName = configuration["AWS:BucketName"] ?? throw new ArgumentNullException("AWS:BucketName configuration is missing");
+        _region = configuration["AWS:Region"] ?? throw new ArgumentNullException("AWS:Region configuration is missing");
     }
 
     public async Task<(string Url, string Key)> GeneratePresignedUploadUrlAsync(string fileName, string contentType, int expirationMinutes = 60)
@@ -77,6 +79,11 @@ public class S3StorageService : IStorageService
             _logger.LogError(ex, "Error generating presigned download URL for file: {FileKey}", fileKey);
             throw;
         }
+    }
+
+    public string GetPublicUrl(string fileKey)
+    {
+        return $"https://{_bucketName}.s3.{_region}.amazonaws.com/{fileKey}";
     }
 
     public async Task<bool> DeleteFileAsync(string fileKey)

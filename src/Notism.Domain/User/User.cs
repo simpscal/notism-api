@@ -12,23 +12,25 @@ public class User : AggregateRoot
     public UserRole Role { get; private set; }
     public string? FirstName { get; private set; }
     public string? LastName { get; private set; }
+    public string? AvatarUrl { get; private set; }
 
-    private User(Email email, Password password, UserRole role = UserRole.User, string? firstName = null, string? lastName = null)
+    private User(Email email, Password password, UserRole role = UserRole.User, string? firstName = null, string? lastName = null, string? avatarUrl = null)
     {
         Email = email;
         Password = password;
         Role = role;
         FirstName = firstName;
         LastName = lastName;
+        AvatarUrl = avatarUrl;
         AddDomainEvent(new UserCreatedEvent(Id, Email));
     }
 
-    public static User Create(string email, string password, UserRole role = UserRole.User, string? firstName = null, string? lastName = null)
+    public static User Create(string email, string password, UserRole role = UserRole.User, string? firstName = null, string? lastName = null, string? avatarUrl = null)
     {
         var emailVO = Email.Create(email);
         var passwordVO = Password.Create(password);
 
-        return new User(emailVO, passwordVO, role, firstName, lastName);
+        return new User(emailVO, passwordVO, role, firstName, lastName, avatarUrl);
     }
 
     public User WithHashedPassword(string hashedPassword)
@@ -52,26 +54,19 @@ public class User : AggregateRoot
         AddDomainEvent(new PasswordResetCompletedEvent(Id, Email));
     }
 
-    public User UpdateProfile(string? firstName, string? lastName, string? email = null, UserRole? role = null)
+    public void UpdateProfile(string? firstName, string? lastName, string? avatarUrl = null)
     {
-        var copy = (User)MemberwiseClone();
-        copy.FirstName = firstName;
-        copy.LastName = lastName;
+        FirstName = firstName;
+        LastName = lastName;
 
-        if (!string.IsNullOrWhiteSpace(email))
+        // Only update AvatarUrl if provided (not null)
+        if (avatarUrl != null)
         {
-            copy.Email = Email.Create(email);
+            AvatarUrl = avatarUrl;
         }
 
-        if (role.HasValue)
-        {
-            copy.Role = role.Value;
-        }
-
-        copy.ClearDomainEvents();
-        copy.AddDomainEvent(new UserProfileUpdatedEvent(Id, copy.Email, copy.FirstName, copy.LastName, copy.Role));
-
-        return copy;
+        ClearDomainEvents();
+        AddDomainEvent(new UserProfileUpdatedEvent(Id, Email, FirstName, LastName, Role, AvatarUrl));
     }
 
     public bool IsAdmin() => Role == UserRole.Admin;

@@ -2,6 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Utilities;
 using Notism.Domain.Common.Interfaces;
 using Notism.Domain.User.Specifications;
@@ -12,13 +13,16 @@ namespace Notism.Application.User.GetProfile;
 public class GetUserProfileHandler : IRequestHandler<GetUserProfileRequest, GetUserProfileResponse>
 {
     private readonly IRepository<Domain.User.User> _userRepository;
+    private readonly IStorageService _storageService;
     private readonly ILogger<GetUserProfileHandler> _logger;
 
     public GetUserProfileHandler(
         IRepository<Domain.User.User> userRepository,
+        IStorageService storageService,
         ILogger<GetUserProfileHandler> logger)
     {
         _userRepository = userRepository;
+        _storageService = storageService;
         _logger = logger;
     }
 
@@ -30,14 +34,22 @@ public class GetUserProfileHandler : IRequestHandler<GetUserProfileRequest, GetU
             new UserByIdSpecification(request.UserId))
         ?? throw new ResultFailureException("User not found");
 
+        string? avatarUrl = null;
+        if (!string.IsNullOrWhiteSpace(user.AvatarUrl))
+        {
+            avatarUrl = _storageService.GetPublicUrl(user.AvatarUrl);
+        }
+
         _logger.LogInformation("User profile retrieved successfully for user {UserId}", request.UserId);
 
         return new GetUserProfileResponse
         {
             Id = user.Id,
             FirstName = user.FirstName,
-            Email = user.Email?.Value ?? string.Empty,
+            LastName = user.LastName,
+            Email = user.Email,
             Role = EnumConverter.ToCamelCase(user.Role),
+            AvatarUrl = avatarUrl,
         };
     }
 }

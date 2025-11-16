@@ -48,7 +48,6 @@ public static class UserEndpoints
         return Results.Ok(result);
     }
 
-    [RequireAdmin]
     private static async Task<IResult> UpdateUserProfileAsync(
         Guid userId,
         UpdateUserProfileRequest request,

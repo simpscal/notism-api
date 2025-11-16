@@ -61,6 +61,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(u => u.LastName)
                 .HasMaxLength(50);
 
+            entity.Property(u => u.AvatarUrl)
+                .HasMaxLength(500);
+
             entity.Property(u => u.CreatedAt)
                 .IsRequired();
 

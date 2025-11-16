@@ -20,14 +20,5 @@ public class UpdateUserProfileValidator : AbstractValidator<UpdateUserProfileReq
         RuleFor(x => x.LastName)
             .MaximumLength(50)
             .WithMessage("Last name cannot exceed 50 characters");
-
-        RuleFor(x => x.Email)
-            .EmailAddress()
-            .When(x => !string.IsNullOrWhiteSpace(x.Email))
-            .WithMessage("Email must be a valid email address");
-
-        RuleFor(x => x.Role)
-            .Must(role => EnumConverter.IsValidEnumString<UserRole>(role))
-            .WithMessage($"Role must be either '{string.Join("' or '", EnumConverter.GetValidEnumStrings<UserRole>())}'");
     }
 }
