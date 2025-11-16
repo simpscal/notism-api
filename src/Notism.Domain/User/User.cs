@@ -58,12 +58,7 @@ public class User : AggregateRoot
     {
         FirstName = firstName;
         LastName = lastName;
-
-        // Only update AvatarUrl if provided (not null)
-        if (avatarUrl != null)
-        {
-            AvatarUrl = avatarUrl;
-        }
+        AvatarUrl = avatarUrl;
 
         ClearDomainEvents();
         AddDomainEvent(new UserProfileUpdatedEvent(Id, Email, FirstName, LastName, Role, AvatarUrl));
