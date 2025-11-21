@@ -39,6 +39,9 @@ public static class DependencyInjection
         services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IStorageService, S3StorageService>();
 
+        services.AddHttpClient<IHttpService, HttpService>();
+        services.AddScoped<IGoogleOAuthService, GoogleOAuthService>();
+
         services.AddAWSS3(configuration);
         services.AddResend(configuration);
 

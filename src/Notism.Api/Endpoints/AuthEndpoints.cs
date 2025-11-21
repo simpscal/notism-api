@@ -4,11 +4,13 @@ using MediatR;
 
 using Notism.Api.Models;
 using Notism.Api.Services;
+using Notism.Application.Auth.GoogleOAuth;
 using Notism.Application.Auth.Login;
 using Notism.Application.Auth.RefreshToken;
 using Notism.Application.Auth.Register;
 using Notism.Application.Auth.RequestPasswordReset;
 using Notism.Application.Auth.ResetPassword;
+using Notism.Application.Common.Models;
 using Notism.Application.User.GetProfile;
 using Notism.Shared.Exceptions;
 
@@ -27,7 +29,7 @@ public static class AuthEndpoints
             .WithSummary("Authenticate user and return JWT token")
             .WithDescription("Authenticates a user with email and password, returns JWT token and user information")
             .AllowAnonymous()
-            .Produces<LoginResponse>(StatusCodes.Status200OK)
+            .Produces<AuthenticationResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
 
         group.MapPost("/register", RegisterAsync)
@@ -72,6 +74,22 @@ public static class AuthEndpoints
             .WithDescription("Resets the user's password using a valid reset token")
             .AllowAnonymous()
             .Produces<ResetPasswordResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
+
+        group.MapGet("/google/redirect", GoogleOAuthRedirectAsync)
+            .WithName("GoogleOAuthRedirect")
+            .WithSummary("Get Google OAuth redirect URL")
+            .WithDescription("Returns a redirect URL for Google OAuth authentication. The redirect URL after authentication will be {appDomain}/auth/oauth/callback")
+            .AllowAnonymous()
+            .Produces<GoogleOAuthRedirectResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
+
+        group.MapPost("/google/callback", GoogleOAuthCallbackAsync)
+            .WithName("GoogleOAuthCallback")
+            .WithSummary("Handle Google OAuth callback")
+            .WithDescription("Receives code and state from Google OAuth, verifies the user, and returns the same response as login API")
+            .AllowAnonymous()
+            .Produces<AuthenticationResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
     }
 
@@ -175,5 +193,31 @@ public static class AuthEndpoints
     {
         var result = await mediator.Send(request);
         return Results.Ok(result);
+    }
+
+    private static async Task<IResult> GoogleOAuthRedirectAsync(
+        IMediator mediator)
+    {
+        var request = new GoogleOAuthRedirectRequest();
+        var result = await mediator.Send(request);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> GoogleOAuthCallbackAsync(
+        GoogleOAuthCallbackRequest request,
+        IMediator mediator,
+        ICookieService cookieService,
+        HttpContext httpContext)
+    {
+        var result = await mediator.Send(request);
+
+        cookieService.SetRefreshTokenCookie(
+            httpContext,
+            result.RefreshToken,
+            result.RefreshTokenExpiresAt);
+
+        await cookieService.GenerateAntiForgeryTokenAsync(httpContext);
+
+        return Results.Ok(result.Response);
     }
 }

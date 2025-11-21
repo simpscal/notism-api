@@ -3,13 +3,14 @@ using AutoMapper;
 using MediatR;
 
 using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Models;
 using Notism.Domain.User;
 using Notism.Domain.User.Specifications;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Auth.Login;
 
-public class LoginHandler : IRequestHandler<LoginRequest, (LoginResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
+public class LoginHandler : IRequestHandler<LoginRequest, (AuthenticationResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
 {
     private readonly IUserRepository _userRepository;
     private readonly ITokenService _tokenService;
@@ -28,7 +29,7 @@ public class LoginHandler : IRequestHandler<LoginRequest, (LoginResponse Respons
         _mapper = mapper;
     }
 
-    public async Task<(LoginResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)> Handle(LoginRequest request, CancellationToken cancellationToken)
+    public async Task<(AuthenticationResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)> Handle(LoginRequest request, CancellationToken cancellationToken)
     {
         // 1. Find user by email
         var user = await _userRepository.FindByExpressionAsync(new UserByEmailSpecification(request.Email))
@@ -44,7 +45,7 @@ public class LoginHandler : IRequestHandler<LoginRequest, (LoginResponse Respons
         var token = await _tokenService.GenerateTokenAsync(user);
 
         // 4. Map to response using AutoMapper
-        var response = _mapper.Map<LoginResponse>(user);
+        var response = _mapper.Map<AuthenticationResponse>(user);
         response.Token = token.Token;
         response.ExpiresAt = token.ExpiresAt;
 

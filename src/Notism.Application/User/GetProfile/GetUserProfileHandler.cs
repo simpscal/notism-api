@@ -7,6 +7,7 @@ using Notism.Application.Common.Utilities;
 using Notism.Domain.Common.Interfaces;
 using Notism.Domain.User.Specifications;
 using Notism.Shared.Exceptions;
+using Notism.Shared.Extensions;
 
 namespace Notism.Application.User.GetProfile;
 
@@ -34,8 +35,8 @@ public class GetUserProfileHandler : IRequestHandler<GetUserProfileRequest, GetU
             new UserByIdSpecification(request.UserId))
         ?? throw new ResultFailureException("User not found");
 
-        string? avatarUrl = null;
-        if (!string.IsNullOrWhiteSpace(user.AvatarUrl))
+        string avatarUrl = user.AvatarUrl ?? string.Empty;
+        if (!string.IsNullOrWhiteSpace(user.AvatarUrl) && !avatarUrl.IsValidUrl())
         {
             avatarUrl = _storageService.GetPublicUrl(user.AvatarUrl);
         }
