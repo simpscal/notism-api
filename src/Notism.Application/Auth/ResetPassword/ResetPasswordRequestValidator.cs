@@ -1,5 +1,7 @@
 using FluentValidation;
 
+using Notism.Application.Common.Validators;
+
 namespace Notism.Application.Auth.ResetPassword;
 
 public class ResetPasswordRequestValidator : AbstractValidator<ResetPasswordRequest>
@@ -10,9 +12,7 @@ public class ResetPasswordRequestValidator : AbstractValidator<ResetPasswordRequ
             .NotEmpty();
 
         RuleFor(x => x.NewPassword)
-            .NotEmpty()
-            .NotNull()
-            .MinimumLength(8);
+            .ValidatePassword();
 
         RuleFor(x => x.ConfirmPassword)
             .NotEmpty()
