@@ -1,7 +1,6 @@
-using System.Security.Claims;
-
 using MediatR;
 
+using Notism.Api.Extensions;
 using Notism.Api.Models;
 using Notism.Api.Services;
 using Notism.Application.Auth.GoogleOAuth;
@@ -166,12 +165,7 @@ public static class AuthEndpoints
         HttpContext httpContext,
         IMediator mediator)
     {
-        var userIdClaim = httpContext.User.FindFirst(ClaimTypes.NameIdentifier)?.Value;
-
-        if (string.IsNullOrEmpty(userIdClaim) || !Guid.TryParse(userIdClaim, out var userId))
-        {
-            throw new ResultFailureException("Invalid or missing user identifier in token");
-        }
+        var userId = httpContext.User.GetUserId();
 
         var request = new GetUserProfileRequest { UserId = userId };
         var result = await mediator.Send(request);

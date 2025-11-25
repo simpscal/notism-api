@@ -1,6 +1,6 @@
 using MediatR;
 
-using Notism.Api.Attributes;
+using Notism.Api.Extensions;
 using Notism.Api.Models;
 using Notism.Application.User.GetProfile;
 using Notism.Application.User.UpdateProfile;
@@ -15,33 +15,34 @@ public static class UserEndpoints
             .WithTags("User Management")
             .WithOpenApi();
 
-        group.MapGet("/{userId:guid}/profile", GetUserProfileAsync)
+        group.MapGet("/profile", GetUserProfileAsync)
             .WithName("GetUserProfile")
             .WithSummary("Get user profile")
-            .WithDescription("Retrieves a user's profile information.")
+            .WithDescription("Retrieves the authenticated user's profile information.")
             .RequireAuthorization()
             .Produces<GetUserProfileResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
 
-        group.MapPut("/{userId:guid}/profile", UpdateUserProfileAsync)
+        group.MapPut("/profile", UpdateUserProfileAsync)
             .WithName("UpdateUserProfile")
-            .WithSummary("Update user profile (Admin only)")
-            .WithDescription("Updates a user's profile information. Only administrators can perform this action.")
+            .WithSummary("Update user profile")
+            .WithDescription("Updates the authenticated user's profile information.")
             .RequireAuthorization()
             .Produces<UpdateUserProfileResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
-            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
             .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
     }
 
     private static async Task<IResult> GetUserProfileAsync(
-        Guid userId,
+        HttpContext httpContext,
         IMediator mediator,
         CancellationToken cancellationToken)
     {
+        var userId = httpContext.User.GetUserId();
+
         var request = new GetUserProfileRequest { UserId = userId };
         var result = await mediator.Send(request, cancellationToken);
 
@@ -49,11 +50,12 @@ public static class UserEndpoints
     }
 
     private static async Task<IResult> UpdateUserProfileAsync(
-        Guid userId,
+        HttpContext httpContext,
         UpdateUserProfileRequest request,
         IMediator mediator,
         CancellationToken cancellationToken)
     {
+        var userId = httpContext.User.GetUserId();
         request.UserId = userId;
 
         var result = await mediator.Send(request, cancellationToken);
