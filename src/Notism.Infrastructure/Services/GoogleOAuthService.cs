@@ -1,8 +1,9 @@
 using System.Security.Cryptography;
 
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 
 using Notism.Application.Common.Interfaces;
+using Notism.Shared.Configuration;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Infrastructure.Services;
@@ -10,29 +11,26 @@ namespace Notism.Infrastructure.Services;
 public class GoogleOAuthService : IGoogleOAuthService
 {
     private readonly IHttpService _httpService;
-    private readonly IConfiguration _configuration;
-    private readonly string _clientId;
-    private readonly string _clientSecret;
-    private readonly string _appDomain;
-    private readonly string _redirectPath;
+    private readonly GoogleOAuthSettings _googleOAuthSettings;
+    private readonly ClientAppSettings _clientAppSettings;
 
-    public GoogleOAuthService(IHttpService httpService, IConfiguration configuration)
+    public GoogleOAuthService(
+        IHttpService httpService,
+        IOptions<GoogleOAuthSettings> googleOAuthSettings,
+        IOptions<ClientAppSettings> clientAppSettings)
     {
         _httpService = httpService;
-        _configuration = configuration;
-        _clientId = configuration["GoogleOAuth:ClientId"]!;
-        _clientSecret = configuration["GoogleOAuth:ClientSecret"]!;
-        _appDomain = configuration["ClientApp:Url"]!;
-        _redirectPath = configuration["GoogleOAuth:RedirectPath"]!;
+        _googleOAuthSettings = googleOAuthSettings.Value;
+        _clientAppSettings = clientAppSettings.Value;
     }
 
     public GoogleOAuthRedirectUrl GetRedirectUrl()
     {
         var state = GenerateState();
-        var redirectUri = $"{_appDomain}{_redirectPath}";
+        var redirectUri = $"{_clientAppSettings.Url}{_googleOAuthSettings.RedirectPath}";
         var scopes = "openid email profile";
         var googleAuthUrl = $"https://accounts.google.com/o/oauth2/v2/auth" +
-            $"?client_id={Uri.EscapeDataString(_clientId)}" +
+            $"?client_id={Uri.EscapeDataString(_googleOAuthSettings.ClientId)}" +
             $"&redirect_uri={Uri.EscapeDataString(redirectUri)}" +
             $"&response_type=code" +
             $"&scope={Uri.EscapeDataString(scopes)}" +
@@ -51,12 +49,12 @@ public class GoogleOAuthService : IGoogleOAuthService
         string code,
         CancellationToken cancellationToken = default)
     {
-        var redirectUri = $"{_appDomain}{_redirectPath}";
+        var redirectUri = $"{_clientAppSettings.Url}{_googleOAuthSettings.RedirectPath}";
 
         var request = new
         {
-            client_id = _clientId,
-            client_secret = _clientSecret,
+            client_id = _googleOAuthSettings.ClientId,
+            client_secret = _googleOAuthSettings.ClientSecret,
             code,
             grant_type = "authorization_code",
             redirect_uri = redirectUri,

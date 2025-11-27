@@ -3,7 +3,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
-using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 using Notism.Application.Common.Interfaces;
@@ -12,33 +12,34 @@ using Notism.Domain.RefreshToken;
 using Notism.Domain.RefreshToken.Specifications;
 using Notism.Domain.User;
 using Notism.Domain.User.Specifications;
+using Notism.Shared.Configuration;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Infrastructure.Services;
 
 public class TokenService : ITokenService
 {
-    private readonly IConfiguration _configuration;
+    private readonly JwtSettings _jwtSettings;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
     private readonly IUserRepository _userRepository;
 
     public TokenService(
-        IConfiguration configuration,
+        IOptions<JwtSettings> jwtSettings,
         IRefreshTokenRepository refreshTokenRepository,
         IUserRepository userRepository)
     {
-        _configuration = configuration;
+        _jwtSettings = jwtSettings.Value;
         _refreshTokenRepository = refreshTokenRepository;
         _userRepository = userRepository;
     }
 
     public async Task<TokenResult> GenerateTokenAsync(Domain.User.User user)
     {
-        var secret = _configuration["JwtSettings:Secret"]!;
-        var issuer = _configuration["JwtSettings:Issuer"]!;
-        var audience = _configuration["JwtSettings:Audience"]!;
-        var expirationMinutes = int.Parse(_configuration["JwtSettings:TokenExpirationInMinutes"]!);
-        var refreshExpirationDays = int.Parse(_configuration["JwtSettings:RefreshTokenExpirationInDays"]!);
+        var secret = _jwtSettings.Secret;
+        var issuer = _jwtSettings.Issuer;
+        var audience = _jwtSettings.Audience;
+        var expirationMinutes = _jwtSettings.TokenExpirationInMinutes;
+        var refreshExpirationDays = _jwtSettings.RefreshTokenExpirationInDays;
 
         var key = Encoding.ASCII.GetBytes(secret);
         var credentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256);

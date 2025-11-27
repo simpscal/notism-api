@@ -1,10 +1,11 @@
 using System.Reflection;
 
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.User.ValueObjects;
+using Notism.Shared.Configuration;
 
 using Resend;
 
@@ -14,27 +15,25 @@ public class EmailService : IEmailService
 {
     private readonly ILogger<EmailService> _logger;
     private readonly IResend _resendClient;
-    private readonly IConfiguration _configuration;
-    private readonly string _fromEmail;
-    private readonly string _fromName;
+    private readonly EmailSettings _emailSettings;
+    private readonly ClientAppSettings _clientAppSettings;
 
     public EmailService(
         ILogger<EmailService> logger,
         IResend resendClient,
-        IConfiguration configuration)
+        IOptions<EmailSettings> emailSettings,
+        IOptions<ClientAppSettings> clientAppSettings)
     {
         _logger = logger;
         _resendClient = resendClient;
-        _configuration = configuration;
-        _fromEmail = configuration["Email:FromEmail"] ?? throw new ArgumentNullException("Email:FromEmail configuration is missing");
-        _fromName = configuration["Email:FromName"] ?? "Notism";
+        _emailSettings = emailSettings.Value;
+        _clientAppSettings = clientAppSettings.Value;
     }
 
     public async Task SendPasswordResetEmailAsync(Email email, string resetToken)
     {
         var subject = "Reset Your Password";
-        var clientAppUrl = _configuration["ClientApp:Url"] ?? throw new ArgumentNullException("ClientApp:Url configuration is missing");
-        var resetUrl = $"{clientAppUrl}/auth/reset-password?token={resetToken}";
+        var resetUrl = $"{_clientAppSettings.Url}/auth/reset-password?token={resetToken}";
 
         var htmlContent = LoadEmailTemplate("PasswordReset.html")
             .Replace("{{RESET_TOKEN}}", resetToken)
@@ -43,7 +42,7 @@ public class EmailService : IEmailService
 
         var message = new EmailMessage
         {
-            From = $"{_fromName} <{_fromEmail}>",
+            From = $"{_emailSettings.FromName} <{_emailSettings.FromEmail}>",
             To = [email.Value],
             Subject = subject,
             HtmlBody = htmlContent,
@@ -64,7 +63,7 @@ public class EmailService : IEmailService
 
         var message = new EmailMessage
         {
-            From = $"{_fromName} <{_fromEmail}>",
+            From = $"{_emailSettings.FromName} <{_emailSettings.FromEmail}>",
             To = [email.Value],
             Subject = subject,
             HtmlBody = htmlContent,

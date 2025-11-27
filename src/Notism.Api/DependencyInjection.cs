@@ -1,10 +1,12 @@
 using System.Text;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
 using Notism.Api.Services;
+using Notism.Shared.Configuration;
 
 namespace Notism.Api;
 
@@ -15,6 +17,7 @@ public static class DependencyInjection
         services.AddEndpointsApiExplorer();
         services.AddAuthorization();
 
+        services.AddConfigurationOptions(configuration);
         services.AddSwaggerConfiguration();
         services.AddJwtAuthentication(configuration);
         services.AddCorsConfiguration();
@@ -23,6 +26,18 @@ public static class DependencyInjection
         services.AddProblemDetails();
 
         services.AddScoped<ICookieService, CookieService>();
+
+        return services;
+    }
+
+    private static IServiceCollection AddConfigurationOptions(this IServiceCollection services, IConfiguration configuration)
+    {
+        services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
+        services.Configure<AwsSettings>(configuration.GetSection(AwsSettings.SectionName));
+        services.Configure<ResendSettings>(configuration.GetSection(ResendSettings.SectionName));
+        services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
+        services.Configure<ClientAppSettings>(configuration.GetSection(ClientAppSettings.SectionName));
+        services.Configure<GoogleOAuthSettings>(configuration.GetSection(GoogleOAuthSettings.SectionName));
 
         return services;
     }

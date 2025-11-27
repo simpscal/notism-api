@@ -1,31 +1,28 @@
 using Amazon.S3;
 using Amazon.S3.Model;
 
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
 
 using Notism.Application.Common.Interfaces;
+using Notism.Shared.Configuration;
 
 namespace Notism.Infrastructure.Services;
 
 public class S3StorageService : IStorageService
 {
     private readonly IAmazonS3 _s3Client;
-    private readonly IConfiguration _configuration;
+    private readonly AwsSettings _awsSettings;
     private readonly ILogger<S3StorageService> _logger;
-    private readonly string _bucketName;
-    private readonly string _region;
 
     public S3StorageService(
         IAmazonS3 s3Client,
-        IConfiguration configuration,
+        IOptions<AwsSettings> awsSettings,
         ILogger<S3StorageService> logger)
     {
         _s3Client = s3Client;
-        _configuration = configuration;
+        _awsSettings = awsSettings.Value;
         _logger = logger;
-        _bucketName = configuration["AWS:BucketName"] ?? throw new ArgumentNullException("AWS:BucketName configuration is missing");
-        _region = configuration["AWS:Region"] ?? throw new ArgumentNullException("AWS:Region configuration is missing");
     }
 
     public async Task<(string Url, string Key)> GeneratePresignedUploadUrlAsync(string fileName, string contentType, int expirationMinutes = 60)
@@ -36,7 +33,7 @@ public class S3StorageService : IStorageService
 
             var request = new GetPreSignedUrlRequest
             {
-                BucketName = _bucketName,
+                BucketName = _awsSettings.BucketName,
                 Key = key,
                 Verb = HttpVerb.PUT,
                 Expires = DateTime.UtcNow.AddMinutes(expirationMinutes),
@@ -62,7 +59,7 @@ public class S3StorageService : IStorageService
         {
             var request = new GetPreSignedUrlRequest
             {
-                BucketName = _bucketName,
+                BucketName = _awsSettings.BucketName,
                 Key = fileKey,
                 Verb = HttpVerb.GET,
                 Expires = DateTime.UtcNow.AddMinutes(expirationMinutes),
@@ -83,7 +80,7 @@ public class S3StorageService : IStorageService
 
     public string GetPublicUrl(string fileKey)
     {
-        return $"https://{_bucketName}.s3.{_region}.amazonaws.com/{fileKey}";
+        return $"https://{_awsSettings.BucketName}.s3.{_awsSettings.Region}.amazonaws.com/{fileKey}";
     }
 
     public async Task<bool> DeleteFileAsync(string fileKey)
@@ -92,7 +89,7 @@ public class S3StorageService : IStorageService
         {
             var request = new DeleteObjectRequest
             {
-                BucketName = _bucketName,
+                BucketName = _awsSettings.BucketName,
                 Key = fileKey,
             };
 
