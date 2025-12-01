@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>notism - Design Direction Mockups</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        :root {
+            --primary: #2563EB;
+            --secondary: #7C3AED;
+            --accent: #F59E0B;
+            --success: #10B981;
+            --background: #FFFFFF;
+            --surface: #F9FAFB;
+            --text-primary: #111827;
+            --text-secondary: #6B7280;
+            --border: #E5E7EB;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 2rem;
+            line-height: 1.6;
+        }
+        
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 1rem;
+            color: var(--text-primary);
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: var(--text-secondary);
+            margin-bottom: 3rem;
+        }
+        
+        .direction-nav {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .nav-btn {
+            padding: 0.5rem 1rem;
+            background: white;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+        
+        .nav-btn:hover, .nav-btn.active {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        .mockup-container {
+            display: none;
+        }
+        
+        .mockup-container.active {
+            display: block;
+        }
+        
+        .mockup {
+            background: white;
+            border-radius: 12px;
+            padding: 2rem;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            margin-bottom: 3rem;
+        }
+        
+        .direction-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 2px solid var(--border);
+        }
+        
+        .direction-title {
+            font-size: 1.75rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .direction-tagline {
+            color: var(--text-secondary);
+            font-size: 1rem;
+            margin-bottom: 1rem;
+        }
+        
+        .direction-characteristics {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+        
+        .characteristic {
+            padding: 0.25rem 0.75rem;
+            background: var(--surface);
+            border-radius: 6px;
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+        
+        .screen-preview {
+            background: var(--background);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+            min-height: 600px;
+        }
+        
+        /* Direction 1: Full-Width Immersive */
+        .dir-1 {
+            --layout: "Full-width timeline, no sidebar";
+            --density: "Spacious, breathing room";
+            --nav: "Timeline as primary navigation";
+            --weight: "Minimal, content-focused";
+        }
+        
+        .dir-1 .screen-preview {
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .dir-1 .timeline-container {
+            width: 100%;
+            height: 500px;
+            background: linear-gradient(90deg, var(--primary) 0%, var(--secondary) 100%);
+            border-radius: 8px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .dir-1 .timeline-line {
+            width: 4px;
+            height: 80%;
+            background: rgba(255,255,255,0.3);
+            position: absolute;
+            left: 10%;
+        }
+        
+        .dir-1 .event-markers {
+            position: absolute;
+            left: 10%;
+            top: 0;
+            bottom: 0;
+            width: 200px;
+        }
+        
+        .dir-1 .event-marker {
+            position: absolute;
+            width: 12px;
+            height: 12px;
+            background: var(--accent);
+            border-radius: 50%;
+            border: 3px solid white;
+            left: -4px;
+        }
+        
+        .dir-1 .event-marker:nth-child(1) { top: 10%; }
+        .dir-1 .event-marker:nth-child(2) { top: 30%; }
+        .dir-1 .event-marker:nth-child(3) { top: 50%; }
+        .dir-1 .event-marker:nth-child(4) { top: 70%; }
+        
+        .dir-1 .content-area {
+            margin-left: 25%;
+            padding: 2rem;
+        }
+        
+        .dir-1 .event-card {
+            background: white;
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        /* Direction 2: Centered Timeline */
+        .dir-2 {
+            --layout: "Centered timeline with side content";
+            --density: "Balanced spacing";
+            --nav: "Centered navigation with period selector";
+            --weight: "Structured, clear hierarchy";
+        }
+        
+        .dir-2 .screen-preview {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        
+        .dir-2 .timeline-container {
+            width: 80%;
+            max-width: 900px;
+            margin: 2rem 0;
+        }
+        
+        .dir-2 .timeline-horizontal {
+            height: 6px;
+            background: var(--primary);
+            border-radius: 3px;
+            position: relative;
+            margin: 2rem 0;
+        }
+        
+        .dir-2 .period-selector {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+        
+        .dir-2 .period-btn {
+            padding: 0.5rem 1rem;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .dir-2 .period-btn:hover {
+            background: var(--primary);
+            color: white;
+            border-color: var(--primary);
+        }
+        
+        /* Direction 3: Sidebar Navigation */
+        .dir-3 {
+            --layout: "Timeline with left sidebar navigation";
+            --density: "Information-rich but organized";
+            --nav: "Sidebar period navigation";
+            --weight: "Professional, structured";
+        }
+        
+        .dir-3 .screen-preview {
+            display: flex;
+            gap: 2rem;
+        }
+        
+        .dir-3 .sidebar {
+            width: 250px;
+            background: var(--surface);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+        
+        .dir-3 .sidebar h3 {
+            font-size: 0.875rem;
+            text-transform: uppercase;
+            color: var(--text-secondary);
+            margin-bottom: 1rem;
+            letter-spacing: 0.05em;
+        }
+        
+        .dir-3 .period-list {
+            list-style: none;
+        }
+        
+        .dir-3 .period-item {
+            padding: 0.75rem;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-bottom: 0.5rem;
+            transition: all 0.2s;
+        }
+        
+        .dir-3 .period-item:hover {
+            background: white;
+        }
+        
+        .dir-3 .period-item.active {
+            background: var(--primary);
+            color: white;
+        }
+        
+        .dir-3 .main-content {
+            flex: 1;
+        }
+        
+        /* Direction 4: Minimal Focus */
+        .dir-4 {
+            --layout: "Ultra-minimal, timeline only";
+            --density: "Maximum whitespace";
+            --nav: "Timeline controls only";
+            --weight: "Extremely minimal";
+        }
+        
+        .dir-4 .screen-preview {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 4rem;
+        }
+        
+        .dir-4 .timeline-minimal {
+            width: 100%;
+            max-width: 1000px;
+            height: 400px;
+            background: var(--surface);
+            border-radius: 12px;
+            position: relative;
+            border: 1px solid var(--border);
+        }
+        
+        .dir-4 .zoom-controls {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            gap: 0.5rem;
+        }
+        
+        .dir-4 .zoom-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            background: white;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        /* Direction 5: Card-Based Timeline */
+        .dir-5 {
+            --layout: "Timeline as card grid";
+            --density: "Card-based organization";
+            --nav: "Scrollable card timeline";
+            --weight: "Modern, card-focused";
+        }
+        
+        .dir-5 .screen-preview {
+            padding: 1rem;
+        }
+        
+        .dir-5 .timeline-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 1.5rem;
+        }
+        
+        .dir-5 .event-card {
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.5rem;
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+        
+        .dir-5 .event-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+            border-color: var(--primary);
+        }
+        
+        .dir-5 .event-date {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .dir-5 .event-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+        
+        .dir-5 .event-preview {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.5;
+        }
+        
+        /* Direction 6: Vertical Scroll Timeline */
+        .dir-6 {
+            --layout: "Vertical scrolling timeline";
+            --density: "Spacious vertical flow";
+            --nav: "Natural scroll navigation";
+            --weight: "Clean, scroll-focused";
+        }
+        
+        .dir-6 .screen-preview {
+            padding: 0;
+            overflow-y: auto;
+            max-height: 600px;
+        }
+        
+        .dir-6 .timeline-vertical {
+            padding: 2rem;
+        }
+        
+        .dir-6 .timeline-line-vertical {
+            position: absolute;
+            left: 50px;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: var(--border);
+        }
+        
+        .dir-6 .timeline-item {
+            display: flex;
+            gap: 2rem;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+        
+        .dir-6 .timeline-marker {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--primary);
+            border: 4px solid white;
+            box-shadow: 0 0 0 2px var(--border);
+            flex-shrink: 0;
+            margin-top: 0.25rem;
+        }
+        
+        .dir-6 .timeline-content {
+            flex: 1;
+            background: white;
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+        
+        .dir-6 .timeline-date {
+            font-size: 0.875rem;
+            color: var(--primary);
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+        
+        .dir-6 .timeline-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.75rem;
+        }
+        
+        .dir-6 .timeline-description {
+            color: var(--text-secondary);
+            line-height: 1.6;
+        }
+        
+        .comparison-note {
+            background: var(--surface);
+            border-left: 4px solid var(--primary);
+            padding: 1rem;
+            border-radius: 6px;
+            margin-top: 2rem;
+        }
+        
+        .comparison-note h3 {
+            font-size: 1rem;
+            margin-bottom: 0.5rem;
+            color: var(--text-primary);
+        }
+        
+        .comparison-note p {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>notism - Design Direction Mockups</h1>
+        <p class="subtitle">Explore different visual approaches for the timeline experience</p>
+        
+        <div class="direction-nav">
+            <button class="nav-btn active" onclick="showDirection(1)">1. Full-Width Immersive</button>
+            <button class="nav-btn" onclick="showDirection(2)">2. Centered Timeline</button>
+            <button class="nav-btn" onclick="showDirection(3)">3. Sidebar Navigation</button>
+            <button class="nav-btn" onclick="showDirection(4)">4. Minimal Focus</button>
+            <button class="nav-btn" onclick="showDirection(5)">5. Card-Based</button>
+            <button class="nav-btn" onclick="showDirection(6)">6. Vertical Scroll</button>
+        </div>
+        
+        <!-- Direction 1: Full-Width Immersive -->
+        <div id="dir-1" class="mockup-container active dir-1">
+            <div class="mockup">
+                <div class="direction-header">
+                    <div class="direction-title">Direction 1: Full-Width Immersive</div>
+                    <div class="direction-tagline">Timeline takes center stage, maximum visual impact</div>
+                    <div class="direction-characteristics">
+                        <span class="characteristic">Full-width timeline</span>
+                        <span class="characteristic">Spacious layout</span>
+                        <span class="characteristic">Content-focused</span>
+                        <span class="characteristic">Immersive experience</span>
+                    </div>
+                </div>
+                
+                <div class="screen-preview">
+                    <div class="timeline-container">
+                        <div class="timeline-line"></div>
+                        <div class="event-markers">
+                            <div class="event-marker"></div>
+                            <div class="event-marker"></div>
+                            <div class="event-marker"></div>
+                            <div class="event-marker"></div>
+                        </div>
+                        <div class="content-area">
+                            <div class="event-card">
+                                <h4 style="color: var(--text-primary); margin-bottom: 0.5rem;">Ancient Apes</h4>
+                                <p style="color: var(--text-secondary); font-size: 0.875rem;">The beginning of human development</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="comparison-note">
+                    <h3>Best For:</h3>
+                    <p>Users who want maximum visual impact. The timeline dominates the screen, creating an immersive exploration experience. Perfect for the "inspired and amazed" goal.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Direction 2: Centered Timeline -->
+        <div id="dir-2" class="mockup-container dir-2">
+            <div class="mockup">
+                <div class="direction-header">
+                    <div class="direction-title">Direction 2: Centered Timeline</div>
+                    <div class="direction-tagline">Balanced approach with centered focus and period navigation</div>
+                    <div class="direction-characteristics">
+                        <span class="characteristic">Centered layout</span>
+                        <span class="characteristic">Period selector</span>
+                        <span class="characteristic">Balanced spacing</span>
+                        <span class="characteristic">Clear hierarchy</span>
+                    </div>
+                </div>
+                
+                <div class="screen-preview">
+                    <div class="period-selector">
+                        <button class="period-btn">Ancient</button>
+                        <button class="period-btn active">Classical</button>
+                        <button class="period-btn">Medieval</button>
+                        <button class="period-btn">Modern</button>
+                    </div>
+                    <div class="timeline-container">
+                        <div class="timeline-horizontal"></div>
+                        <div style="text-align: center; padding: 2rem;">
+                            <h3 style="color: var(--text-primary); margin-bottom: 1rem;">Classical Period</h3>
+                            <p style="color: var(--text-secondary);">Explore the rise of ancient civilizations</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="comparison-note">
+                    <h3>Best For:</h3>
+                    <p>Users who want clear period navigation. The centered approach provides focus while the period selector makes jumping to specific eras easy.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Direction 3: Sidebar Navigation -->
+        <div id="dir-3" class="mockup-container dir-3">
+            <div class="mockup">
+                <div class="direction-header">
+                    <div class="direction-title">Direction 3: Sidebar Navigation</div>
+                    <div class="direction-tagline">Structured navigation with persistent period access</div>
+                    <div class="direction-characteristics">
+                        <span class="characteristic">Left sidebar</span>
+                        <span class="characteristic">Persistent navigation</span>
+                        <span class="characteristic">Structured layout</span>
+                        <span class="characteristic">Professional feel</span>
+                    </div>
+                </div>
+                
+                <div class="screen-preview">
+                    <div class="sidebar">
+                        <h3>Periods</h3>
+                        <ul class="period-list">
+                            <li class="period-item">Ancient Apes</li>
+                            <li class="period-item active">Early Humans</li>
+                            <li class="period-item">Ancient Civilizations</li>
+                            <li class="period-item">Classical Era</li>
+                            <li class="period-item">Medieval Period</li>
+                            <li class="period-item">Renaissance</li>
+                            <li class="period-item">Modern Era</li>
+                        </ul>
+                    </div>
+                    <div class="main-content">
+                        <h2 style="color: var(--text-primary); margin-bottom: 1rem;">Early Humans</h2>
+                        <p style="color: var(--text-secondary); line-height: 1.6;">Explore the development of early human societies and their impact on the world.</p>
+                    </div>
+                </div>
+                
+                <div class="comparison-note">
+                    <h3>Best For:</h3>
+                    <p>Users who want persistent navigation. The sidebar always shows available periods, making it easy to jump between eras while exploring content.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Direction 4: Minimal Focus -->
+        <div id="dir-4" class="mockup-container dir-4">
+            <div class="mockup">
+                <div class="direction-header">
+                    <div class="direction-title">Direction 4: Minimal Focus</div>
+                    <div class="direction-tagline">Ultra-minimal approach, timeline only with essential controls</div>
+                    <div class="direction-characteristics">
+                        <span class="characteristic">Maximum whitespace</span>
+                        <span class="characteristic">Minimal UI</span>
+                        <span class="characteristic">Content-first</span>
+                        <span class="characteristic">Distraction-free</span>
+                    </div>
+                </div>
+                
+                <div class="screen-preview">
+                    <div class="timeline-minimal">
+                        <div class="zoom-controls">
+                            <div class="zoom-btn">+</div>
+                            <div class="zoom-btn">−</div>
+                        </div>
+                        <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center;">
+                            <h3 style="color: var(--text-primary); margin-bottom: 0.5rem;">Timeline</h3>
+                            <p style="color: var(--text-secondary);">Scroll to explore</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="comparison-note">
+                    <h3>Best For:</h3>
+                    <p>Users who want absolute focus on the timeline. Minimal UI elements, maximum content space. Perfect for the "sparse with focus" principle.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Direction 5: Card-Based Timeline -->
+        <div id="dir-5" class="mockup-container dir-5">
+            <div class="mockup">
+                <div class="direction-header">
+                    <div class="direction-title">Direction 5: Card-Based Timeline</div>
+                    <div class="direction-tagline">Modern card grid approach for event exploration</div>
+                    <div class="direction-characteristics">
+                        <span class="characteristic">Card grid</span>
+                        <span class="characteristic">Event-focused</span>
+                        <span class="characteristic">Modern aesthetic</span>
+                        <span class="characteristic">Scannable</span>
+                    </div>
+                </div>
+                
+                <div class="screen-preview">
+                    <div class="timeline-cards">
+                        <div class="event-card">
+                            <div class="event-date">2.5M years ago</div>
+                            <div class="event-title">First Stone Tools</div>
+                            <div class="event-preview">Early humans begin using tools, marking a major leap in development.</div>
+                        </div>
+                        <div class="event-card">
+                            <div class="event-date">1.8M years ago</div>
+                            <div class="event-title">Homo Erectus</div>
+                            <div class="event-preview">First human species to migrate out of Africa.</div>
+                        </div>
+                        <div class="event-card">
+                            <div class="event-date">300K years ago</div>
+                            <div class="event-title">Homo Sapiens</div>
+                            <div class="event-preview">Modern humans emerge, beginning the journey to today.</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="comparison-note">
+                    <h3>Best For:</h3>
+                    <p>Users who prefer scanning events. The card-based approach makes it easy to browse and discover events. Great for visual learners.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Direction 6: Vertical Scroll Timeline -->
+        <div id="dir-6" class="mockup-container dir-6">
+            <div class="mockup">
+                <div class="direction-header">
+                    <div class="direction-title">Direction 6: Vertical Scroll Timeline</div>
+                    <div class="direction-tagline">Natural vertical flow, familiar scroll experience</div>
+                    <div class="direction-characteristics">
+                        <span class="characteristic">Vertical flow</span>
+                        <span class="characteristic">Natural scrolling</span>
+                        <span class="characteristic">Chronological</span>
+                        <span class="characteristic">Familiar pattern</span>
+                    </div>
+                </div>
+                
+                <div class="screen-preview">
+                    <div class="timeline-vertical">
+                        <div class="timeline-line-vertical"></div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-date">2.5M years ago</div>
+                                <div class="timeline-title">First Stone Tools</div>
+                                <div class="timeline-description">Early humans begin using tools, marking a major leap in cognitive and physical development.</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-date">1.8M years ago</div>
+                                <div class="timeline-title">Homo Erectus Migration</div>
+                                <div class="timeline-description">First human species to migrate out of Africa, spreading across continents.</div>
+                            </div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-marker"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-date">300K years ago</div>
+                                <div class="timeline-title">Homo Sapiens Emerge</div>
+                                <div class="timeline-description">Modern humans emerge, beginning the journey that leads to today's world.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="comparison-note">
+                    <h3>Best For:</h3>
+                    <p>Users who prefer familiar scrolling patterns. The vertical timeline flows naturally from top to bottom, following chronological order. Very intuitive.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function showDirection(num) {
+            // Hide all directions
+            document.querySelectorAll('.mockup-container').forEach(el => {
+                el.classList.remove('active');
+            });
+            
+            // Remove active class from all nav buttons
+            document.querySelectorAll('.nav-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            
+            // Show selected direction
+            document.getElementById('dir-' + num).classList.add('active');
+            
+            // Add active class to clicked button
+            event.target.classList.add('active');
+        }
+    </script>
+</body>
+</html>
+
