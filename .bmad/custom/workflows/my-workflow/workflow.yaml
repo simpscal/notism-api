@@ -1,0 +1,24 @@
+# My Workflow Configuration
+name: my-workflow
+description: "A custom workflow template - customize this for your needs"
+author: "BMad"
+
+# Critical variables from config
+config_source: '{project-root}/.bmad/core/config.yaml'
+output_folder: '{config_source}:output_folder'
+user_name: '{config_source}:user_name'
+communication_language: '{config_source}:communication_language'
+date: system-generated
+
+# Module path and component files
+installed_path: '{project-root}/.bmad/custom/workflows/my-workflow'
+template: '{installed_path}/template.md'
+instructions: '{installed_path}/instructions.md'
+validation: '{installed_path}/checklist.md'
+
+# Output configuration
+default_output_file: '{output_folder}/my-workflow-output.md'
+
+# Invocation control
+standalone: true
+
