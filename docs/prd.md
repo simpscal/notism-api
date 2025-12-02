@@ -101,6 +101,11 @@ Enhanced exploration and context:
 - **Enhanced Interactivity**: Additional ways to explore and filter timeline content
 - **Richer Content**: Expanded visual content for more periods and events
 - **Advanced Map Features**: Enhanced map interactions and visualizations
+- **Blogs Feature**: Historical blog posts that provide narrative context and deeper exploration of historical topics
+  - **Blogs Tab**: Display a list of historical blogs with titles, publication dates, and brief descriptions
+  - **Blog Details View**: Comprehensive blog post content with rich text, images, and historical context
+  - **Event Mentions**: Events can be mentioned within blog content and are clickable, allowing users to navigate directly to event details
+  - **Blog-Event Integration**: Seamless navigation between blog content and related events, enhancing the learning experience by connecting narrative storytelling with specific historical events
 
 ### Vision (Future)
 
@@ -342,6 +347,22 @@ Success will be validated through:
 
 **FR59**: Country-specific timelines maintain consistency with Human Development visualization patterns, including dual view layout and cluster visualization (Growth)
 
+**FR60**: Users can access a Blogs tab to view a list of historical blog posts (Growth)
+
+**FR61**: The blogs list displays blog titles, publication dates, brief descriptions, and thumbnails (when available) (Growth)
+
+**FR62**: Users can view blog details with comprehensive blog content including rich text, images, and historical context (Growth)
+
+**FR63**: Blog content can mention events, and event mentions are displayed as clickable links or interactive elements (Growth)
+
+**FR64**: When users click on an event mention in a blog, they navigate to the event details page (Level 3) (Growth)
+
+**FR65**: Event mentions in blogs are visually distinct and clearly indicate they are clickable (Growth)
+
+**FR66**: Users can navigate back to the blogs list from blog details (Growth)
+
+**FR67**: Blog content maintains the minimal, clean design aesthetic consistent with the rest of the application (Growth)
+
 ---
 
 ## Admin Panel Requirements
@@ -497,6 +518,26 @@ The Admin Panel serves as the backend content management system for notism, allo
 
 **AP59**: Admin panel supports version history for content (track changes, restore previous versions)
 
+#### Blog Management (Post-MVP)
+
+**AP70**: Administrators can create, update, and delete blog posts (Growth)
+
+**AP71**: Administrators can manage blog content using rich text or markdown editors (Growth)
+
+**AP72**: Administrators can set blog publication dates and metadata (title, description, author) (Growth)
+
+**AP73**: Administrators can mention events in blog content by selecting from available events (Growth)
+
+**AP74**: Event mentions in blogs are automatically linked to event details pages (Growth)
+
+**AP75**: Administrators can preview blog content before publishing (Growth)
+
+**AP76**: Blog management interface includes a list view of all blogs with filtering and search capabilities (Growth)
+
+**AP77**: Administrators can upload and attach images to blog posts (Growth)
+
+**AP78**: Blog content supports the same rich text and markdown editing features as event content (Growth)
+
 #### Settings & Configuration
 
 **AP60**: Admin panel includes settings for application configuration
@@ -511,33 +552,33 @@ The Admin Panel serves as the backend content management system for notism, allo
 
 ### Admin Panel User Experience
 
-**AP65**: Admin panel interface is intuitive and easy to navigate for non-technical administrators
+**AP79**: Admin panel interface is intuitive and easy to navigate for non-technical administrators
 
-**AP66**: Admin panel provides clear feedback for all operations (success messages, error handling)
+**AP80**: Admin panel provides clear feedback for all operations (success messages, error handling)
 
-**AP67**: Admin panel supports keyboard shortcuts for common operations
+**AP81**: Admin panel supports keyboard shortcuts for common operations
 
-**AP68**: Admin panel is responsive and usable on desktop and tablet devices
+**AP82**: Admin panel is responsive and usable on desktop and tablet devices
 
-**AP69**: Admin panel provides contextual help and tooltips for complex features
+**AP83**: Admin panel provides contextual help and tooltips for complex features
 
-**AP70**: Admin panel maintains consistent design language with the public-facing application
+**AP84**: Admin panel maintains consistent design language with the public-facing application
 
 ### Technical Requirements for Admin Panel
 
-**AP71**: Admin panel must be accessible only through secure authentication
+**AP85**: Admin panel must be accessible only through secure authentication
 
-**AP72**: Admin panel API endpoints must be protected with authentication and authorization
+**AP86**: Admin panel API endpoints must be protected with authentication and authorization
 
-**AP73**: Admin panel must handle concurrent editing (multiple admins) with conflict resolution
+**AP87**: Admin panel must handle concurrent editing (multiple admins) with conflict resolution
 
-**AP74**: Admin panel must provide efficient data loading and pagination for large datasets
+**AP88**: Admin panel must provide efficient data loading and pagination for large datasets
 
-**AP75**: Admin panel must support real-time updates when content is modified
+**AP89**: Admin panel must support real-time updates when content is modified
 
-**AP76**: Admin panel must integrate with media storage (local or cloud-based)
+**AP90**: Admin panel must integrate with media storage (local or cloud-based)
 
-**AP77**: Admin panel must provide backup and recovery capabilities for content
+**AP91**: Admin panel must provide backup and recovery capabilities for content
 
 ---
 

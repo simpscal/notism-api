@@ -153,10 +153,27 @@ notism is a web application that visualizes the complete human development timel
 - Timeline editor (manage periods)
 - Period editor (manage events within periods)
 - Event editor (comprehensive event details)
+- Blog editor (manage blog posts with event mentions) (Post-MVP)
 - Media library (manage images and animations)
 - Settings and configuration
 
 ---
+
+### Growth Features (Post-MVP)
+
+**Blogs Feature:** Historical blog posts that provide narrative context and deeper exploration
+
+**Features:**
+- **Blogs Tab:** Display a list of historical blog posts with titles, publication dates, brief descriptions, and thumbnails
+- **Blog Details View:** Comprehensive blog content with rich text, images, and historical context
+- **Event Mentions:** Events can be mentioned within blog content and are clickable, allowing users to navigate directly to event details (Level 3)
+- **Blog-Event Integration:** Seamless navigation between blog content and related events, enhancing the learning experience by connecting narrative storytelling with specific historical events
+
+**Admin Panel Support:**
+- Blog creation and management with rich text/markdown editors
+- Event mention functionality - administrators can select events to mention in blog content
+- Content preview before publishing
+- Media management for blog images
 
 ### Long-Term Vision - Country-Specific Development
 
@@ -205,6 +222,15 @@ notism is a web application that visualizes the complete human development timel
 - Historical context and background
 - Related events connections
 - Navigation back to period or timeline
+
+### Blogs Feature (Post-MVP)
+- Blogs tab in main navigation
+- List view of historical blog posts (reverse chronological order)
+- Blog details view with comprehensive content
+- Clickable event mentions in blog content that navigate to event details
+- Visual distinction for event mentions (clearly clickable)
+- Navigation back to blogs list from blog details
+- Maintains minimal, clean design aesthetic
 
 ### User Experience
 - Smooth, fluid animations (60fps target)
