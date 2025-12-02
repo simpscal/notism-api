@@ -29,7 +29,7 @@ notism is a web application that visualizes the complete human development timel
 
 **Features:**
 - Complete timeline visualization showing all periods
-- **250-year gaps between periods** (visual spacing between period markers)
+- **Dynamic gaps between periods** (visual spacing between period markers calculated based on event relevance)
 - Period markers/indicators on the timeline
 - Smooth navigation between periods
 - Jump to any period from the timeline
@@ -111,7 +111,7 @@ notism is a web application that visualizes the complete human development timel
 
 **Features:**
 - Three-level navigation (Timeline → Period → Event)
-- Timeline with all periods (250-year gaps)
+- Timeline with all periods (dynamic gaps based on event relevance)
 - Period details with **dual view layout** (timeline left, map right)
 - Linear event display on timeline with cluster/group visualization for simultaneous events
 - Map visualization with event dots synchronized with timeline
@@ -180,7 +180,7 @@ notism is a web application that visualizes the complete human development timel
 
 ### Level 1: Timeline Overview
 - Display all periods from ancient apes to present
-- 250-year visual gaps between periods
+- Dynamic visual gaps between periods (calculated based on event relevance)
 - Period markers clearly visible
 - Smooth scrolling/panning
 - Click to navigate to period details

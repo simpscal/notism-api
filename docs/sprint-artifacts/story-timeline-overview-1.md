@@ -18,7 +18,7 @@ So that the timeline can display all historical periods with their metadata.
 
 **AC #2:** Given period data, when I access the API endpoint, then periods are returned in chronological order.
 
-**AC #3:** Given period data, when periods are retrieved, then 250-year gaps are calculated and included in the response.
+**AC #3:** Given period data, when periods are retrieved, then dynamic gaps are calculated based on event relevance and included in the response.
 
 **AC #4:** Given the API, when I request periods, then the response includes metadata needed for timeline visualization (dates, names, IDs).
 
@@ -31,14 +31,14 @@ So that the timeline can display all historical periods with their metadata.
 - [ ] Design database schema for periods (id, name, start_date, end_date, description) (AC: #1, #4)
 - [ ] Create API endpoints for period retrieval (AC: #2)
 - [ ] Implement chronological ordering logic (AC: #2)
-- [ ] Calculate 250-year gap spacing between periods (AC: #3)
+- [ ] Calculate dynamic gap spacing between periods based on event relevance (AC: #3)
 - [ ] Add API response formatting with required metadata (AC: #4)
 - [ ] Write unit tests for data model and API endpoints
 - [ ] Write integration tests for period retrieval
 
 ### Technical Summary
 
-This story establishes the foundational data layer for the timeline. The database schema will store period information, and the API will provide access to periods in chronological order with calculated gap spacing. This is a backend-focused story that enables the frontend timeline visualization.
+This story establishes the foundational data layer for the timeline. The database schema will store period information, and the API will provide access to periods in chronological order with calculated gap spacing based on event relevance. This is a backend-focused story that enables the frontend timeline visualization.
 
 ### Project Structure Notes
 
@@ -57,7 +57,8 @@ This story establishes the foundational data layer for the timeline. The databas
 ### Key Code References
 
 - PRD Section: Level 1: Timeline Overview (FR1-FR6)
-- PRD Section: Product Scope - MVP (250-year gaps requirement)
+- Gap calculation based on event relevance in each period
+- PRD Section: Product Scope - MVP (dynamic gaps based on event relevance)
 - UX Design: Timeline visualization requirements
 
 ---
@@ -66,7 +67,7 @@ This story establishes the foundational data layer for the timeline. The databas
 
 **PRD:** [prd.md](../prd.md) - Product Requirements Document containing:
 - Functional requirements for timeline overview (FR1-FR6)
-- 250-year gap requirement between periods
+- Dynamic gap calculation based on event relevance in each period
 - Timeline navigation requirements
 
 **UX Design:** [ux-design-specification.md](../ux-design-specification.md) - UX Design Specification containing:

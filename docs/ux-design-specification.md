@@ -412,12 +412,12 @@ For a web application focused on visualization and inspiration, I recommend:
 **Anatomy:**
 - Timeline line/axis (visual representation of time)
 - Event markers (visual indicators for major events)
-- Period sections (grouped areas for periods with 250-year gaps between them)
+- Period sections (grouped areas for periods with dynamic gaps between them based on event relevance)
 - Navigation controls (zoom, scroll indicators - minimal)
 - Current position indicator (shows where user is on timeline)
 
 **Period Structure:**
-- Timeline shows 250-year visual gaps between periods (spacing between period markers)
+- Timeline shows dynamic visual gaps between periods (spacing between period markers calculated based on event relevance)
 - Periods are visually distinct sections on the timeline
 - Events within each period are displayed in linear chronological order
 
@@ -840,7 +840,7 @@ The Admin Panel is a comprehensive content management system that enables admini
   - Click period to edit
   - Drag to reorder (if supported)
   - Add/delete buttons clearly visible
-  - 250-year gap visualization maintained
+  - Dynamic gap visualization based on event relevance maintained
 - **UX Pattern:** Visual timeline editor with inline editing capabilities
 
 #### Period Management

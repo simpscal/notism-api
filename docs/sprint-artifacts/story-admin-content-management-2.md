@@ -24,7 +24,7 @@ So that I can add, update, and organize historical periods on the timeline.
 
 **AC #5:** Given periods, when I manage them, then I can reorder periods on the timeline if needed.
 
-**AC #6:** Given the timeline editor, when I view it, then it shows 250-year gap visualization between periods.
+**AC #6:** Given the timeline editor, when I view it, then it shows dynamic gap visualization between periods based on event relevance.
 
 ---
 
@@ -38,13 +38,13 @@ So that I can add, update, and organize historical periods on the timeline.
 - [ ] Add update period functionality (AC: #3)
 - [ ] Implement delete period with confirmation and cascade handling (AC: #4)
 - [ ] Add period reordering functionality (AC: #5)
-- [ ] Display 250-year gap visualization (AC: #6)
+- [ ] Display dynamic gap visualization based on event relevance (AC: #6)
 - [ ] Write timeline editor tests
 - [ ] Write period management tests
 
 ### Technical Summary
 
-This story creates the timeline and period management interface, allowing administrators to view, create, update, delete, and reorder periods on the timeline. The interface shows the complete timeline structure with 250-year gap visualization and handles cascade deletion of associated events.
+This story creates the timeline and period management interface, allowing administrators to view, create, update, delete, and reorder periods on the timeline. The interface shows the complete timeline structure with dynamic gap visualization based on event relevance and handles cascade deletion of associated events.
 
 ### Project Structure Notes
 

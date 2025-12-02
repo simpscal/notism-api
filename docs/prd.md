@@ -52,7 +52,7 @@ The product succeeds when it transforms how people perceive and engage with huma
 
 The MVP focuses exclusively on **Human Development** timeline with three-level navigation:
 
-- **Level 1 - Timeline Overview**: Complete timeline showing all periods from ancient apes to present, with 250-year gaps between periods
+- **Level 1 - Timeline Overview**: Complete timeline showing all periods from ancient apes to present, with dynamic gap spacing between periods based on event relevance
 - **Level 2 - Period Details**: Dual view layout (timeline left, map right) showing all important events within a selected period
   - Timeline displays events linearly with cluster markers for simultaneous events
   - Map shows all event dots at their geographic locations
@@ -214,7 +214,7 @@ Success will be validated through:
 
 **FR1**: Users can view a complete timeline visualization spanning from ancient apes to the present day, displaying all periods
 
-**FR2**: The timeline shows 250-year visual gaps between periods (spacing between period markers)
+**FR2**: The timeline shows dynamic visual gaps between periods (spacing between period markers) calculated based on the relevance of events in each period
 
 **FR3**: Users can navigate the timeline through smooth scrolling or panning interactions
 
@@ -393,7 +393,7 @@ The Admin Panel serves as the backend content management system for notism, allo
 
 **AP13**: Administrators can reorder periods on the timeline if needed
 
-**AP14**: Timeline editor shows 250-year gap visualization between periods
+**AP14**: Timeline editor shows dynamic gap visualization between periods based on event relevance
 
 #### Period Management
 
@@ -501,7 +501,7 @@ The Admin Panel serves as the backend content management system for notism, allo
 
 **AP60**: Admin panel includes settings for application configuration
 
-**AP61**: Administrators can configure timeline display settings (gap sizes, visual styles)
+**AP61**: Administrators can configure timeline display settings (gap calculation parameters based on event relevance, visual styles)
 
 **AP62**: Administrators can manage admin user accounts and permissions
 

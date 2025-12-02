@@ -17,7 +17,7 @@ Enable users to view and navigate the complete human development timeline from a
 
 **In Scope:**
 - Complete timeline visualization spanning all historical periods
-- 250-year visual gaps between periods
+- Dynamic visual gaps between periods (calculated based on event relevance)
 - Smooth scrolling/panning navigation
 - Period markers and indicators
 - Click/select to navigate to period details
@@ -34,7 +34,7 @@ Enable users to view and navigate the complete human development timeline from a
 ### Success Criteria
 
 - Users can see the complete timeline with all periods clearly marked
-- Timeline displays with 250-year gaps between periods
+- Timeline displays with dynamic gaps between periods (based on event relevance)
 - Users can smoothly scroll/pan through the timeline
 - Users can click any period to navigate to Level 2
 - Users can jump directly to specific periods
@@ -81,7 +81,7 @@ So that the timeline can display all historical periods with their metadata.
 
 **AC #2:** Given period data, when I access the API endpoint, then periods are returned in chronological order.
 
-**AC #3:** Given period data, when periods are retrieved, then 250-year gaps are calculated and included in the response.
+**AC #3:** Given period data, when periods are retrieved, then dynamic gaps are calculated based on event relevance and included in the response.
 
 **AC #4:** Given the API, when I request periods, then the response includes metadata needed for timeline visualization (dates, names, IDs).
 
@@ -91,7 +91,7 @@ So that the timeline can display all historical periods with their metadata.
 - Design database schema for periods (id, name, start_date, end_date, description)
 - Create API endpoints for period retrieval
 - Implement chronological ordering logic
-- Calculate 250-year gap spacing
+- Calculate dynamic gap spacing based on event relevance
 
 **Estimated Effort:** 3 points
 
@@ -107,7 +107,7 @@ So that I can understand the complete scope of human development history.
 
 **AC #1:** Given period data, when the timeline loads, then all periods are displayed in chronological order.
 
-**AC #2:** Given the timeline, when I view it, then 250-year visual gaps appear between period markers.
+**AC #2:** Given the timeline, when I view it, then dynamic visual gaps appear between period markers based on event relevance.
 
 **AC #3:** Given the timeline, when I look at it, then period markers/indicators are clearly visible and distinguishable.
 
@@ -120,7 +120,7 @@ So that I can understand the complete scope of human development history.
 **Technical Notes:**
 - Create timeline visualization component using chosen framework
 - Implement period marker rendering
-- Calculate and render 250-year gaps
+- Calculate and render dynamic gaps based on event relevance
 - Optimize for performance (60fps target)
 - Use design system components (shadcn/ui recommended)
 
@@ -852,7 +852,7 @@ So that I can add, update, and organize historical periods on the timeline.
 
 **AC #5:** Given periods, when I manage them, then I can reorder periods on the timeline if needed.
 
-**AC #6:** Given the timeline editor, when I view it, then it shows 250-year gap visualization between periods.
+**AC #6:** Given the timeline editor, when I view it, then it shows dynamic gap visualization between periods based on event relevance.
 
 **Prerequisites:** Story 5.1
 
@@ -863,7 +863,7 @@ So that I can add, update, and organize historical periods on the timeline.
 - Add update period functionality
 - Implement delete period with confirmation and cascade handling
 - Add period reordering functionality
-- Display 250-year gap visualization
+- Display dynamic gap visualization based on event relevance
 
 **Estimated Effort:** 5 points
 

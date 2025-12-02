@@ -16,7 +16,7 @@ So that I can understand the complete scope of human development history.
 
 **AC #1:** Given period data, when the timeline loads, then all periods are displayed in chronological order.
 
-**AC #2:** Given the timeline, when I view it, then 250-year visual gaps appear between period markers.
+**AC #2:** Given the timeline, when I view it, then dynamic visual gaps appear between period markers based on event relevance.
 
 **AC #3:** Given the timeline, when I look at it, then period markers/indicators are clearly visible and distinguishable.
 
@@ -32,7 +32,7 @@ So that I can understand the complete scope of human development history.
 
 - [ ] Create timeline visualization component using chosen framework (AC: #1, #2, #3)
 - [ ] Implement period marker rendering with clear visual indicators (AC: #3)
-- [ ] Calculate and render 250-year gaps between periods (AC: #2)
+- [ ] Calculate and render dynamic gaps between periods based on event relevance (AC: #2)
 - [ ] Optimize rendering for 60fps performance (AC: #4)
 - [ ] Implement progressive loading for fast initial display (AC: #5)
 - [ ] Integrate with design system components (shadcn/ui recommended) (AC: #3)
@@ -42,7 +42,7 @@ So that I can understand the complete scope of human development history.
 
 ### Technical Summary
 
-This story creates the core timeline visualization component that displays all historical periods. The component must render periods chronologically with 250-year gaps, maintain high performance (60fps), and load quickly (within 2 seconds). The design should use the recommended design system (shadcn/ui) for consistency.
+This story creates the core timeline visualization component that displays all historical periods. The component must render periods chronologically with dynamic gaps calculated based on event relevance, maintain high performance (60fps), and load quickly (within 2 seconds). The design should use the recommended design system (shadcn/ui) for consistency.
 
 ### Project Structure Notes
 
@@ -72,7 +72,7 @@ This story creates the core timeline visualization component that displays all h
 **PRD:** [prd.md](../prd.md) - Product Requirements Document containing:
 - Timeline visualization requirements (FR1-FR6)
 - Performance requirements (60fps, 2-second load)
-- 250-year gap requirement
+- Dynamic gap calculation based on event relevance
 
 **UX Design:** [ux-design-specification.md](../ux-design-specification.md) - UX Design Specification containing:
 - Timeline visualization design
