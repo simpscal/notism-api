@@ -360,11 +360,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasIndex(b => b.AuthorId);
             entity.HasIndex(b => new { b.IsPublished, b.IsDeleted, b.PublishedAt });
 
-            // PostgreSQL-specific: Full-text search index (GIN with trigram operators)
-            entity.HasIndex(b => new { b.Title, b.Content })
-                .HasMethod("gin")
-                .HasOperators("gin_trgm_ops");
-
+            // Note: Full-text search can be implemented using PostgreSQL tsvector or trigram extensions
+            // For now, we'll rely on standard indexes for performance
             entity.HasOne<User>()
                 .WithMany()
                 .HasForeignKey(b => b.AuthorId)
@@ -475,7 +472,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasMaxLength(20)
                 .HasConversion<string>()
                 .IsRequired()
-                .HasDefaultValue("General");
+                .HasDefaultValue(EventMediaUsageType.General);
 
             entity.Property(em => em.CreatedAt)
                 .IsRequired();
@@ -529,7 +526,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasMaxLength(20)
                 .HasConversion<string>()
                 .IsRequired()
-                .HasDefaultValue("Content");
+                .HasDefaultValue(BlogMediaUsageType.Content);
 
             entity.Property(bm => bm.CreatedAt)
                 .IsRequired();
