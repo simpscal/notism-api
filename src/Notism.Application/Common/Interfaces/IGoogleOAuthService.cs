@@ -59,4 +59,3 @@ public class GoogleUserInfo
     [JsonPropertyName("picture")]
     public string? Picture { get; set; }
 }
-

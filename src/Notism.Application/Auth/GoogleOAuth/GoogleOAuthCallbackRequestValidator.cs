@@ -15,4 +15,3 @@ public class GoogleOAuthCallbackRequestValidator : AbstractValidator<GoogleOAuth
             .WithMessage("State parameter is required for security validation");
     }
 }
-

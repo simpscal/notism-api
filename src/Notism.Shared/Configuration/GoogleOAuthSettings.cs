@@ -8,4 +8,3 @@ public class GoogleOAuthSettings
     public string ClientSecret { get; set; } = string.Empty;
     public string RedirectPath { get; set; } = "/auth/oauth/google/callback";
 }
-

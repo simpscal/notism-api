@@ -9,4 +9,3 @@ public class GoogleOAuthCallbackRequest : IRequest<(AuthenticationResponse Respo
     public required string Code { get; set; }
     public required string State { get; set; }
 }
-

@@ -113,4 +113,3 @@ public class GoogleOAuthService : IGoogleOAuthService
             .Replace("=", string.Empty);
     }
 }
-

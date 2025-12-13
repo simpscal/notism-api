@@ -26,4 +26,3 @@ public class GoogleOAuthRedirectHandler : IRequestHandler<GoogleOAuthRedirectReq
         return Task.FromResult(response);
     }
 }
-

@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Identity;
+
 using Notism.Application.Common.Interfaces;
 
 namespace Notism.Infrastructure.Services;
