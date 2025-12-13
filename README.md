@@ -177,6 +177,65 @@ cd src/Notism.Worker
 dotnet run
 ```
 
+## Code Formatting
+
+This project uses **dotnet format** to automatically fix coding errors and enforce consistent code style. The project includes:
+
+- **StyleCop.Analyzers** - Code analysis and style enforcement
+- **.editorconfig** - Editor configuration for consistent formatting
+- **dotnet format** - Automatic code formatting tool
+
+### Install dotnet format (if not already installed)
+
+```bash
+dotnet tool install -g dotnet-format
+```
+
+### Format Code
+
+**Using the provided script (recommended):**
+
+```bash
+# Fix all code style issues (default)
+./format-code.sh
+
+# Only check if code needs formatting (doesn't modify files)
+./format-code.sh --verify
+
+# Fix specific issues
+./format-code.sh --whitespace  # Fix whitespace only
+./format-code.sh --style       # Fix code style only
+./format-code.sh --analyzers   # Fix analyzer issues only
+```
+
+**Using dotnet format directly:**
+
+```bash
+# Fix all issues (run all three commands)
+dotnet format Notism.sln whitespace
+dotnet format Notism.sln style
+dotnet format Notism.sln analyzers
+
+# Only check (verify mode)
+dotnet format Notism.sln whitespace --verify-no-changes
+dotnet format Notism.sln style --verify-no-changes
+dotnet format Notism.sln analyzers --verify-no-changes
+
+# Fix specific issues
+dotnet format Notism.sln whitespace  # Fix whitespace only
+dotnet format Notism.sln style       # Fix code style only
+dotnet format Notism.sln analyzers   # Fix analyzer issues only
+```
+
+### Code Style Configuration
+
+The project uses `.editorconfig` for consistent code formatting. Key settings include:
+
+- **Indentation**: 4 spaces
+- **Line endings**: CRLF (Windows style)
+- **Naming conventions**: PascalCase for types/methods, camelCase for variables
+- **StyleCop rules**: Configured with sensible defaults
+
 ## Testing
 
 ### Run All Tests
