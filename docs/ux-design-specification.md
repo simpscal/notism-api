@@ -377,6 +377,59 @@ For a web application focused on visualization and inspiration, I recommend:
 
 ---
 
+### Journey 7: Explore Historical Blogs (Post-MVP)
+
+**User Goal:** Read narrative blog posts about historical topics and navigate to related events
+
+**Entry Point:** From main navigation (Blogs tab)
+
+**Flow:**
+1. **Access Blogs Tab:**
+   - User sees: Blogs tab in main navigation
+   - User does: Clicks/taps Blogs tab
+   - System responds: Smooth transition to blogs list view
+
+2. **Blogs List View:**
+   - User sees: 
+     - List of blog posts in reverse chronological order (newest first)
+     - Each blog card shows: title, publication date, brief description, thumbnail (when available)
+     - Clean, minimal layout maintaining design aesthetic
+   - User does: Scrolls through blogs, reads descriptions
+   - System responds: Blogs load progressively, smooth scrolling
+
+3. **Select Blog:**
+   - User sees: Blog card with title and description
+   - User does: Clicks/taps blog card
+   - System responds: Smooth transition to blog details view
+
+4. **Blog Details View:**
+   - User sees:
+     - Blog title, publication date, author
+     - Comprehensive blog content with rich text formatting
+     - Images embedded in content
+     - Event mentions displayed as clickable links or interactive elements (visually distinct)
+   - User does: Reads blog content, notices event mentions
+   - System responds: Content displays with smooth animations, event mentions are clearly clickable
+
+5. **Click Event Mention:**
+   - User sees: Event mention in blog content (visually distinct, clearly clickable)
+   - User does: Clicks/taps event mention
+   - System responds: Smooth transition to event details page (Level 3)
+
+6. **Return to Blog:**
+   - User sees: Navigation option to return to blog
+   - User does: Returns to blog details
+   - System responds: Smooth transition maintaining scroll position
+
+7. **Return to Blogs List:**
+   - User sees: Back button or breadcrumb
+   - User does: Returns to blogs list
+   - System responds: Smooth transition maintaining context
+
+**Design Approach:** Narrative exploration - blogs provide storytelling context while maintaining seamless integration with event details through clickable mentions. Design maintains minimal, clean aesthetic consistent with timeline experience.
+
+---
+
 ## Core Experience Principles
 
 **Speed:** Immediate - timeline visible instantly, no loading barriers. Interactions feel instant and responsive.
@@ -412,12 +465,12 @@ For a web application focused on visualization and inspiration, I recommend:
 **Anatomy:**
 - Timeline line/axis (visual representation of time)
 - Event markers (visual indicators for major events)
-- Period sections (grouped areas for periods with 250-year gaps between them)
+- Period sections (grouped areas for periods with dynamic gaps between them based on event relevance)
 - Navigation controls (zoom, scroll indicators - minimal)
 - Current position indicator (shows where user is on timeline)
 
 **Period Structure:**
-- Timeline shows 250-year visual gaps between periods (spacing between period markers)
+- Timeline shows dynamic visual gaps between periods (spacing between period markers calculated based on event relevance)
 - Periods are visually distinct sections on the timeline
 - Events within each period are displayed in linear chronological order
 
@@ -692,6 +745,111 @@ For a web application focused on visualization and inspiration, I recommend:
 
 ---
 
+#### 9. Blogs List Component (Post-MVP)
+
+**Purpose:** Displays a list of historical blog posts in the Blogs tab
+
+**Anatomy:**
+- Blog card/item (title, date, description, thumbnail)
+- List container (grid or list layout)
+- Navigation to blog details
+- Optional: Filter/search functionality
+
+**States:**
+- **Default:** Blog cards visible in list/grid
+- **Hover:** Blog card highlights, subtle elevation
+- **Loading:** Skeleton loaders for blog cards
+- **Empty:** Empty state message when no blogs available
+
+**Variants:**
+- **List View:** Vertical list of blog cards
+- **Grid View:** Grid layout with blog cards (2-3 columns on desktop)
+
+**Behavior:**
+- Click blog card → smooth transition to blog details
+- Scroll to load more blogs (if pagination)
+- Smooth animations for card interactions
+
+**Visual Style:**
+- Blog card: White background, subtle shadow, clean typography
+- Thumbnail: Rounded corners, aspect ratio maintained
+- Title: H4 size, semibold weight
+- Date: Small text, secondary color
+- Description: Body text, truncated with ellipsis
+- Maintains minimal, clean design aesthetic
+
+---
+
+#### 10. Blog Details Component (Post-MVP)
+
+**Purpose:** Displays comprehensive blog content with event mentions
+
+**Anatomy:**
+- Blog header (title, publication date, author)
+- Blog content area (rich text, images)
+- Event mentions (clickable links or interactive elements)
+- Navigation controls (back to blogs list)
+- Optional: Related blogs section
+
+**States:**
+- **Loading:** Skeleton loader for content
+- **Loaded:** Content visible with smooth entrance animation
+- **Error:** Graceful error state with retry option
+
+**Event Mention States:**
+- **Default:** Visually distinct styling (e.g., colored text, underline, or badge)
+- **Hover:** Highlighted, cursor changes to pointer
+- **Active:** Clicked state feedback
+
+**Behavior:**
+- Click event mention → smooth transition to event details (Level 3)
+- Smooth scroll for long blog content
+- Progressive content loading
+- Keyboard navigation support (Tab to event mentions, Enter to navigate)
+
+**Visual Style:**
+- Blog content: Maximum width for readability (e.g., 800px max-width, centered)
+- Rich text: Proper formatting, images embedded
+- Event mentions: Visually distinct (e.g., primary color text, underline, or badge style)
+- Maintains minimal, clean design that doesn't compete with content
+- Images: Full-width or constrained, rounded corners optional
+
+---
+
+#### 11. Event Mention Component (Post-MVP)
+
+**Purpose:** Clickable event references within blog content
+
+**Anatomy:**
+- Event mention link/text (displays event title or name)
+- Visual indicator (color, underline, or badge)
+- Optional: Tooltip on hover showing event date
+
+**States:**
+- **Default:** Visually distinct from regular text
+- **Hover:** Highlighted, tooltip appears (optional)
+- **Active:** Clicked state feedback
+- **Visited:** Subtle styling change after navigation
+
+**Variants:**
+- **Inline Link:** Colored text with underline
+- **Badge Style:** Badge/pill with event name
+- **Button Style:** Button-like appearance
+
+**Behavior:**
+- Click → navigate to event details (Level 3)
+- Hover → tooltip shows event date (optional)
+- Keyboard accessible (Tab to focus, Enter to navigate)
+- Smooth transition to event details
+
+**Visual Style:**
+- Primary color for event mentions (matches design system)
+- Clear visual distinction from regular text
+- Accessible focus indicators
+- Smooth hover and active states
+
+---
+
 ### Component Patterns
 
 #### Progressive Content Loading Pattern
@@ -809,7 +967,7 @@ The Admin Panel is a comprehensive content management system that enables admini
 
 **Navigation:**
 - Sidebar navigation (desktop) or hamburger menu (tablet)
-- Main sections: Dashboard, Timeline, Periods, Events, Media Library, Settings
+- Main sections: Dashboard, Timeline, Periods, Events, Blogs (Post-MVP), Media Library, Settings
 - Current section highlighted, breadcrumbs for deep navigation
 
 **Content Area:**
@@ -840,7 +998,7 @@ The Admin Panel is a comprehensive content management system that enables admini
   - Click period to edit
   - Drag to reorder (if supported)
   - Add/delete buttons clearly visible
-  - 250-year gap visualization maintained
+  - Dynamic gap visualization based on event relevance maintained
 - **UX Pattern:** Visual timeline editor with inline editing capabilities
 
 #### Period Management
@@ -887,6 +1045,20 @@ The Admin Panel is a comprehensive content management system that enables admini
   - View usage information (which events use which assets)
 - **UX Pattern:** Media library with grid layout, similar to modern CMS interfaces
 
+#### Blog Management (Post-MVP)
+- **Purpose:** Create, edit, and manage blog posts with event mentions
+- **Layout:** List view of blogs with filters and search, blog editor form
+- **Interactions:**
+  - Create new blog button (prominent)
+  - Edit blog details (title, publication date, author, description, content)
+  - Delete with confirmation dialog
+  - Rich text/markdown editor for blog content (same as event editor)
+  - Event mention functionality: Select events from available events to create mentions
+  - Event mentions automatically linked to event details pages
+  - Image upload and attachment for blogs
+  - Content preview before publishing
+- **UX Pattern:** Form-based editing with rich text/markdown editors, event selection interface for mentions
+
 #### Content Preview
 - **Purpose:** Preview how content will appear in the public-facing application
 - **Layout:** Preview pane showing Level 1, 2, or 3 views
@@ -905,6 +1077,7 @@ The Admin Panel is a comprehensive content management system that enables admini
 - File upload with drag-and-drop
 - Rich text editor toolbar
 - Markdown editor with preview
+- Event selector/mention interface for blogs (Post-MVP)
 
 **Feedback Components:**
 - Success messages for completed actions

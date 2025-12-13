@@ -29,7 +29,7 @@ notism is a web application that visualizes the complete human development timel
 
 **Features:**
 - Complete timeline visualization showing all periods
-- **250-year gaps between periods** (visual spacing between period markers)
+- **Dynamic gaps between periods** (visual spacing between period markers calculated based on event relevance)
 - Period markers/indicators on the timeline
 - Smooth navigation between periods
 - Jump to any period from the timeline
@@ -111,7 +111,7 @@ notism is a web application that visualizes the complete human development timel
 
 **Features:**
 - Three-level navigation (Timeline → Period → Event)
-- Timeline with all periods (250-year gaps)
+- Timeline with all periods (dynamic gaps based on event relevance)
 - Period details with **dual view layout** (timeline left, map right)
 - Linear event display on timeline with cluster/group visualization for simultaneous events
 - Map visualization with event dots synchronized with timeline
@@ -153,10 +153,27 @@ notism is a web application that visualizes the complete human development timel
 - Timeline editor (manage periods)
 - Period editor (manage events within periods)
 - Event editor (comprehensive event details)
+- Blog editor (manage blog posts with event mentions) (Post-MVP)
 - Media library (manage images and animations)
 - Settings and configuration
 
 ---
+
+### Growth Features (Post-MVP)
+
+**Blogs Feature:** Historical blog posts that provide narrative context and deeper exploration
+
+**Features:**
+- **Blogs Tab:** Display a list of historical blog posts with titles, publication dates, brief descriptions, and thumbnails
+- **Blog Details View:** Comprehensive blog content with rich text, images, and historical context
+- **Event Mentions:** Events can be mentioned within blog content and are clickable, allowing users to navigate directly to event details (Level 3)
+- **Blog-Event Integration:** Seamless navigation between blog content and related events, enhancing the learning experience by connecting narrative storytelling with specific historical events
+
+**Admin Panel Support:**
+- Blog creation and management with rich text/markdown editors
+- Event mention functionality - administrators can select events to mention in blog content
+- Content preview before publishing
+- Media management for blog images
 
 ### Long-Term Vision - Country-Specific Development
 
@@ -180,7 +197,7 @@ notism is a web application that visualizes the complete human development timel
 
 ### Level 1: Timeline Overview
 - Display all periods from ancient apes to present
-- 250-year visual gaps between periods
+- Dynamic visual gaps between periods (calculated based on event relevance)
 - Period markers clearly visible
 - Smooth scrolling/panning
 - Click to navigate to period details
@@ -205,6 +222,15 @@ notism is a web application that visualizes the complete human development timel
 - Historical context and background
 - Related events connections
 - Navigation back to period or timeline
+
+### Blogs Feature (Post-MVP)
+- Blogs tab in main navigation
+- List view of historical blog posts (reverse chronological order)
+- Blog details view with comprehensive content
+- Clickable event mentions in blog content that navigate to event details
+- Visual distinction for event mentions (clearly clickable)
+- Navigation back to blogs list from blog details
+- Maintains minimal, clean design aesthetic
 
 ### User Experience
 - Smooth, fluid animations (60fps target)
