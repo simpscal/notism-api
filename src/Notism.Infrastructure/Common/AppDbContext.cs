@@ -28,8 +28,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Event> Events { get; set; }
     public DbSet<Blog> Blogs { get; set; }
     public DbSet<MediaAsset> MediaAssets { get; set; }
-    public DbSet<EventMedia> EventMedia { get; set; }
-    public DbSet<BlogMedia> BlogMedia { get; set; }
+    public DbSet<Domain.EventMedia.EventMedia> EventMedia { get; set; }
+    public DbSet<Domain.BlogMedia.BlogMedia> BlogMedia { get; set; }
     public DbSet<BlogEventMention> BlogEventMentions { get; set; }
     public DbSet<ContentVersion> ContentVersions { get; set; }
     public DbSet<AuditLog> AuditLogs { get; set; }
@@ -274,12 +274,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasIndex(e => new { e.EventYear, e.DisplayOrder });
             entity.HasIndex(e => new { e.PeriodId, e.IsPublished, e.IsDeleted });
 
-            // Geographic index (PostgreSQL GIST)
-            if (modelBuilder.IsConfiguredForPostgres())
-            {
-                entity.HasIndex(e => new { e.Latitude, e.Longitude })
-                    .HasMethod("gist");
-            }
+            // PostgreSQL-specific: Geographic index (GIST)
+            entity.HasIndex(e => new { e.Latitude, e.Longitude })
+                .HasMethod("gist");
 
             entity.HasOne<Period>()
                 .WithMany()
@@ -363,13 +360,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasIndex(b => b.AuthorId);
             entity.HasIndex(b => new { b.IsPublished, b.IsDeleted, b.PublishedAt });
 
-            // Full-text search index (PostgreSQL GIN)
-            if (modelBuilder.IsConfiguredForPostgres())
-            {
-                entity.HasIndex(b => new { b.Title, b.Content })
-                    .HasMethod("gin")
-                    .HasOperators("gin_trgm_ops");
-            }
+            // PostgreSQL-specific: Full-text search index (GIN with trigram operators)
+            entity.HasIndex(b => new { b.Title, b.Content })
+                .HasMethod("gin")
+                .HasOperators("gin_trgm_ops");
 
             entity.HasOne<User>()
                 .WithMany()
@@ -446,12 +440,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.HasIndex(m => m.CreatedBy);
 
-            // Full-text search index on tags (PostgreSQL GIN)
-            if (modelBuilder.IsConfiguredForPostgres())
-            {
-                entity.HasIndex(m => m.Tags)
-                    .HasMethod("gin");
-            }
+            // PostgreSQL-specific: Full-text search index on tags (GIN)
+            entity.HasIndex(m => m.Tags)
+                .HasMethod("gin");
 
             entity.HasOne<User>()
                 .WithMany()
@@ -462,7 +453,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     private static void ConfigureEventMedia(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<EventMedia>(entity =>
+        modelBuilder.Entity<Domain.EventMedia.EventMedia>(entity =>
         {
             entity.HasKey(em => em.Id);
 
@@ -516,7 +507,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     private static void ConfigureBlogMedia(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<BlogMedia>(entity =>
+        modelBuilder.Entity<Domain.BlogMedia.BlogMedia>(entity =>
         {
             entity.HasKey(bm => bm.Id);
 
@@ -635,7 +626,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasColumnType("jsonb")
                 .HasConversion(
                     v => v.RootElement.GetRawText(),
-                    v => JsonDocument.Parse(v))
+                    v => JsonDocument.Parse(v, default))
                 .IsRequired();
 
             entity.Property(cv => cv.ChangeDescription)
@@ -678,7 +669,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasColumnType("jsonb")
                 .HasConversion(
                     v => v == null ? null : v.RootElement.GetRawText(),
-                    v => v == null ? null : JsonDocument.Parse(v));
+                    v => v == null ? null : JsonDocument.Parse(v, default));
 
             entity.Property(al => al.IpAddress)
                 .HasMaxLength(45);
@@ -705,16 +696,5 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasForeignKey(al => al.UserId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
-    }
-}
-
-// Extension method to check if PostgreSQL is configured
-internal static class ModelBuilderExtensions
-{
-    public static bool IsConfiguredForPostgres(this ModelBuilder modelBuilder)
-    {
-        // This is a simple check - in practice, you might want to check the actual database provider
-        // For now, we'll assume PostgreSQL is being used based on the project setup
-        return true;
     }
 }

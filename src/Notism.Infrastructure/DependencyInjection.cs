@@ -5,10 +5,28 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using Notism.Application.Common.Interfaces;
+using Notism.Domain.AuditLog;
+using Notism.Domain.Blog;
+using Notism.Domain.BlogEventMention;
+using Notism.Domain.BlogMedia;
 using Notism.Domain.Common.Interfaces;
+using Notism.Domain.ContentVersion;
+using Notism.Domain.Event;
+using Notism.Domain.EventMedia;
+using Notism.Domain.MediaAsset;
+using Notism.Domain.Period;
 using Notism.Domain.RefreshToken;
 using Notism.Domain.User;
+using Notism.Infrastructure.AuditLogs;
+using Notism.Infrastructure.BlogEventMentions;
+using Notism.Infrastructure.BlogMedia;
+using Notism.Infrastructure.Blogs;
 using Notism.Infrastructure.Common;
+using Notism.Infrastructure.ContentVersions;
+using Notism.Infrastructure.EventMedia;
+using Notism.Infrastructure.Events;
+using Notism.Infrastructure.MediaAssets;
+using Notism.Infrastructure.Periods;
 using Notism.Infrastructure.RefreshTokens;
 using Notism.Infrastructure.Services;
 using Notism.Infrastructure.Users;
@@ -33,6 +51,16 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+
+        services.AddScoped<IPeriodRepository, PeriodRepository>();
+        services.AddScoped<IEventRepository, EventRepository>();
+        services.AddScoped<IBlogRepository, BlogRepository>();
+        services.AddScoped<IMediaAssetRepository, MediaAssetRepository>();
+        services.AddScoped<IEventMediaRepository, EventMediaRepository>();
+        services.AddScoped<IBlogMediaRepository, BlogMediaRepository>();
+        services.AddScoped<IBlogEventMentionRepository, BlogEventMentionRepository>();
+        services.AddScoped<IContentVersionRepository, ContentVersionRepository>();
+        services.AddScoped<IAuditLogRepository, AuditLogRepository>();
 
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IPasswordService, PasswordService>();
