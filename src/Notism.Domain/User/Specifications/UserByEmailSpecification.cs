@@ -1,4 +1,5 @@
 using System.Linq.Expressions;
+
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.User.ValueObjects;
 
