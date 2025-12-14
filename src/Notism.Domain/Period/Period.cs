@@ -1,5 +1,7 @@
 using Notism.Domain.Common;
 
+using MediaAssetEntity = Notism.Domain.MediaAsset.MediaAsset;
+
 namespace Notism.Domain.Period;
 
 public class Period : AggregateRoot
@@ -9,6 +11,7 @@ public class Period : AggregateRoot
     public int EndYear { get; private set; }
     public string? Description { get; private set; }
     public Guid? ThumbnailMediaAssetId { get; private set; }
+    public MediaAssetEntity? ThumbnailMediaAsset { get; private set; }
     public int DisplayOrder { get; private set; }
     public bool IsPublished { get; private set; }
 
