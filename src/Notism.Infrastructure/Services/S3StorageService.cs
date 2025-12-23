@@ -25,15 +25,15 @@ public class S3StorageService : IStorageService
         _logger = logger;
     }
 
-    public async Task<(string Url, string Key)> GeneratePresignedUploadUrlAsync(string fileName, string contentType, int expirationMinutes = 60)
+    public async Task<(string Url, string Key)> GeneratePresignedUploadUrlAsync(string folderName, string fileName, string contentType, int expirationMinutes = 60)
     {
         try
         {
-            var key = $"uploads/{Guid.NewGuid()}/{fileName}";
+            var key = $"{folderName}/{Guid.NewGuid()}/{fileName}";
 
             var request = new GetPreSignedUrlRequest
             {
-                BucketName = _awsSettings.BucketName,
+                BucketName = _awsSettings.PrivateBucketName,
                 Key = key,
                 Verb = HttpVerb.PUT,
                 Expires = DateTime.UtcNow.AddMinutes(expirationMinutes),
@@ -59,7 +59,7 @@ public class S3StorageService : IStorageService
         {
             var request = new GetPreSignedUrlRequest
             {
-                BucketName = _awsSettings.BucketName,
+                BucketName = _awsSettings.PrivateBucketName,
                 Key = fileKey,
                 Verb = HttpVerb.GET,
                 Expires = DateTime.UtcNow.AddMinutes(expirationMinutes),
@@ -80,7 +80,7 @@ public class S3StorageService : IStorageService
 
     public string GetPublicUrl(string fileKey)
     {
-        return $"https://{_awsSettings.BucketName}.s3.{_awsSettings.Region}.amazonaws.com/{fileKey}";
+        return $"https://{_awsSettings.PublicBucketName}.s3.{_awsSettings.Region}.amazonaws.com/{fileKey}";
     }
 
     public async Task<bool> DeleteFileAsync(string fileKey)
@@ -89,7 +89,7 @@ public class S3StorageService : IStorageService
         {
             var request = new DeleteObjectRequest
             {
-                BucketName = _awsSettings.BucketName,
+                BucketName = _awsSettings.PrivateBucketName,
                 Key = fileKey,
             };
 

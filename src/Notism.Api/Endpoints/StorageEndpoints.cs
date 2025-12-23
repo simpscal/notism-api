@@ -17,7 +17,7 @@ public static class StorageEndpoints
             .WithOpenApi()
             .RequireAuthorization();
 
-        group.MapPost("/presigned-url/upload", GenerateUploadUrlAsync)
+        group.MapPost("/presigned-url/{type}", GenerateUploadUrlAsync)
             .WithName("GenerateUploadUrl")
             .WithSummary("Generate presigned URL for file upload")
             .WithDescription("Generates a presigned URL that allows secure file upload to S3")
@@ -36,9 +36,11 @@ public static class StorageEndpoints
 
     private static async Task<IResult> GenerateUploadUrlAsync(
         GenerateUploadUrlRequest request,
+        [FromRoute] string type,
         IMediator mediator,
         CancellationToken cancellationToken)
     {
+        request.Type = type;
         var response = await mediator.Send(request, cancellationToken);
         return Results.Ok(response);
     }

@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Interfaces;
+using Notism.Shared.Extensions;
 
 namespace Notism.Application.Storage.GenerateUploadUrl;
 
@@ -24,6 +25,7 @@ public class GenerateUploadUrlHandler : IRequestHandler<GenerateUploadUrlRequest
         CancellationToken cancellationToken)
     {
         var (uploadUrl, fileKey) = await _storageService.GeneratePresignedUploadUrlAsync(
+            GetFolderName(request.Type),
             request.FileName,
             request.ContentType,
             request.ExpirationMinutes);
@@ -40,5 +42,10 @@ public class GenerateUploadUrlHandler : IRequestHandler<GenerateUploadUrlRequest
             FileKey = fileKey,
             ExpiresAt = DateTime.UtcNow.AddMinutes(request.ExpirationMinutes),
         };
+    }
+
+    private string GetFolderName(string type)
+    {
+        return type.ToEnum<UploadType>() == UploadType.Avatar ? "avatar" : "upload";
     }
 }
