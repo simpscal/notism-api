@@ -49,9 +49,10 @@ public static class DependencyInjection
             options.AddPolicy("DevelopmentCorsPolicy", builder =>
             {
                 builder
-                    .AllowAnyOrigin()
+                    .WithOrigins("http://localhost:4200")
                     .AllowAnyMethod()
-                    .AllowAnyHeader();
+                    .AllowAnyHeader()
+                    .AllowCredentials();
             });
 
             options.AddPolicy("ProductionCorsPolicy", builder =>
@@ -75,10 +76,10 @@ public static class DependencyInjection
             options.Cookie.Name = "X-CSRF-TOKEN";
             options.Cookie.HttpOnly = true;
             options.Cookie.SecurePolicy = environment.IsDevelopment()
-                ? CookieSecurePolicy.SameAsRequest
+                ? CookieSecurePolicy.None
                 : CookieSecurePolicy.Always;
 
-            options.Cookie.SameSite = SameSiteMode.Strict;
+            options.Cookie.SameSite = SameSiteMode.None;
         });
 
         return services;

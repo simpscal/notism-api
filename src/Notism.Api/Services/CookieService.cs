@@ -21,7 +21,7 @@ public class CookieService : ICookieService
         {
             HttpOnly = true,
             Secure = !_environment.IsDevelopment(),
-            SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.None,
             Expires = expiresAt,
             Path = "/",
         };
@@ -40,7 +40,7 @@ public class CookieService : ICookieService
         {
             HttpOnly = true,
             Secure = !_environment.IsDevelopment(),
-            SameSite = SameSiteMode.Strict,
+            SameSite = SameSiteMode.None,
             Path = "/",
         });
     }
