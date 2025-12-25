@@ -18,6 +18,7 @@ public class AuthMappingProfile : Profile
                 Email = src.Email,
                 FirstName = src.FirstName,
                 LastName = src.LastName,
+                AvatarUrl = src.AvatarUrl,
             }))
             .ForMember(dest => dest.Token, opt => opt.Ignore()) // Set manually in handler
             .ForMember(dest => dest.ExpiresAt, opt => opt.Ignore()); // Set manually in handler
@@ -29,6 +30,7 @@ public class AuthMappingProfile : Profile
                  Email = src.Email,
                  FirstName = src.FirstName,
                  LastName = src.LastName,
+                 AvatarUrl = src.AvatarUrl,
              }))
             .ForMember(dest => dest.Token, opt => opt.Ignore()) // Set manually in handler
             .ForMember(dest => dest.ExpiresAt, opt => opt.Ignore()); // Set manually in handler
