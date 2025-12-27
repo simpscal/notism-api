@@ -144,11 +144,6 @@ public static class AuthEndpoints
         var request = new RefreshTokenRequest { RefreshToken = refreshToken };
         var tokenResult = await mediator.Send(request);
 
-        cookieService.SetRefreshTokenCookie(
-            httpContext,
-            tokenResult.RefreshToken,
-            tokenResult.RefreshTokenExpiresAt);
-
         return Results.Ok(new { Token = tokenResult.Token, ExpiresAt = tokenResult.ExpiresAt });
     }
 
@@ -156,7 +151,7 @@ public static class AuthEndpoints
         ICookieService cookieService,
         HttpContext httpContext)
     {
-        cookieService.ClearRefreshTokenCookie(httpContext);
+        cookieService.ClearAuthenticationCookies(httpContext);
 
         return Results.Ok(new { Message = "Logged out successfully" });
     }
