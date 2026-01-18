@@ -1,8 +1,5 @@
 using FluentValidation;
 
-using Notism.Application.Common.Utilities;
-using Notism.Domain.User.Enums;
-
 namespace Notism.Application.User.UpdateProfile;
 
 public class UpdateUserProfileValidator : AbstractValidator<UpdateUserProfileRequest>

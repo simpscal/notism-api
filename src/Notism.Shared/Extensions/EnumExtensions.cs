@@ -42,4 +42,21 @@ public static class EnumExtensions
         var attribute = field?.GetCustomAttribute<StringValue>();
         return attribute?.Value ?? value.ToString();
     }
+
+    public static string ToCamelCase(this Enum value)
+    {
+        var enumString = value.ToString();
+        return char.ToLowerInvariant(enumString[0]) + enumString[1..];
+    }
+
+    public static T? FromCamelCase<T>(this string? value)
+        where T : struct, Enum
+    {
+        if (string.IsNullOrWhiteSpace(value))
+        {
+            return null;
+        }
+
+        return Enum.TryParse<T>(value, ignoreCase: true, out var result) ? result : null;
+    }
 }

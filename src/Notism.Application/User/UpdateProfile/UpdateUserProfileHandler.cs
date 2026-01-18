@@ -2,11 +2,10 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Common.Utilities;
 using Notism.Domain.User;
-using Notism.Domain.User.Enums;
 using Notism.Domain.User.Specifications;
 using Notism.Shared.Exceptions;
+using Notism.Shared.Extensions;
 
 namespace Notism.Application.User.UpdateProfile;
 
@@ -46,7 +45,7 @@ public class UpdateUserProfileHandler : IRequestHandler<UpdateUserProfileRequest
             FirstName = user.FirstName,
             LastName = user.LastName,
             Email = user.Email?.Value ?? string.Empty,
-            Role = EnumConverter.ToCamelCase(user.Role),
+            Role = user.Role.ToCamelCase(),
             AvatarUrl = user.AvatarUrl,
             Message = "User profile updated successfully",
         };

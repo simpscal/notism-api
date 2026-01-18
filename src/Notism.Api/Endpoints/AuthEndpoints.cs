@@ -1,8 +1,8 @@
 using MediatR;
 
 using Notism.Api.Extensions;
+using Notism.Api.Interfaces;
 using Notism.Api.Models;
-using Notism.Api.Services;
 using Notism.Application.Auth.GoogleOAuth;
 using Notism.Application.Auth.Login;
 using Notism.Application.Auth.RefreshToken;

@@ -1,10 +1,10 @@
 using Microsoft.EntityFrameworkCore;
 
-using Notism.Application.Common.Utilities;
 using Notism.Domain.RefreshToken;
 using Notism.Domain.User;
 using Notism.Domain.User.Enums;
 using Notism.Domain.User.ValueObjects;
+using Notism.Shared.Extensions;
 
 namespace Notism.Infrastructure.Common;
 
@@ -59,8 +59,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.Property(u => u.Role)
                 .HasConversion(
-                    role => EnumConverter.ToCamelCase(role),
-                    value => EnumConverter.FromString<UserRole>(value) ?? UserRole.User)
+                    role => role.ToCamelCase(),
+                    value => value.FromCamelCase<UserRole>() ?? UserRole.User)
                 .HasMaxLength(20)
                 .IsRequired();
 

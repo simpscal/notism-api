@@ -3,7 +3,6 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Interfaces;
-using Notism.Application.Common.Utilities;
 using Notism.Domain.Common.Interfaces;
 using Notism.Domain.User.Specifications;
 using Notism.Shared.Exceptions;
@@ -49,7 +48,7 @@ public class GetUserProfileHandler : IRequestHandler<GetUserProfileRequest, GetU
             FirstName = user.FirstName,
             LastName = user.LastName,
             Email = user.Email,
-            Role = EnumConverter.ToCamelCase(user.Role),
+            Role = user.Role.ToCamelCase(),
             AvatarUrl = avatarUrl,
         };
     }

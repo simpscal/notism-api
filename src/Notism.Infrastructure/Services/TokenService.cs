@@ -7,13 +7,13 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 using Notism.Application.Common.Interfaces;
-using Notism.Application.Common.Utilities;
 using Notism.Domain.RefreshToken;
 using Notism.Domain.RefreshToken.Specifications;
 using Notism.Domain.User;
 using Notism.Domain.User.Specifications;
 using Notism.Shared.Configuration;
 using Notism.Shared.Exceptions;
+using Notism.Shared.Extensions;
 
 namespace Notism.Infrastructure.Services;
 
@@ -48,7 +48,7 @@ public class TokenService : ITokenService
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Email, user.Email),
-            new Claim(ClaimTypes.Role, EnumConverter.ToCamelCase(user.Role)),
+            new Claim(ClaimTypes.Role, user.Role.ToCamelCase()),
             new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
         };
 
