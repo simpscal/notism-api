@@ -6,4 +6,3 @@ public class ClientAppSettings
 
     public string Url { get; set; } = string.Empty;
 }
-

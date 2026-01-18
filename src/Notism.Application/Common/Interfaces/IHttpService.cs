@@ -21,4 +21,3 @@ public interface IHttpService
         string? errorMessage = null,
         CancellationToken cancellationToken = default);
 }
-

@@ -1,5 +1,7 @@
 using FluentValidation;
 
+using Notism.Shared.Extensions;
+
 namespace Notism.Application.Storage.GenerateUploadUrl;
 
 public class GenerateUploadUrlValidator : AbstractValidator<GenerateUploadUrlRequest>
@@ -20,6 +22,14 @@ public class GenerateUploadUrlValidator : AbstractValidator<GenerateUploadUrlReq
 
     public GenerateUploadUrlValidator()
     {
+        var validUploadTypes = Enum.GetNames<UploadType>();
+
+        RuleFor(x => x.Type)
+            .NotEmpty()
+            .WithMessage("Type is required")
+            .Must(type => type.ExistInEnum<UploadType>())
+            .WithMessage($"Type must be one of: {string.Join(", ", validUploadTypes)}");
+
         RuleFor(x => x.FileName)
             .NotEmpty()
             .WithMessage("File name is required")

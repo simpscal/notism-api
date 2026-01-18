@@ -26,6 +26,15 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        ConfigureUser(modelBuilder);
+        ConfigureRefreshToken(modelBuilder);
+        ConfigurePasswordResetToken(modelBuilder);
+
+        base.OnModelCreating(modelBuilder);
+    }
+
+    private static void ConfigureUser(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<User>(entity =>
         {
             entity.HasKey(u => u.Id);
@@ -70,7 +79,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(u => u.UpdatedAt)
                 .IsRequired();
         });
+    }
 
+    private static void ConfigureRefreshToken(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<RefreshToken>(entity =>
         {
             entity.HasKey(rt => rt.Id);
@@ -97,7 +109,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasIndex(rt => rt.UserId);
             entity.HasIndex(rt => new { rt.UserId, rt.IsRevoked });
         });
+    }
 
+    private static void ConfigurePasswordResetToken(ModelBuilder modelBuilder)
+    {
         modelBuilder.Entity<PasswordResetToken>(entity =>
         {
             entity.HasKey(prt => prt.Id);
@@ -124,7 +139,5 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasIndex(prt => prt.UserId);
             entity.HasIndex(prt => new { prt.UserId, prt.IsUsed, prt.ExpiresAt });
         });
-
-        base.OnModelCreating(modelBuilder);
     }
 }

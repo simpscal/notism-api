@@ -43,4 +43,3 @@ public static class PasswordValidatorExtensions
         return string.IsNullOrWhiteSpace(password) ? false : Regex.IsMatch(password, NumberPattern);
     }
 }
-
