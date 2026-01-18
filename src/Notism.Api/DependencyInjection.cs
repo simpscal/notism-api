@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 
 using Notism.Api.Services;
 using Notism.Shared.Configuration;
+using Notism.Shared.Constants;
 
 namespace Notism.Api;
 
@@ -49,9 +50,11 @@ public static class DependencyInjection
             options.AddPolicy("DevelopmentCorsPolicy", builder =>
             {
                 builder
-                    .AllowAnyOrigin()
+                    .WithOrigins("http://localhost:4200")
                     .AllowAnyMethod()
-                    .AllowAnyHeader();
+                    .AllowAnyHeader()
+                    .WithExposedHeaders(HeaderNames.AntiForgeryToken)
+                    .AllowCredentials();
             });
 
             options.AddPolicy("ProductionCorsPolicy", builder =>
@@ -60,6 +63,7 @@ public static class DependencyInjection
                     .WithOrigins("https://localhost:3000", "https://yourdomain.com")
                     .AllowAnyMethod()
                     .AllowAnyHeader()
+                    .WithExposedHeaders(HeaderNames.AntiForgeryToken)
                     .AllowCredentials();
             });
         });
@@ -71,14 +75,16 @@ public static class DependencyInjection
     {
         services.AddAntiforgery(options =>
         {
-            options.HeaderName = "X-XSRF-TOKEN";
-            options.Cookie.Name = "X-CSRF-TOKEN";
+            options.HeaderName = HeaderNames.AntiForgeryToken;
+            options.Cookie.Name = CookieNames.AntiForgery;
             options.Cookie.HttpOnly = true;
             options.Cookie.SecurePolicy = environment.IsDevelopment()
-                ? CookieSecurePolicy.SameAsRequest
+                ? CookieSecurePolicy.None
                 : CookieSecurePolicy.Always;
 
-            options.Cookie.SameSite = SameSiteMode.Strict;
+            options.Cookie.SameSite = environment.IsDevelopment()
+                ? SameSiteMode.Lax
+                : SameSiteMode.None;
         });
 
         return services;
@@ -131,6 +137,7 @@ public static class DependencyInjection
                     ValidateAudience = false,
                     ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
+                    ClockSkew = TimeSpan.Zero,
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
                         configuration["JwtSettings:Secret"] ??
                         throw new Exception("Empty JWTSettings Secret"))),

@@ -87,4 +87,3 @@ public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackReq
         return Convert.ToBase64String(bytes);
     }
 }
-

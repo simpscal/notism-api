@@ -1,5 +1,7 @@
 using FluentValidation;
+
 using MediatR;
+
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Common.Behaviors;

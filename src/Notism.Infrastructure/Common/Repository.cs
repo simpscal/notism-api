@@ -20,7 +20,10 @@ public class Repository<T>(AppDbContext appDbContext) : IRepository<T>
             queryable = queryable.Include(include);
         }
 
-        return queryable.Where(specification.ToExpression()).FirstOrDefaultAsync();
+        queryable = queryable.Where(specification.ToExpression());
+        queryable = specification.ApplyOrdering(queryable);
+
+        return queryable.FirstOrDefaultAsync();
     }
 
     public async Task<IEnumerable<T>> FilterByExpressionAsync(ISpecification<T> specification)
@@ -33,6 +36,8 @@ public class Repository<T>(AppDbContext appDbContext) : IRepository<T>
         }
 
         queryable = queryable.Where(specification.ToExpression());
+
+        queryable = specification.ApplyOrdering(queryable);
 
         return await queryable.ToListAsync();
     }
@@ -49,6 +54,7 @@ public class Repository<T>(AppDbContext appDbContext) : IRepository<T>
         }
 
         queryable = queryable.Where(specification.ToExpression());
+        queryable = specification.ApplyOrdering(queryable);
         var totalCount = await queryable.CountAsync();
 
         queryable = queryable.Skip(pagination.Skip).Take(pagination.Take);

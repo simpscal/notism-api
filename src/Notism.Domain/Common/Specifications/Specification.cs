@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using System.Linq.Expressions;
 
 using Notism.Domain.Common.Interfaces;
@@ -7,7 +8,7 @@ namespace Notism.Domain.Common.Specifications;
 
 public abstract class Specification<T> : ISpecification<T>
 {
-    private readonly List<Expression<Func<T, object>>> _includes = new();
+    protected readonly List<Expression<Func<T, object>>> _includes = new();
 
     public abstract Expression<Func<T, bool>> ToExpression();
 
@@ -19,10 +20,15 @@ public abstract class Specification<T> : ISpecification<T>
 
     public IReadOnlyCollection<Expression<Func<T, object>>> Includes => _includes.AsReadOnly();
 
+    public virtual IQueryable<T> ApplyOrdering(IQueryable<T> queryable)
+    {
+        return queryable;
+    }
+
     public Specification<T> Include(Expression<Func<T, object>> includeExpression)
     {
         _includes.Add(includeExpression);
-        return this;
+        return this!;
     }
 
     public Specification<T> And(Specification<T> specification)

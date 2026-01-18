@@ -95,9 +95,6 @@ public class TokenService : ITokenService
 
         var user = await _userRepository.FindByExpressionAsync(new UserByIdSpecification(refreshTokenEntity.UserId)) ?? throw new InvalidRefreshTokenException("User not found");
 
-        refreshTokenEntity.Revoke();
-        await _refreshTokenRepository.SaveChangesAsync();
-
         return await GenerateTokenAsync(user);
     }
 

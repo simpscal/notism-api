@@ -5,13 +5,11 @@ A modern, clean architecture-based REST API built with .NET 9, implementing Doma
 ## 📋 Table of Contents
 
 - [Overview](#overview)
-- [Architecture](#architecture)
+- [Documentation](#documentation)
 - [Technologies](#technologies)
-- [Project Structure](#project-structure)
 - [Prerequisites](#prerequisites)
 - [Getting Started](#getting-started)
 - [Running the Application](#running-the-application)
-- [Testing](#testing)
 - [Docker Deployment](#docker-deployment)
 - [Configuration](#configuration)
 
@@ -25,33 +23,14 @@ Notism API is a backend service built following Clean Architecture principles wi
 - **Clean Code**: Well-structured, testable, and maintainable codebase
 - **Modern .NET**: Built with .NET 9 and minimal APIs
 
-## Architecture
+## Documentation
 
-This project follows **Clean Architecture** principles with clear separation of concerns across multiple layers:
+Detailed documentation is available in the `docs/` directory:
 
-```
-┌─────────────────────────────────────────┐
-│              API Layer                  │  ← Minimal APIs, Endpoints, Middleware
-├─────────────────────────────────────────┤
-│          Application Layer              │  ← CQRS Handlers, Request/Response Models
-├─────────────────────────────────────────┤
-│            Domain Layer                 │  ← Aggregates, Entities, Business Rules
-├─────────────────────────────────────────┤
-│        Infrastructure Layer             │  ← Data Access, External Services
-├─────────────────────────────────────────┤
-│            Shared Layer                 │  ← Common Utilities, Extensions
-└─────────────────────────────────────────┘
-```
-
-For detailed architecture documentation, see [docs/architecture.md](docs/architecture.md).
-
-### Key Principles
-
-- **Dependency Inversion**: Inner layers define interfaces, outer layers implement them
-- **Aggregate Boundaries**: Business logic encapsulated within aggregates
-- **CQRS**: Commands and queries separated for better scalability
-- **Domain Events**: Cross-aggregate communication through events
-- **Repository Pattern**: Aggregate-focused data access
+| Folder | Purpose |
+|--------|---------|
+| `docs/rules/` | Architecture guidelines, coding standards, and implementation methodology |
+| `docs/features/` | Feature-specific documentation and technical flows |
 
 ## Technologies
 
@@ -73,31 +52,6 @@ For detailed architecture documentation, see [docs/architecture.md](docs/archite
 - **xUnit** - Testing framework
 - **FluentAssertions** - Assertion library
 - **NSubstitute** - Mocking framework
-
-## Project Structure
-
-```
-notism-api/
-├── src/
-│   ├── Notism.Api/              # API Layer - Endpoints, Middleware
-│   ├── Notism.Application/      # Application Layer - CQRS Handlers
-│   ├── Notism.Domain/           # Domain Layer - Business Logic
-│   ├── Notism.Infrastructure/   # Infrastructure Layer - Data Access
-│   ├── Notism.Shared/           # Shared Layer - Common Utilities
-│   └── Notism.Worker/           # Background Worker Service
-├── tests/                        # Test Projects
-├── docs/                         # Documentation
-└── docker-compose.yml            # Container orchestration
-```
-
-### Layer Responsibilities
-
-- **Notism.Api**: HTTP endpoints, authentication, middleware, error handling
-- **Notism.Application**: Feature handlers (Login, Register, etc.), validation, orchestration
-- **Notism.Domain**: User and RefreshToken aggregates, domain events, business rules
-- **Notism.Infrastructure**: EF Core DbContext, repositories, email service, token service
-- **Notism.Shared**: Result pattern, pagination models, extensions, exceptions
-- **Notism.Worker**: Background services (token cleanup, scheduled tasks)
 
 ## Prerequisites
 
@@ -177,26 +131,64 @@ cd src/Notism.Worker
 dotnet run
 ```
 
-## Testing
+## Code Formatting
 
-### Run All Tests
+This project uses **dotnet format** to automatically fix coding errors and enforce consistent code style. The project includes:
+
+- **StyleCop.Analyzers** - Code analysis and style enforcement
+- **.editorconfig** - Editor configuration for consistent formatting
+- **dotnet format** - Automatic code formatting tool
+
+### Install dotnet format (if not already installed)
 
 ```bash
-dotnet test
+dotnet tool install -g dotnet-format
 ```
 
-### Run Specific Test Project
+### Format Code
+
+**Using the provided script (recommended):**
 
 ```bash
-dotnet test tests/Notism.Domain.Tests/Notism.Domain.Tests.csproj
-dotnet test tests/Notism.Application.Tests/Notism.Application.Tests.csproj
+# Fix all code style issues (default)
+./format-code.sh
+
+# Only check if code needs formatting (doesn't modify files)
+./format-code.sh --verify
+
+# Fix specific issues
+./format-code.sh --whitespace  # Fix whitespace only
+./format-code.sh --style       # Fix code style only
+./format-code.sh --analyzers   # Fix analyzer issues only
 ```
 
-### Test Coverage
+**Using dotnet format directly:**
 
-The project includes comprehensive test coverage:
-- **Domain Tests**: 122+ tests covering business logic, value objects, and specifications
-- **Application Tests**: Handler validation and business flow testing
+```bash
+# Fix all issues (run all three commands)
+dotnet format Notism.sln whitespace
+dotnet format Notism.sln style
+dotnet format Notism.sln analyzers
+
+# Only check (verify mode)
+dotnet format Notism.sln whitespace --verify-no-changes
+dotnet format Notism.sln style --verify-no-changes
+dotnet format Notism.sln analyzers --verify-no-changes
+
+# Fix specific issues
+dotnet format Notism.sln whitespace  # Fix whitespace only
+dotnet format Notism.sln style       # Fix code style only
+dotnet format Notism.sln analyzers   # Fix analyzer issues only
+```
+
+### Code Style Configuration
+
+The project uses `.editorconfig` for consistent code formatting. Key settings include:
+
+- **Indentation**: 4 spaces
+- **Line endings**: CRLF (Windows style)
+- **Naming conventions**: PascalCase for types/methods, camelCase for variables
+- **StyleCop rules**: Configured with sensible defaults
 
 ## Docker Deployment
 

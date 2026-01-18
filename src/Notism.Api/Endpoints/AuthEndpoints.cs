@@ -11,6 +11,7 @@ using Notism.Application.Auth.RequestPasswordReset;
 using Notism.Application.Auth.ResetPassword;
 using Notism.Application.Common.Models;
 using Notism.Application.User.GetProfile;
+using Notism.Domain.RefreshToken;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Api.Endpoints;
@@ -47,7 +48,7 @@ public static class AuthEndpoints
 
         group.MapPost("/logout", LogoutAsync)
             .WithName("Logout")
-            .AllowAnonymous()
+            .RequireAuthorization()
             .Produces(StatusCodes.Status200OK);
 
         group.MapGet("/reload", ReloadAsync)
@@ -144,19 +145,19 @@ public static class AuthEndpoints
         var request = new RefreshTokenRequest { RefreshToken = refreshToken };
         var tokenResult = await mediator.Send(request);
 
-        cookieService.SetRefreshTokenCookie(
-            httpContext,
-            tokenResult.RefreshToken,
-            tokenResult.RefreshTokenExpiresAt);
-
         return Results.Ok(new { Token = tokenResult.Token, ExpiresAt = tokenResult.ExpiresAt });
     }
 
-    private static IResult LogoutAsync(
+    private static async Task<IResult> LogoutAsync(
         ICookieService cookieService,
+        IRefreshTokenRepository refreshTokenRepository,
         HttpContext httpContext)
     {
-        cookieService.ClearRefreshTokenCookie(httpContext);
+        var userId = httpContext.User.GetUserId();
+
+        await refreshTokenRepository.RevokeAllUserTokensAsync(userId);
+
+        cookieService.ClearAuthenticationCookies(httpContext);
 
         return Results.Ok(new { Message = "Logged out successfully" });
     }
