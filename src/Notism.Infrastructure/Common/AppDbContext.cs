@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
+using Notism.Domain.Food;
+using Notism.Domain.Food.Enums;
 using Notism.Domain.RefreshToken;
 using Notism.Domain.User;
 using Notism.Domain.User.Enums;
@@ -13,6 +15,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<User> Users { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
+    public DbSet<Food> Foods { get; set; }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -29,6 +32,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         ConfigureUser(modelBuilder);
         ConfigureRefreshToken(modelBuilder);
         ConfigurePasswordResetToken(modelBuilder);
+        ConfigureFood(modelBuilder);
 
         base.OnModelCreating(modelBuilder);
     }
@@ -138,6 +142,63 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.HasIndex(prt => prt.UserId);
             entity.HasIndex(prt => new { prt.UserId, prt.IsUsed, prt.ExpiresAt });
+        });
+    }
+
+    private static void ConfigureFood(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Food>(entity =>
+        {
+            entity.HasKey(f => f.Id);
+
+            entity.Property(f => f.Name)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(f => f.Description)
+                .HasMaxLength(1000)
+                .IsRequired();
+
+            entity.Property(f => f.Price)
+                .HasPrecision(18, 2)
+                .IsRequired();
+
+            entity.Property(f => f.DiscountPrice)
+                .HasPrecision(18, 2);
+
+            entity.Property(f => f.FileKey)
+                .HasMaxLength(500)
+                .IsRequired();
+
+            entity.Property(f => f.Category)
+                .HasConversion(
+                    category => category.GetStringValue(),
+                    value => value.ToEnum<FoodCategory>())
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(f => f.IsAvailable)
+                .IsRequired();
+
+            entity.Property(f => f.QuantityUnit)
+                .HasConversion(
+                    quantityUnit => quantityUnit.GetStringValue(),
+                    value => value.ToEnum<QuantityUnit>())
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(f => f.StockQuantity)
+                .IsRequired();
+
+            entity.Property(f => f.CreatedAt)
+                .IsRequired();
+
+            entity.Property(f => f.UpdatedAt)
+                .IsRequired();
+
+            entity.HasIndex(f => f.Category);
+            entity.HasIndex(f => f.IsAvailable);
+            entity.HasIndex(f => new { f.Category, f.IsAvailable });
         });
     }
 }
