@@ -42,7 +42,7 @@ public class GetFoodsHandler : IRequestHandler<GetFoodsRequest, GetFoodsResponse
             Description = food.Description,
             Price = food.Price,
             DiscountPrice = food.DiscountPrice,
-            ImageUrl = GetImageUrl(food.FileKey),
+            ImageUrl = GetImageUrl(food.Images),
             Category = food.Category.GetStringValue(),
             IsAvailable = food.IsAvailable,
             QuantityUnit = food.QuantityUnit.GetStringValue(),
@@ -58,8 +58,9 @@ public class GetFoodsHandler : IRequestHandler<GetFoodsRequest, GetFoodsResponse
         };
     }
 
-    private string GetImageUrl(string fileKey)
+    private string GetImageUrl(IReadOnlyCollection<FoodImage> images)
     {
-        return string.IsNullOrWhiteSpace(fileKey) ? string.Empty : _storageService.GetPublicUrl(fileKey);
+        var firstImage = images.OrderBy(img => img.DisplayOrder).FirstOrDefault();
+        return firstImage == null ? string.Empty : _storageService.GetPublicUrl(firstImage.FileKey);
     }
 }

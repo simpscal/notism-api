@@ -11,6 +11,7 @@ public class FoodByIdSpecification : Specification<Food>
     public FoodByIdSpecification(Guid foodId)
     {
         _foodId = foodId;
+        Include(food => food.Images);
     }
 
     public override Expression<Func<Food, bool>> ToExpression()

@@ -16,6 +16,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
     public DbSet<Food> Foods { get; set; }
+    public DbSet<FoodImage> FoodImages { get; set; }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -33,6 +34,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         ConfigureRefreshToken(modelBuilder);
         ConfigurePasswordResetToken(modelBuilder);
         ConfigureFood(modelBuilder);
+        ConfigureFoodImage(modelBuilder);
 
         base.OnModelCreating(modelBuilder);
     }
@@ -199,6 +201,41 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.HasIndex(f => f.Category);
             entity.HasIndex(f => f.IsAvailable);
             entity.HasIndex(f => new { f.Category, f.IsAvailable });
+
+            entity.HasMany(f => f.Images)
+                .WithOne(i => i.Food)
+                .HasForeignKey(i => i.FoodId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureFoodImage(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<FoodImage>(entity =>
+        {
+            entity.HasKey(fi => fi.Id);
+
+            entity.Property(fi => fi.FileKey)
+                .HasMaxLength(500)
+                .IsRequired();
+
+            entity.Property(fi => fi.FoodId)
+                .IsRequired();
+
+            entity.Property(fi => fi.DisplayOrder)
+                .IsRequired();
+
+            entity.Property(fi => fi.AltText)
+                .HasMaxLength(200);
+
+            entity.Property(fi => fi.CreatedAt)
+                .IsRequired();
+
+            entity.Property(fi => fi.UpdatedAt)
+                .IsRequired();
+
+            entity.HasIndex(fi => fi.FoodId);
+            entity.HasIndex(fi => new { fi.FoodId, fi.DisplayOrder });
         });
     }
 }

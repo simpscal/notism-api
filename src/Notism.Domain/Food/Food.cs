@@ -16,6 +16,9 @@ public class Food : AggregateRoot
     public decimal? DiscountPrice { get; private set; }
     public int StockQuantity { get; private set; }
 
+    private readonly List<FoodImage> _images = new();
+    public IReadOnlyCollection<FoodImage> Images => _images.AsReadOnly();
+
     private Food(
         string name,
         string description,
@@ -156,4 +159,38 @@ public class Food : AggregateRoot
     public decimal GetEffectivePrice() => DiscountPrice ?? Price;
 
     public bool HasDiscount() => DiscountPrice.HasValue && DiscountPrice.Value < Price;
+
+    public void AddImage(string fileKey, int displayOrder, string? altText = null)
+    {
+        var image = FoodImage.Create(Id, fileKey, displayOrder, altText);
+        _images.Add(image);
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void RemoveImage(Guid imageId)
+    {
+        var image = _images.FirstOrDefault(i => i.Id == imageId);
+        if (image != null)
+        {
+            _images.Remove(image);
+            UpdatedAt = DateTime.UtcNow;
+        }
+    }
+
+    public void ClearImages()
+    {
+        _images.Clear();
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdateImages(IEnumerable<(string FileKey, int DisplayOrder, string? AltText)> images)
+    {
+        _images.Clear();
+        foreach (var (fileKey, displayOrder, altText) in images)
+        {
+            _images.Add(FoodImage.Create(Id, fileKey, displayOrder, altText));
+        }
+
+        UpdatedAt = DateTime.UtcNow;
+    }
 }

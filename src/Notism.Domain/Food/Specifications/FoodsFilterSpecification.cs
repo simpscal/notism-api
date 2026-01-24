@@ -19,6 +19,7 @@ public class FoodsFilterSpecification : Specification<Food>
         _category = category;
         _keyword = keyword?.ToLower();
         _isAvailable = isAvailable;
+        Include(food => food.Images);
     }
 
     public override Expression<Func<Food, bool>> ToExpression()

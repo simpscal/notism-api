@@ -7,7 +7,7 @@ public class GetFoodByIdResponse
     public required string Description { get; set; }
     public decimal Price { get; set; }
     public decimal? DiscountPrice { get; set; }
-    public required string ImageUrl { get; set; }
+    public required List<string> ImageUrls { get; set; }
     public required string Category { get; set; }
     public bool IsAvailable { get; set; }
     public required string QuantityUnit { get; set; }
