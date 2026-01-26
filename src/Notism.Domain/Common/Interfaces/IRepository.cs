@@ -8,6 +8,7 @@ public interface IRepository<T>
     Task<IEnumerable<T>> FilterByExpressionAsync(ISpecification<T> specification);
     Task<PagedResult<T>> FilterPagedByExpressionAsync(ISpecification<T> specification, Pagination pagination);
     Task<T> AddAsync(T entity);
+    T Add(T entity);
     void Remove(T entity);
     Task<int> SaveChangesAsync();
 }

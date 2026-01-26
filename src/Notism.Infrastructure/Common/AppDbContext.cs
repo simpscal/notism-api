@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 
+using Notism.Domain.Cart;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
 using Notism.Domain.RefreshToken;
@@ -17,6 +18,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
     public DbSet<Food> Foods { get; set; }
     public DbSet<FoodImage> FoodImages { get; set; }
+    public DbSet<CartItem> CartItems { get; set; }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -35,6 +37,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         ConfigurePasswordResetToken(modelBuilder);
         ConfigureFood(modelBuilder);
         ConfigureFoodImage(modelBuilder);
+        ConfigureCartItem(modelBuilder);
 
         base.OnModelCreating(modelBuilder);
     }
@@ -236,6 +239,38 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
             entity.HasIndex(fi => fi.FoodId);
             entity.HasIndex(fi => new { fi.FoodId, fi.DisplayOrder });
+        });
+    }
+
+    private static void ConfigureCartItem(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CartItem>(entity =>
+        {
+            entity.HasKey(ci => ci.Id);
+
+            entity.Property(ci => ci.UserId)
+                .IsRequired();
+
+            entity.Property(ci => ci.FoodId)
+                .IsRequired();
+
+            entity.Property(ci => ci.Quantity)
+                .IsRequired();
+
+            entity.Property(ci => ci.CreatedAt)
+                .IsRequired();
+
+            entity.Property(ci => ci.UpdatedAt)
+                .IsRequired();
+
+            entity.HasIndex(ci => ci.UserId);
+            entity.HasIndex(ci => new { ci.UserId, ci.FoodId })
+                .IsUnique();
+
+            entity.HasOne(ci => ci.Food)
+                .WithMany()
+                .HasForeignKey(ci => ci.FoodId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 }

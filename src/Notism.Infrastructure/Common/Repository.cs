@@ -69,6 +69,12 @@ public class Repository<T>(AppDbContext appDbContext) : IRepository<T>
         return entity;
     }
 
+    public T Add(T entity)
+    {
+        _dbSet.Add(entity);
+        return entity;
+    }
+
     public void Remove(T entity)
     {
         _dbSet.Remove(entity);

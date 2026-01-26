@@ -5,10 +5,12 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using Notism.Application.Common.Interfaces;
+using Notism.Domain.Cart;
 using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Food;
 using Notism.Domain.RefreshToken;
 using Notism.Domain.User;
+using Notism.Infrastructure.Carts;
 using Notism.Infrastructure.Common;
 using Notism.Infrastructure.Foods;
 using Notism.Infrastructure.RefreshTokens;
@@ -36,6 +38,7 @@ public static class DependencyInjection
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
         services.AddScoped<IFoodRepository, FoodRepository>();
+        services.AddScoped<ICartItemRepository, CartItemRepository>();
 
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IPasswordService, PasswordService>();
