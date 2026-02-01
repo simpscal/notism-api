@@ -94,6 +94,8 @@ public static class DependencyInjection
     {
         services.AddSwaggerGen(options =>
         {
+            // Use fully qualified names to avoid schema ID conflicts
+            options.CustomSchemaIds(type => type.FullName);
             options.AddSecurityDefinition(
                 "Bearer",
                 new OpenApiSecurityScheme

@@ -22,6 +22,8 @@ public class AddFoodRequestValidator : AbstractValidator<AddFoodRequest>
             .WithMessage("Description cannot exceed 1000 characters");
 
         RuleFor(x => x.Price)
+            .NotNull()
+            .WithMessage("Price is required")
             .GreaterThan(0)
             .WithMessage("Price must be greater than zero");
 

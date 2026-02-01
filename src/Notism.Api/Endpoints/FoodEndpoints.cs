@@ -5,6 +5,7 @@ using Notism.Api.Models;
 using Notism.Application.Food.AddFood;
 using Notism.Application.Food.GetFoodById;
 using Notism.Application.Food.GetFoods;
+using Notism.Application.Food.UpdateFood;
 
 namespace Notism.Api.Endpoints;
 
@@ -40,6 +41,17 @@ public static class FoodEndpoints
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
+
+        group.MapPatch("/{id:guid}", UpdateFoodAsync)
+            .WithName("UpdateFood")
+            .WithSummary("Update food")
+            .WithDescription("Updates an existing food item. Requires admin authorization.")
+            .RequireAdmin()
+            .Produces<UpdateFoodResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
     }
 
     private static async Task<IResult> GetFoodsAsync(
@@ -66,6 +78,17 @@ public static class FoodEndpoints
         AddFoodRequest request,
         CancellationToken cancellationToken)
     {
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> UpdateFoodAsync(
+        IMediator mediator,
+        Guid id,
+        UpdateFoodRequest request,
+        CancellationToken cancellationToken)
+    {
+        request = request with { FoodId = id };
         var result = await mediator.Send(request, cancellationToken);
         return Results.Ok(result);
     }
