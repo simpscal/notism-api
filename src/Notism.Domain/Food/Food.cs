@@ -9,7 +9,6 @@ public class Food : AggregateRoot
     public string Name { get; private set; }
     public string Description { get; private set; }
     public decimal Price { get; private set; }
-    public string FileKey { get; private set; }
     public FoodCategory Category { get; private set; }
     public bool IsAvailable { get; private set; }
     public QuantityUnit QuantityUnit { get; private set; }
@@ -23,7 +22,6 @@ public class Food : AggregateRoot
         string name,
         string description,
         decimal price,
-        string fileKey,
         FoodCategory category,
         QuantityUnit quantityUnit,
         int stockQuantity,
@@ -32,7 +30,6 @@ public class Food : AggregateRoot
         Name = name;
         Description = description;
         Price = price;
-        FileKey = fileKey;
         Category = category;
         IsAvailable = true;
         QuantityUnit = quantityUnit;
@@ -46,7 +43,6 @@ public class Food : AggregateRoot
         string name,
         string description,
         decimal price,
-        string fileKey,
         FoodCategory category,
         QuantityUnit quantityUnit,
         int stockQuantity,
@@ -67,14 +63,13 @@ public class Food : AggregateRoot
             throw new ArgumentException("Discount price must be less than the original price", nameof(discountPrice));
         }
 
-        return new Food(name, description, price, fileKey, category, quantityUnit, stockQuantity, discountPrice);
+        return new Food(name, description, price, category, quantityUnit, stockQuantity, discountPrice);
     }
 
     public void Update(
         string name,
         string description,
         decimal price,
-        string fileKey,
         FoodCategory category,
         QuantityUnit quantityUnit,
         int stockQuantity,
@@ -98,7 +93,6 @@ public class Food : AggregateRoot
         Name = name;
         Description = description;
         Price = price;
-        FileKey = fileKey;
         Category = category;
         QuantityUnit = quantityUnit;
         StockQuantity = stockQuantity;
@@ -153,7 +147,6 @@ public class Food : AggregateRoot
     {
         Name = string.Empty;
         Description = string.Empty;
-        FileKey = string.Empty;
     }
 
     public decimal GetEffectivePrice() => DiscountPrice ?? Price;

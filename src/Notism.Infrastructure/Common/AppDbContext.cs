@@ -171,10 +171,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
             entity.Property(f => f.DiscountPrice)
                 .HasPrecision(18, 2);
 
-            entity.Property(f => f.FileKey)
-                .HasMaxLength(500)
-                .IsRequired();
-
             entity.Property(f => f.Category)
                 .HasConversion(
                     category => category.GetStringValue(),
