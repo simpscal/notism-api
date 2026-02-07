@@ -78,7 +78,7 @@ public static class CartEndpoints
     private static async Task<IResult> AddCartItemAsync(
         HttpContext httpContext,
         IMediator mediator,
-        AddCartItemDto dto,
+        AddCartItemPayload payload,
         CancellationToken cancellationToken)
     {
         var userId = httpContext.User.GetUserId();
@@ -86,8 +86,8 @@ public static class CartEndpoints
         var request = new AddCartItemRequest
         {
             UserId = userId,
-            FoodId = dto.FoodId,
-            Quantity = dto.Quantity,
+            FoodId = payload.FoodId,
+            Quantity = payload.Quantity,
         };
 
         var result = await mediator.Send(request, cancellationToken);
@@ -99,7 +99,7 @@ public static class CartEndpoints
         HttpContext httpContext,
         IMediator mediator,
         Guid id,
-        UpdateCartItemQuantityDto dto,
+        UpdateCartItemQuantityPayload payloda,
         CancellationToken cancellationToken)
     {
         var userId = httpContext.User.GetUserId();
@@ -108,7 +108,7 @@ public static class CartEndpoints
         {
             UserId = userId,
             CartItemId = id,
-            Quantity = dto.Quantity,
+            Quantity = payloda.Quantity,
         };
 
         var result = await mediator.Send(request, cancellationToken);
@@ -149,13 +149,13 @@ public static class CartEndpoints
     }
 }
 
-public record AddCartItemDto
+public record AddCartItemPayload
 {
     public Guid FoodId { get; set; }
     public int Quantity { get; set; }
 }
 
-public record UpdateCartItemQuantityDto
+public record UpdateCartItemQuantityPayload
 {
     public int Quantity { get; set; }
 }

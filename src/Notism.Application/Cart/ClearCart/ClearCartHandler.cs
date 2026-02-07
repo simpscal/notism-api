@@ -29,4 +29,3 @@ public class ClearCartHandler : IRequestHandler<ClearCartRequest>
         _logger.LogInformation("Cleared cart for user {UserId}", request.UserId);
     }
 }
-

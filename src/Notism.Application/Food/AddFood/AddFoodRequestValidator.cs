@@ -68,4 +68,3 @@ public class AddFoodRequestValidator : AbstractValidator<AddFoodRequest>
             .WithMessage("Discount price must be greater than zero");
     }
 }
-

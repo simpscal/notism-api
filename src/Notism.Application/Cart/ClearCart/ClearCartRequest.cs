@@ -6,4 +6,3 @@ public record ClearCartRequest : IRequest
 {
     public Guid UserId { get; set; }
 }
-

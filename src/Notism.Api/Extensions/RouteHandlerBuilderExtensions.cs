@@ -9,4 +9,3 @@ public static class RouteHandlerBuilderExtensions
         return builder.RequireAuthorization(policy => policy.RequireRole("admin"));
     }
 }
-

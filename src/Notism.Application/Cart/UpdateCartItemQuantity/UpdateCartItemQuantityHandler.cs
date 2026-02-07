@@ -3,9 +3,8 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Domain.Cart;
-using Notism.Domain.Cart.Specifications;
 using Notism.Domain.Common.Interfaces;
-using Notism.Domain.Food.Specifications;
+using Notism.Domain.Common.Specifications;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Cart.UpdateCartItemQuantity;
@@ -30,9 +29,9 @@ public class UpdateCartItemQuantityHandler : IRequestHandler<UpdateCartItemQuant
         UpdateCartItemQuantityRequest request,
         CancellationToken cancellationToken)
     {
-        var cartItem = await _cartItemRepository.FindByExpressionAsync(
-            new CartItemByIdSpecification(request.CartItemId))
-        ?? throw new ResultFailureException("Cart item not found");
+        var cartItemSpecification = new FilterSpecification<CartItem>(c => c.Id == request.CartItemId);
+        var cartItem = await _cartItemRepository.FindByExpressionAsync(cartItemSpecification)
+            ?? throw new ResultFailureException("Cart item not found");
 
         // Verify the cart item belongs to the user
         if (cartItem.UserId != request.UserId)
@@ -41,9 +40,9 @@ public class UpdateCartItemQuantityHandler : IRequestHandler<UpdateCartItemQuant
         }
 
         // Check if food is still available
-        var food = await _foodRepository.FindByExpressionAsync(
-            new FoodByIdSpecification(cartItem.FoodId))
-        ?? throw new ResultFailureException("Food not found");
+        var foodSpecification = new FilterSpecification<Domain.Food.Food>(f => f.Id == cartItem.FoodId);
+        var food = await _foodRepository.FindByExpressionAsync(foodSpecification)
+            ?? throw new ResultFailureException("Food not found");
 
         if (!food.IsAvailable)
         {
@@ -67,4 +66,3 @@ public class UpdateCartItemQuantityHandler : IRequestHandler<UpdateCartItemQuant
         return new UpdateCartItemQuantityResponse { Id = cartItem.Id };
     }
 }
-

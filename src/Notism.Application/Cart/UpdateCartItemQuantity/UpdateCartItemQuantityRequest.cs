@@ -8,4 +8,3 @@ public record UpdateCartItemQuantityRequest : IRequest<UpdateCartItemQuantityRes
     public Guid CartItemId { get; set; }
     public int Quantity { get; set; }
 }
-

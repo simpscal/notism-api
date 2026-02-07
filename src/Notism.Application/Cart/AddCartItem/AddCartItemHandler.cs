@@ -3,9 +3,8 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Domain.Cart;
-using Notism.Domain.Cart.Specifications;
 using Notism.Domain.Common.Interfaces;
-using Notism.Domain.Food.Specifications;
+using Notism.Domain.Common.Specifications;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Cart.AddCartItem;
@@ -31,9 +30,9 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         CancellationToken cancellationToken)
     {
         // Check if food exists and is available
-        var food = await _foodRepository.FindByExpressionAsync(
-            new FoodByIdSpecification(request.FoodId))
-        ?? throw new ResultFailureException("Food not found");
+        var foodSpecification = new FilterSpecification<Domain.Food.Food>(f => f.Id == request.FoodId);
+        var food = await _foodRepository.FindByExpressionAsync(foodSpecification)
+            ?? throw new ResultFailureException("Food not found");
 
         if (!food.IsAvailable)
         {
@@ -46,7 +45,9 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         }
 
         // Check if cart item already exists
-        var cartItemSpecification = new CartItemByUserAndFoodSpecification(request.UserId, request.FoodId);
+        var cartItemSpecification = new FilterSpecification<CartItem>(c => c.UserId == request.UserId && c.FoodId == request.FoodId)
+            .Include(c => c.Food)
+            .Include(c => c.Food.Images);
         var existingCartItem = await _cartItemRepository.FindByExpressionAsync(cartItemSpecification);
 
         // Update quantity if item already exists
@@ -84,4 +85,3 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         return new AddCartItemResponse { Id = cartItem.Id };
     }
 }
-

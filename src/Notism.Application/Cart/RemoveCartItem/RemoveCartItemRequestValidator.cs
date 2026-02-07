@@ -15,4 +15,3 @@ public class RemoveCartItemRequestValidator : AbstractValidator<RemoveCartItemRe
             .WithMessage("CartItemId is required");
     }
 }
-

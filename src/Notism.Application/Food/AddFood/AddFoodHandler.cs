@@ -54,4 +54,3 @@ public class AddFoodHandler : IRequestHandler<AddFoodRequest, AddFoodResponse>
         };
     }
 }
-

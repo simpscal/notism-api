@@ -67,4 +67,3 @@ public class UpdateFoodRequestValidator : AbstractValidator<UpdateFoodRequest>
             .When(x => x.DiscountPrice.HasValue);
     }
 }
-

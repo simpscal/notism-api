@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.Common.Interfaces;
-using Notism.Domain.Food.Specifications;
+using Notism.Domain.Common.Specifications;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Extensions;
 
@@ -30,9 +30,10 @@ public class GetFoodByIdHandler : IRequestHandler<GetFoodByIdRequest, GetFoodByI
         GetFoodByIdRequest request,
         CancellationToken cancellationToken)
     {
-        var food = await _foodRepository.FindByExpressionAsync(
-            new FoodByIdSpecification(request.FoodId))
-        ?? throw new ResultFailureException("Food not found");
+        var specification = new FilterSpecification<Domain.Food.Food>(f => f.Id == request.FoodId)
+            .Include(f => f.Images);
+        var food = await _foodRepository.FindByExpressionAsync(specification)
+            ?? throw new ResultFailureException("Food not found");
 
         _logger.LogInformation("Retrieved food {FoodId}", request.FoodId);
 

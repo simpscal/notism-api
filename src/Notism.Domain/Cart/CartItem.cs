@@ -44,4 +44,3 @@ public class CartItem : AggregateRoot
         AddDomainEvent(new CartItemQuantityUpdatedEvent(Id, UserId, FoodId, oldQuantity, quantity));
     }
 }
-

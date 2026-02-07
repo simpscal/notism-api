@@ -19,4 +19,3 @@ public class UpdateCartItemQuantityRequestValidator : AbstractValidator<UpdateCa
             .WithMessage("Quantity must be greater than zero");
     }
 }
-

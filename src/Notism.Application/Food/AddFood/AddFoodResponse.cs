@@ -4,4 +4,3 @@ public record AddFoodResponse
 {
     public Guid Id { get; set; }
 }
-

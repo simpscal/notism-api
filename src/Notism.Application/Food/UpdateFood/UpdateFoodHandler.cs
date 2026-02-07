@@ -2,9 +2,9 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
-using Notism.Domain.Food.Specifications;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Extensions;
 
@@ -27,9 +27,9 @@ public class UpdateFoodHandler : IRequestHandler<UpdateFoodRequest, UpdateFoodRe
         UpdateFoodRequest request,
         CancellationToken cancellationToken)
     {
-        var food = await _foodRepository.FindByExpressionAsync(
-            new FoodByIdSpecification(request.FoodId))
-        ?? throw new ResultFailureException("Food not found");
+        var specification = new FilterSpecification<Domain.Food.Food>(f => f.Id == request.FoodId);
+        var food = await _foodRepository.FindByExpressionAsync(specification)
+            ?? throw new ResultFailureException("Food not found");
 
         // Use provided values or keep existing values
         var name = request.Name ?? food.Name;
@@ -76,4 +76,3 @@ public class UpdateFoodHandler : IRequestHandler<UpdateFoodRequest, UpdateFoodRe
         };
     }
 }
-

@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Interfaces;
+using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
 using Notism.Domain.Food.Specifications;
@@ -31,7 +32,9 @@ public class GetFoodsHandler : IRequestHandler<GetFoodsRequest, GetFoodsResponse
         CancellationToken cancellationToken)
     {
         var category = request.Category?.ToEnum<FoodCategory>();
-        var specification = new FoodsFilterSpecification(category, request.Keyword, request.IsAvailable);
+        var keywordLower = request.Keyword?.ToLower();
+        var specification = new FoodsFilterSpecification(category, keywordLower, request.IsAvailable)
+            .Include(f => f.Images);
 
         var pagedResult = await _foodRepository.FilterPagedByExpressionAsync(specification, request);
 

@@ -142,7 +142,6 @@ public class Food : AggregateRoot
         UpdatedAt = DateTime.UtcNow;
     }
 
-    // Required for EF Core
     private Food()
     {
         Name = string.Empty;

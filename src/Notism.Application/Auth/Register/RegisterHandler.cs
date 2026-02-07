@@ -3,9 +3,10 @@ using AutoMapper;
 using MediatR;
 
 using Notism.Application.Common.Interfaces;
+using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
 using Notism.Domain.User.Enums;
-using Notism.Domain.User.Specifications;
+using Notism.Domain.User.ValueObjects;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Auth.Register;
@@ -32,7 +33,9 @@ public class RegisterHandler : IRequestHandler<RegisterRequest, (RegisterRespons
     public async Task<(RegisterResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)> Handle(RegisterRequest request, CancellationToken cancellationToken)
     {
         // 1. Check if user already exists
-        var existingUser = await _userRepository.FindByExpressionAsync(new UserByEmailSpecification(request.Email));
+        var email = Email.Create(request.Email);
+        var specification = new FilterSpecification<Domain.User.User>(u => u.Email.Equals(email));
+        var existingUser = await _userRepository.FindByExpressionAsync(specification);
 
         if (existingUser != null)
         {

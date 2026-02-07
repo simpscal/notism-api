@@ -4,4 +4,3 @@ public record UpdateCartItemQuantityResponse
 {
     public Guid Id { get; set; }
 }
-

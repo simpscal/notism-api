@@ -11,4 +11,3 @@ public class ClearCartRequestValidator : AbstractValidator<ClearCartRequest>
             .WithMessage("UserId is required");
     }
 }
-

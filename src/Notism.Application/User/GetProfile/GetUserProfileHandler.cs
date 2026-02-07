@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.Common.Interfaces;
-using Notism.Domain.User.Specifications;
+using Notism.Domain.Common.Specifications;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Extensions;
 
@@ -30,9 +30,9 @@ public class GetUserProfileHandler : IRequestHandler<GetUserProfileRequest, GetU
         GetUserProfileRequest request,
         CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByExpressionAsync(
-            new UserByIdSpecification(request.UserId))
-        ?? throw new ResultFailureException("User not found");
+        var specification = new FilterSpecification<Domain.User.User>(u => u.Id == request.UserId);
+        var user = await _userRepository.FindByExpressionAsync(specification)
+            ?? throw new ResultFailureException("User not found");
 
         string avatarUrl = user.AvatarUrl ?? string.Empty;
         if (!string.IsNullOrWhiteSpace(user.AvatarUrl) && !avatarUrl.IsValidUrl())

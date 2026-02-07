@@ -76,4 +76,3 @@ public class FoodImage : Entity
         FileKey = string.Empty;
     }
 }
-

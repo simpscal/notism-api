@@ -24,4 +24,3 @@ public class CartItemQuantityUpdatedEvent : DomainEvent
         NewQuantity = newQuantity;
     }
 }
-

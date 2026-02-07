@@ -7,4 +7,3 @@ public record RemoveCartItemRequest : IRequest
     public Guid UserId { get; set; }
     public Guid CartItemId { get; set; }
 }
-

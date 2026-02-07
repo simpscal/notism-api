@@ -20,4 +20,3 @@ public record FoodImageRequest
     public int DisplayOrder { get; set; }
     public string? AltText { get; set; }
 }
-

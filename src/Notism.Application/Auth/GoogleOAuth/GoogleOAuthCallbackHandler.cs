@@ -6,9 +6,10 @@ using MediatR;
 
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Models;
+using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
 using Notism.Domain.User.Enums;
-using Notism.Domain.User.Specifications;
+using Notism.Domain.User.ValueObjects;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Auth.GoogleOAuth;
@@ -47,7 +48,9 @@ public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackReq
             tokenResponse.AccessToken!,
             cancellationToken);
 
-        var user = await _userRepository.FindByExpressionAsync(new UserByEmailSpecification(userInfo.Email!));
+        var email = Email.Create(userInfo.Email!);
+        var specification = new FilterSpecification<Domain.User.User>(u => u.Email.Equals(email));
+        var user = await _userRepository.FindByExpressionAsync(specification);
 
         if (user == null)
         {

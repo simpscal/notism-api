@@ -4,4 +4,3 @@ public record AddCartItemResponse
 {
     public Guid Id { get; set; }
 }
-

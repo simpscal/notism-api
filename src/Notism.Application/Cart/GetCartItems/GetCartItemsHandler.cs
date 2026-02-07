@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.Cart;
-using Notism.Domain.Cart.Specifications;
+using Notism.Domain.Common.Specifications;
 using Notism.Shared.Extensions;
 
 namespace Notism.Application.Cart.GetCartItems;
@@ -29,7 +29,9 @@ public class GetCartItemsHandler : IRequestHandler<GetCartItemsRequest, GetCartI
         GetCartItemsRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new CartItemByUserIdSpecification(request.UserId);
+        var specification = new FilterSpecification<CartItem>(c => c.UserId == request.UserId)
+            .Include(c => c.Food)
+            .Include(c => c.Food.Images);
         var cartItems = await _cartItemRepository.FilterByExpressionAsync(specification);
 
         var items = cartItems.Select(cartItem => new CartItemResponse
@@ -60,4 +62,3 @@ public class GetCartItemsHandler : IRequestHandler<GetCartItemsRequest, GetCartI
         return firstImage == null ? string.Empty : _storageService.GetPublicUrl(firstImage.FileKey);
     }
 }
-

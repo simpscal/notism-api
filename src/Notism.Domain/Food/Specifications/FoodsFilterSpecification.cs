@@ -1,3 +1,4 @@
+using System.Linq;
 using System.Linq.Expressions;
 
 using Notism.Domain.Common.Specifications;
@@ -17,9 +18,8 @@ public class FoodsFilterSpecification : Specification<Food>
         bool? isAvailable = null)
     {
         _category = category;
-        _keyword = keyword?.ToLower();
+        _keyword = keyword;
         _isAvailable = isAvailable;
-        Include(food => food.Images);
     }
 
     public override Expression<Func<Food, bool>> ToExpression()

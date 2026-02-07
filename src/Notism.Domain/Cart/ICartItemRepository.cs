@@ -6,4 +6,3 @@ public interface ICartItemRepository : IRepository<CartItem>
 {
     Task ClearCart(Guid userId);
 }
-
