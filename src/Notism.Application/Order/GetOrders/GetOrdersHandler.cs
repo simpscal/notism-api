@@ -30,9 +30,7 @@ public class GetOrdersHandler : IRequestHandler<GetOrdersRequest, GetOrdersRespo
         CancellationToken cancellationToken)
     {
         var specification = new FilterSpecification<Domain.Order.Order>(o => o.UserId == request.UserId)
-            .Include(o => o.Items)
-            .Include(o => o.Items.Select(i => i.Food))
-            .Include(o => o.Items.Select(i => i.Food.Images))
+            .Include("Items.Food.Images")
             .Include(o => o.StatusHistory);
         var orders = await _orderRepository.FilterByExpressionAsync(specification);
 

@@ -31,9 +31,7 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
         CancellationToken cancellationToken)
     {
         var specification = new FilterSpecification<Domain.Order.Order>(o => o.Id == request.OrderId && o.UserId == request.UserId)
-            .Include(o => o.Items)
-            .Include(o => o.Items.Select(i => i.Food))
-            .Include(o => o.Items.Select(i => i.Food.Images))
+            .Include("Items.Food.Images")
             .Include(o => o.StatusHistory);
         var order = await _orderRepository.FindByExpressionAsync(specification)
             ?? throw new ResultFailureException("Order not found");

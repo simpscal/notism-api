@@ -20,6 +20,11 @@ public class Repository<T>(AppDbContext appDbContext) : IRepository<T>
             queryable = queryable.Include(include);
         }
 
+        foreach (var stringInclude in specification.StringIncludes)
+        {
+            queryable = queryable.Include(stringInclude);
+        }
+
         queryable = queryable.Where(specification.ToExpression());
         queryable = specification.ApplyOrdering(queryable);
 
@@ -33,6 +38,11 @@ public class Repository<T>(AppDbContext appDbContext) : IRepository<T>
         foreach (var include in specification.Includes)
         {
             queryable = queryable.Include(include);
+        }
+
+        foreach (var stringInclude in specification.StringIncludes)
+        {
+            queryable = queryable.Include(stringInclude);
         }
 
         queryable = queryable.Where(specification.ToExpression());
@@ -51,6 +61,11 @@ public class Repository<T>(AppDbContext appDbContext) : IRepository<T>
         foreach (var include in specification.Includes)
         {
             queryable = queryable.Include(include);
+        }
+
+        foreach (var stringInclude in specification.StringIncludes)
+        {
+            queryable = queryable.Include(stringInclude);
         }
 
         queryable = queryable.Where(specification.ToExpression());

@@ -25,6 +25,20 @@ public class OrSpecification<T> : Specification<T>
                 _includes.Add(include);
             }
         }
+
+        // Merge string includes from both specifications
+        foreach (var stringInclude in _left.StringIncludes)
+        {
+            _stringIncludes.Add(stringInclude);
+        }
+
+        foreach (var stringInclude in _right.StringIncludes)
+        {
+            if (!_stringIncludes.Contains(stringInclude))
+            {
+                _stringIncludes.Add(stringInclude);
+            }
+        }
     }
 
     public override Expression<Func<T, bool>> ToExpression()
