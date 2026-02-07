@@ -30,18 +30,19 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
         GetOrderByIdRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new FilterSpecification<Domain.Order.Order>(o => o.Id == request.OrderId && o.UserId == request.UserId)
+        var specification = new FilterSpecification<Domain.Order.Order>(o => o.SlugId == request.SlugId && o.UserId == request.UserId)
             .Include("Items.Food.Images")
             .Include(o => o.StatusHistory);
         var order = await _orderRepository.FindByExpressionAsync(specification)
             ?? throw new ResultFailureException("Order not found");
 
-        _logger.LogInformation("Retrieved order {OrderId} for user {UserId}", request.OrderId, request.UserId);
+        _logger.LogInformation("Retrieved order {SlugId} for user {UserId}", request.SlugId, request.UserId);
 
         var baseResponse = OrderMapper.ToResponse(order, _storageService);
         return new GetOrderByIdResponse
         {
             Id = baseResponse.Id,
+            SlugId = baseResponse.SlugId,
             TotalAmount = baseResponse.TotalAmount,
             PaymentMethod = baseResponse.PaymentMethod,
             DeliveryStatus = baseResponse.DeliveryStatus,

@@ -33,10 +33,10 @@ public static class OrderEndpoints
             .Produces<GetOrdersResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized);
 
-        group.MapGet("/{id:guid}", GetOrderByIdAsync)
+        group.MapGet("/{slugId}", GetOrderByIdAsync)
             .WithName("GetOrderById")
-            .WithSummary("Get order by ID")
-            .WithDescription("Retrieves a specific order by ID for the authenticated user.")
+            .WithSummary("Get order by slug ID")
+            .WithDescription("Retrieves a specific order by slug ID for the authenticated user.")
             .Produces<GetOrderByIdResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
@@ -88,14 +88,14 @@ public static class OrderEndpoints
     private static async Task<IResult> GetOrderByIdAsync(
         HttpContext httpContext,
         IMediator mediator,
-        Guid id,
+        string slugId,
         CancellationToken cancellationToken)
     {
         var userId = httpContext.User.GetUserId();
 
         var request = new GetOrderByIdRequest
         {
-            OrderId = id,
+            SlugId = slugId,
             UserId = userId,
         };
 

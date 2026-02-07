@@ -54,6 +54,7 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
             return new CreateOrderResponse
             {
                 OrderId = order.Id,
+                SlugId = order.SlugId,
                 TotalAmount = order.TotalAmount,
                 PaymentMethod = order.PaymentMethod.GetStringValue(),
                 DeliveryStatus = order.DeliveryStatus.GetStringValue(),

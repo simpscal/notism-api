@@ -296,6 +296,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
             entity.Property(o => o.UserId)
                 .IsRequired();
 
+            entity.Property(o => o.SlugId)
+                .HasMaxLength(20)
+                .IsRequired();
+
             entity.Property(o => o.TotalAmount)
                 .HasPrecision(18, 2)
                 .IsRequired();
@@ -321,6 +325,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
                 .IsRequired();
 
             entity.HasIndex(o => o.UserId);
+            entity.HasIndex(o => o.SlugId)
+                .IsUnique();
             entity.HasIndex(o => o.DeliveryStatus);
             entity.HasIndex(o => new { o.UserId, o.CreatedAt });
 

@@ -15,6 +15,7 @@ public static class OrderMapper
         return new OrderResponse
         {
             Id = order.Id,
+            SlugId = order.SlugId,
             TotalAmount = order.TotalAmount,
             PaymentMethod = order.PaymentMethod.GetStringValue(),
             DeliveryStatus = order.DeliveryStatus.GetStringValue(),

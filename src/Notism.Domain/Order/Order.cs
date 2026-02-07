@@ -1,12 +1,14 @@
 using Notism.Domain.Common;
 using Notism.Domain.Order.Enums;
 using Notism.Domain.Order.Events;
+using Notism.Shared.Utilities;
 
 namespace Notism.Domain.Order;
 
 public class Order : AggregateRoot
 {
     public Guid UserId { get; private set; }
+    public string SlugId { get; private set; } = string.Empty;
     public decimal TotalAmount { get; private set; }
     public PaymentMethod PaymentMethod { get; private set; }
     public DeliveryStatus DeliveryStatus { get; private set; }
@@ -23,6 +25,7 @@ public class Order : AggregateRoot
         List<Guid> cartItemIds)
     {
         UserId = userId;
+        SlugId = SlugGenerator.Generate("ORD");
         PaymentMethod = paymentMethod;
         DeliveryStatus = DeliveryStatus.OrderPlaced;
 

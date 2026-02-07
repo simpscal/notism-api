@@ -4,6 +4,6 @@ namespace Notism.Application.Order.GetOrderById;
 
 public class GetOrderByIdRequest : IRequest<GetOrderByIdResponse>
 {
-    public Guid OrderId { get; set; }
+    public string SlugId { get; set; } = string.Empty;
     public Guid UserId { get; set; }
 }
