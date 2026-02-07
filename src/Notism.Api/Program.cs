@@ -36,6 +36,7 @@ var app = builder.Build();
     app.MapStorageEndpoints();
     app.MapFoodEndpoints();
     app.MapCartEndpoints();
+    app.MapOrderEndpoints();
 
     app.Run();
 }

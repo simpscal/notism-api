@@ -1,8 +1,14 @@
+using MediatR;
+
 using Microsoft.EntityFrameworkCore;
 
 using Notism.Domain.Cart;
+using Notism.Domain.Common;
+using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
+using Notism.Domain.Order;
+using Notism.Domain.Order.Enums;
 using Notism.Domain.RefreshToken;
 using Notism.Domain.User;
 using Notism.Domain.User.Enums;
@@ -11,7 +17,7 @@ using Notism.Shared.Extensions;
 
 namespace Notism.Infrastructure.Common;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(options)
+public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator mediator) : DbContext(options)
 {
     public DbSet<User> Users { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
@@ -19,10 +25,18 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
     public DbSet<Food> Foods { get; set; }
     public DbSet<FoodImage> FoodImages { get; set; }
     public DbSet<CartItem> CartItems { get; set; }
+    public DbSet<Order> Orders { get; set; }
+    public DbSet<OrderItem> OrderItems { get; set; }
+    public DbSet<DeliveryStatusHistory> DeliveryStatusHistories { get; set; }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        return await base.SaveChangesAsync(cancellationToken);
+        var domainEvents = CollectDomainEvents();
+        var result = await base.SaveChangesAsync(cancellationToken);
+
+        await DispatchDomainEventsAsync(domainEvents, cancellationToken);
+
+        return result;
     }
 
     public override int SaveChanges()
@@ -38,6 +52,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
         ConfigureFood(modelBuilder);
         ConfigureFoodImage(modelBuilder);
         ConfigureCartItem(modelBuilder);
+        ConfigureOrder(modelBuilder);
+        ConfigureOrderItem(modelBuilder);
+        ConfigureDeliveryStatusHistory(modelBuilder);
 
         base.OnModelCreating(modelBuilder);
     }
@@ -268,5 +285,158 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
                 .HasForeignKey(ci => ci.FoodId)
                 .OnDelete(DeleteBehavior.Restrict);
         });
+    }
+
+    private static void ConfigureOrder(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Order>(entity =>
+        {
+            entity.HasKey(o => o.Id);
+
+            entity.Property(o => o.UserId)
+                .IsRequired();
+
+            entity.Property(o => o.TotalAmount)
+                .HasPrecision(18, 2)
+                .IsRequired();
+
+            entity.Property(o => o.PaymentMethod)
+                .HasConversion(
+                    method => method.GetStringValue(),
+                    value => value.ToEnum<PaymentMethod>())
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(o => o.DeliveryStatus)
+                .HasConversion(
+                    status => status.GetStringValue(),
+                    value => value.ToEnum<DeliveryStatus>())
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(o => o.CreatedAt)
+                .IsRequired();
+
+            entity.Property(o => o.UpdatedAt)
+                .IsRequired();
+
+            entity.HasIndex(o => o.UserId);
+            entity.HasIndex(o => o.DeliveryStatus);
+            entity.HasIndex(o => new { o.UserId, o.CreatedAt });
+
+            entity.HasMany(o => o.Items)
+                .WithOne(i => i.Order)
+                .HasForeignKey(i => i.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(o => o.StatusHistory)
+                .WithOne(h => h.Order)
+                .HasForeignKey(h => h.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureOrderItem(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<OrderItem>(entity =>
+        {
+            entity.HasKey(oi => oi.Id);
+
+            entity.Property(oi => oi.OrderId)
+                .IsRequired();
+
+            entity.Property(oi => oi.FoodId)
+                .IsRequired();
+
+            entity.Property(oi => oi.FoodName)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(oi => oi.UnitPrice)
+                .HasPrecision(18, 2)
+                .IsRequired();
+
+            entity.Property(oi => oi.DiscountPrice)
+                .HasPrecision(18, 2);
+
+            entity.Property(oi => oi.Quantity)
+                .IsRequired();
+
+            entity.Property(oi => oi.TotalPrice)
+                .HasPrecision(18, 2)
+                .IsRequired();
+
+            entity.Property(oi => oi.CreatedAt)
+                .IsRequired();
+
+            entity.Property(oi => oi.UpdatedAt)
+                .IsRequired();
+
+            entity.HasIndex(oi => oi.OrderId);
+            entity.HasIndex(oi => oi.FoodId);
+
+            entity.HasOne(oi => oi.Food)
+                .WithMany()
+                .HasForeignKey(oi => oi.FoodId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+    }
+
+    private static void ConfigureDeliveryStatusHistory(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<DeliveryStatusHistory>(entity =>
+        {
+            entity.HasKey(dsh => dsh.Id);
+
+            entity.Property(dsh => dsh.OrderId)
+                .IsRequired();
+
+            entity.Property(dsh => dsh.Status)
+                .HasConversion(
+                    status => status.GetStringValue(),
+                    value => value.ToEnum<DeliveryStatus>())
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(dsh => dsh.StatusChangedAt)
+                .IsRequired();
+
+            entity.Property(dsh => dsh.CreatedAt)
+                .IsRequired();
+
+            entity.Property(dsh => dsh.UpdatedAt)
+                .IsRequired();
+
+            entity.HasIndex(dsh => dsh.OrderId);
+            entity.HasIndex(dsh => new { dsh.OrderId, dsh.StatusChangedAt });
+        });
+    }
+
+    private List<IDomainEvent> CollectDomainEvents()
+    {
+        var aggregatesWithEvents = ChangeTracker
+            .Entries<AggregateRoot>()
+            .Where(entry => entry.Entity.DomainEvents.Any())
+            .Select(entry => entry.Entity)
+            .ToList();
+
+        var domainEvents = aggregatesWithEvents
+            .SelectMany(aggregate => aggregate.DomainEvents)
+            .ToList();
+
+        aggregatesWithEvents.ForEach(aggregate => aggregate.ClearDomainEvents());
+
+        return domainEvents;
+    }
+
+    private async Task DispatchDomainEventsAsync(List<IDomainEvent> domainEvents, CancellationToken cancellationToken)
+    {
+        foreach (var domainEvent in domainEvents)
+        {
+            if (domainEvent is INotification notification)
+            {
+                await mediator.Publish(notification, cancellationToken);
+            }
+        }
     }
 }
