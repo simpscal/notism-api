@@ -63,6 +63,11 @@ public static class OrderMapper
         var onTheWayAt = history.FirstOrDefault(h => h.Status == DeliveryStatus.OnTheWay)?.StatusChangedAt;
         var deliveredAt = history.FirstOrDefault(h => h.Status == DeliveryStatus.Delivered)?.StatusChangedAt;
 
+        if (orderPlacedAt.HasValue)
+        {
+            timing.OrderPlacedCompletedAt = orderPlacedAt.Value;
+        }
+
         if (preparingAt.HasValue)
         {
             timing.OrderPlacedCompletedAt = preparingAt.Value;
