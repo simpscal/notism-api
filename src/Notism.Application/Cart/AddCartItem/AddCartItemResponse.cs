@@ -1,6 +1,7 @@
+using Notism.Application.Cart.Models;
+
 namespace Notism.Application.Cart.AddCartItem;
 
-public record AddCartItemResponse
+public record AddCartItemResponse : CartItemResponse
 {
-    public Guid Id { get; set; }
 }

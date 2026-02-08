@@ -2,8 +2,10 @@ using MediatR;
 
 using Notism.Api.Extensions;
 using Notism.Api.Models;
+using Notism.Application.Cart.AddBulkCartItems;
 using Notism.Application.Cart.AddCartItem;
 using Notism.Application.Cart.ClearCart;
+using Notism.Application.Cart.GetCartItemCount;
 using Notism.Application.Cart.GetCartItems;
 using Notism.Application.Cart.RemoveCartItem;
 using Notism.Application.Cart.UpdateCartItemQuantity;
@@ -27,11 +29,26 @@ public static class CartEndpoints
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized);
 
+        group.MapGet("/count", GetCartItemCountAsync)
+            .WithName("GetCartItemCount")
+            .WithSummary("Get cart item count")
+            .WithDescription("Retrieves the count of items in the cart for the authenticated user.")
+            .Produces<GetCartItemCountResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized);
+
         group.MapPost("/items", AddCartItemAsync)
             .WithName("AddCartItem")
             .WithSummary("Add item to cart")
             .WithDescription("Adds a food item to the user's cart.")
             .Produces<AddCartItemResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized);
+
+        group.MapPost("/items/bulk", AddBulkCartItemsAsync)
+            .WithName("AddBulkCartItems")
+            .WithSummary("Replace cart with bulk items")
+            .WithDescription("Replaces all existing cart items with the provided items. All existing items are removed before adding the new ones.")
+            .Produces<AddBulkCartItemsResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized);
 
@@ -75,6 +92,19 @@ public static class CartEndpoints
         return Results.Ok(result);
     }
 
+    private static async Task<IResult> GetCartItemCountAsync(
+        HttpContext httpContext,
+        IMediator mediator,
+        CancellationToken cancellationToken)
+    {
+        var userId = httpContext.User.GetUserId();
+
+        var request = new GetCartItemCountRequest { UserId = userId };
+        var result = await mediator.Send(request, cancellationToken);
+
+        return Results.Ok(result);
+    }
+
     private static async Task<IResult> AddCartItemAsync(
         HttpContext httpContext,
         IMediator mediator,
@@ -88,6 +118,29 @@ public static class CartEndpoints
             UserId = userId,
             FoodId = payload.FoodId,
             Quantity = payload.Quantity,
+        };
+
+        var result = await mediator.Send(request, cancellationToken);
+
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AddBulkCartItemsAsync(
+        HttpContext httpContext,
+        IMediator mediator,
+        AddBulkCartItemsPayload payload,
+        CancellationToken cancellationToken)
+    {
+        var userId = httpContext.User.GetUserId();
+
+        var request = new AddBulkCartItemsRequest
+        {
+            UserId = userId,
+            Items = payload.Items.Select(i => new CartItemRequest
+            {
+                FoodId = i.FoodId,
+                Quantity = i.Quantity,
+            }).ToList(),
         };
 
         var result = await mediator.Send(request, cancellationToken);
@@ -157,5 +210,16 @@ public record AddCartItemPayload
 
 public record UpdateCartItemQuantityPayload
 {
+    public int Quantity { get; set; }
+}
+
+public record AddBulkCartItemsPayload
+{
+    public List<CartItemPayload> Items { get; set; } = new();
+}
+
+public record CartItemPayload
+{
+    public Guid FoodId { get; set; }
     public int Quantity { get; set; }
 }
