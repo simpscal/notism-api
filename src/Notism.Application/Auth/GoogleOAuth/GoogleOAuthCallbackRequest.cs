@@ -1,6 +1,6 @@
 using MediatR;
 
-using Notism.Application.Auth;
+using Notism.Application.Auth.Models;
 
 namespace Notism.Application.Auth.GoogleOAuth;
 

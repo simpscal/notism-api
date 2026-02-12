@@ -2,7 +2,7 @@ using AutoMapper;
 
 using MediatR;
 
-using Notism.Application.Auth;
+using Notism.Application.Auth.Models;
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;

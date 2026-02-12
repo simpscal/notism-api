@@ -1,4 +1,4 @@
-namespace Notism.Application.Auth;
+namespace Notism.Application.Auth.Models;
 
 public class AuthenticationResponse
 {
