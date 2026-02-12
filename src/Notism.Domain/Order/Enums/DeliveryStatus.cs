@@ -15,4 +15,7 @@ public enum DeliveryStatus
 
     [StringValue("delivered")]
     Delivered,
+
+    [StringValue("cancelled")]
+    Cancelled,
 }

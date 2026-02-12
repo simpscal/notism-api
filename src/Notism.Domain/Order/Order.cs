@@ -67,6 +67,27 @@ public class Order : AggregateRoot
         AddDomainEvent(new DeliveryStatusUpdatedEvent(Id, UserId, status));
     }
 
+    public void Cancel()
+    {
+        if (DeliveryStatus != DeliveryStatus.OrderPlaced && DeliveryStatus != DeliveryStatus.Preparing)
+        {
+            throw new InvalidOperationException("Order can only be cancelled when delivery status is OrderPlaced or Preparing");
+        }
+
+        if (DeliveryStatus == DeliveryStatus.Cancelled)
+        {
+            return;
+        }
+
+        DeliveryStatus = DeliveryStatus.Cancelled;
+        UpdatedAt = DateTime.UtcNow;
+
+        _statusHistory.Add(DeliveryStatusHistory.Create(Id, DeliveryStatus.Cancelled));
+
+        ClearDomainEvents();
+        AddDomainEvent(new DeliveryStatusUpdatedEvent(Id, UserId, DeliveryStatus.Cancelled));
+    }
+
     private void RecalculateTotal()
     {
         TotalAmount = _items.Sum(item => item.TotalPrice);

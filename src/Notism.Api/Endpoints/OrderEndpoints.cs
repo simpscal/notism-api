@@ -2,6 +2,7 @@ using MediatR;
 
 using Notism.Api.Extensions;
 using Notism.Api.Models;
+using Notism.Application.Order.CancelOrder;
 using Notism.Application.Order.CreateOrder;
 using Notism.Application.Order.GetOrderById;
 using Notism.Application.Order.GetOrders;
@@ -47,6 +48,15 @@ public static class OrderEndpoints
             .WithSummary("Update delivery status")
             .WithDescription("Updates the delivery status of an order.")
             .Produces<UpdateDeliveryStatusResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+
+        group.MapPost("/{id:guid}/cancel", CancelOrderAsync)
+            .WithName("CancelOrder")
+            .WithSummary("Cancel order")
+            .WithDescription("Cancels an order. The order can only be cancelled if the delivery status is OrderPlaced or Preparing.")
+            .Produces(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
@@ -123,6 +133,25 @@ public static class OrderEndpoints
         var result = await mediator.Send(request, cancellationToken);
 
         return Results.Ok(result);
+    }
+
+    private static async Task<IResult> CancelOrderAsync(
+        HttpContext httpContext,
+        IMediator mediator,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var userId = httpContext.User.GetUserId();
+
+        var request = new CancelOrderRequest
+        {
+            OrderId = id,
+            UserId = userId,
+        };
+
+        await mediator.Send(request, cancellationToken);
+
+        return Results.Ok();
     }
 }
 
