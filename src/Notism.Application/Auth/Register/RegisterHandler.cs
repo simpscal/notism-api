@@ -2,6 +2,7 @@ using AutoMapper;
 
 using MediatR;
 
+using Notism.Application.Auth;
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
@@ -11,7 +12,7 @@ using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Auth.Register;
 
-public class RegisterHandler : IRequestHandler<RegisterRequest, (RegisterResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
+public class RegisterHandler : IRequestHandler<RegisterRequest, (AuthenticationResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
 {
     private readonly IUserRepository _userRepository;
     private readonly ITokenService _tokenService;
@@ -30,7 +31,7 @@ public class RegisterHandler : IRequestHandler<RegisterRequest, (RegisterRespons
         _mapper = mapper;
     }
 
-    public async Task<(RegisterResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)> Handle(RegisterRequest request, CancellationToken cancellationToken)
+    public async Task<(AuthenticationResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)> Handle(RegisterRequest request, CancellationToken cancellationToken)
     {
         // 1. Check if user already exists
         var email = Email.Create(request.Email);
@@ -57,7 +58,7 @@ public class RegisterHandler : IRequestHandler<RegisterRequest, (RegisterRespons
         var token = await _tokenService.GenerateTokenAsync(user);
 
         // 4. Map to response using AutoMapper
-        var response = _mapper.Map<RegisterResponse>(user);
+        var response = _mapper.Map<AuthenticationResponse>(user);
         response.Token = token.Token;
         response.ExpiresAt = token.ExpiresAt;
 

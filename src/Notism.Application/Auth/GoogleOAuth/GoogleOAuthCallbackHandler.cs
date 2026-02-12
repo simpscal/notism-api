@@ -4,8 +4,8 @@ using AutoMapper;
 
 using MediatR;
 
+using Notism.Application.Auth;
 using Notism.Application.Common.Interfaces;
-using Notism.Application.Common.Models;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
 using Notism.Domain.User.Enums;

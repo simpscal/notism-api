@@ -1,8 +1,10 @@
 using MediatR;
 
+using Notism.Application.Auth;
+
 namespace Notism.Application.Auth.Register;
 
-public class RegisterRequest : IRequest<(RegisterResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
+public class RegisterRequest : IRequest<(AuthenticationResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
 {
     public required string Email { get; set; }
 

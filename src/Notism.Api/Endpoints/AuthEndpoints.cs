@@ -3,13 +3,13 @@ using MediatR;
 using Notism.Api.Extensions;
 using Notism.Api.Interfaces;
 using Notism.Api.Models;
+using Notism.Application.Auth;
 using Notism.Application.Auth.GoogleOAuth;
 using Notism.Application.Auth.Login;
 using Notism.Application.Auth.RefreshToken;
 using Notism.Application.Auth.Register;
 using Notism.Application.Auth.RequestPasswordReset;
 using Notism.Application.Auth.ResetPassword;
-using Notism.Application.Common.Models;
 using Notism.Application.User.GetProfile;
 using Notism.Domain.RefreshToken;
 using Notism.Shared.Exceptions;
@@ -37,7 +37,7 @@ public static class AuthEndpoints
             .WithSummary("Register a new user and return JWT token")
             .WithDescription("Creates a new user account and returns JWT token and user information")
             .AllowAnonymous()
-            .Produces<RegisterResponse>(StatusCodes.Status200OK)
+            .Produces<AuthenticationResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
 
         group.MapPost("/refresh", RefreshTokenAsync)

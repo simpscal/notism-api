@@ -1,6 +1,6 @@
 using MediatR;
 
-using Notism.Application.Common.Models;
+using Notism.Application.Auth;
 
 namespace Notism.Application.Auth.Login;
 
