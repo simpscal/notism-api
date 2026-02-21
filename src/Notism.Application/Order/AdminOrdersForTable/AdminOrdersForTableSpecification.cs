@@ -25,7 +25,7 @@ public class AdminOrdersForTableSpecification : Specification<DomainOrder>
         _isDescending = sortOrderEnum == SortOrder.Desc;
 
         Include(o => o.User!);
-        Include(o => o.StatusHistory);
+        Include(o => o.Items);
     }
 
     public override Expression<Func<DomainOrder, bool>> ToExpression()

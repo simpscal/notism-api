@@ -16,7 +16,7 @@ public class AdminOrdersForKanbanSpecification : Specification<DomainOrder>
         _deliveryStatus = deliveryStatus;
 
         Include(o => o.User!);
-        Include(o => o.StatusHistory);
+        Include(o => o.Items);
     }
 
     public override Expression<Func<DomainOrder, bool>> ToExpression()
