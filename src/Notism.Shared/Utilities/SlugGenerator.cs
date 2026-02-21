@@ -42,4 +42,3 @@ public static class SlugGenerator
         return result.ToString();
     }
 }
-

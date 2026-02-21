@@ -15,4 +15,3 @@ public class CancelOrderRequestValidator : AbstractValidator<CancelOrderRequest>
             .WithMessage("User ID is required");
     }
 }
-

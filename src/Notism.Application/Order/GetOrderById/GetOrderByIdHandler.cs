@@ -6,7 +6,9 @@ using Notism.Application.Common.Interfaces;
 using Notism.Application.Order.Mappers;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Order;
+using Notism.Domain.User.Enums;
 using Notism.Shared.Exceptions;
+using Notism.Shared.Extensions;
 
 namespace Notism.Application.Order.GetOrderById;
 
@@ -30,13 +32,18 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
         GetOrderByIdRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new FilterSpecification<Domain.Order.Order>(o => o.SlugId == request.SlugId && o.UserId == request.UserId)
+        var userRole = request.Role.FromCamelCase<UserRole>() ?? UserRole.User;
+        var isAdmin = userRole == UserRole.Admin;
+
+        var specification = new FilterSpecification<Domain.Order.Order>(o =>
+            o.SlugId == request.SlugId &&
+            (o.UserId == request.UserId || isAdmin))
             .Include("Items.Food.Images")
             .Include(o => o.StatusHistory);
         var order = await _orderRepository.FindByExpressionAsync(specification)
             ?? throw new ResultFailureException("Order not found");
 
-        _logger.LogInformation("Retrieved order {SlugId} for user {UserId}", request.SlugId, request.UserId);
+        _logger.LogInformation("Retrieved order {SlugId} for user {UserId} (Admin: {IsAdmin})", request.SlugId, request.UserId, isAdmin);
 
         var baseResponse = OrderMapper.ToResponse(order, _storageService);
         return new GetOrderByIdResponse

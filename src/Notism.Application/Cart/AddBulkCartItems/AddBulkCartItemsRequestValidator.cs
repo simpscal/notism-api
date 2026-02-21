@@ -32,4 +32,3 @@ public class CartItemRequestValidator : AbstractValidator<CartItemRequest>
             .WithMessage("Quantity must be greater than zero");
     }
 }
-

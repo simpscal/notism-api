@@ -13,4 +13,3 @@ public record CartItemRequest
     public Guid FoodId { get; set; }
     public int Quantity { get; set; }
 }
-

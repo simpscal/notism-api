@@ -14,4 +14,3 @@ public record CartItemResponse
     public int StockQuantity { get; set; }
     public required string QuantityUnit { get; set; }
 }
-

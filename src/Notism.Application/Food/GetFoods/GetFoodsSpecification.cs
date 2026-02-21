@@ -1,18 +1,17 @@
-using System.Linq;
 using System.Linq.Expressions;
 
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food.Enums;
 
-namespace Notism.Domain.Food.Specifications;
+namespace Notism.Application.Food.GetFoods;
 
-public class FoodsFilterSpecification : Specification<Food>
+public class GetFoodsSpecification : Specification<Domain.Food.Food>
 {
     private readonly FoodCategory? _category;
     private readonly string? _keyword;
     private readonly bool? _isAvailable;
 
-    public FoodsFilterSpecification(
+    public GetFoodsSpecification(
         FoodCategory? category = null,
         string? keyword = null,
         bool? isAvailable = null)
@@ -22,7 +21,7 @@ public class FoodsFilterSpecification : Specification<Food>
         _isAvailable = isAvailable;
     }
 
-    public override Expression<Func<Food, bool>> ToExpression()
+    public override Expression<Func<Domain.Food.Food, bool>> ToExpression()
     {
         return food =>
             !food.IsDeleted &&
@@ -33,7 +32,7 @@ public class FoodsFilterSpecification : Specification<Food>
                 food.Description.ToLower().Contains(_keyword));
     }
 
-    public override IQueryable<Food> ApplyOrdering(IQueryable<Food> queryable)
+    public override IQueryable<Domain.Food.Food> ApplyOrdering(IQueryable<Domain.Food.Food> queryable)
     {
         return queryable.OrderByDescending(f => f.CreatedAt);
     }

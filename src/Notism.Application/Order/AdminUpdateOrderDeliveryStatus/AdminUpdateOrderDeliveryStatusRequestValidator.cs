@@ -3,19 +3,15 @@ using FluentValidation;
 using Notism.Domain.Order.Enums;
 using Notism.Shared.Extensions;
 
-namespace Notism.Application.Order.UpdateDeliveryStatus;
+namespace Notism.Application.Order.AdminUpdateOrderDeliveryStatus;
 
-public class UpdateDeliveryStatusRequestValidator : AbstractValidator<UpdateDeliveryStatusRequest>
+public class AdminUpdateOrderDeliveryStatusRequestValidator : AbstractValidator<AdminUpdateOrderDeliveryStatusRequest>
 {
-    public UpdateDeliveryStatusRequestValidator()
+    public AdminUpdateOrderDeliveryStatusRequestValidator()
     {
         RuleFor(x => x.OrderId)
             .NotEmpty()
             .WithMessage("Order ID is required");
-
-        RuleFor(x => x.UserId)
-            .NotEmpty()
-            .WithMessage("User ID is required");
 
         RuleFor(x => x.DeliveryStatus)
             .NotEmpty()

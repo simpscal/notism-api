@@ -6,7 +6,6 @@ using Notism.Application.Order.CancelOrder;
 using Notism.Application.Order.CreateOrder;
 using Notism.Application.Order.GetOrderById;
 using Notism.Application.Order.GetOrders;
-using Notism.Application.Order.UpdateDeliveryStatus;
 
 namespace Notism.Api.Endpoints;
 
@@ -39,15 +38,6 @@ public static class OrderEndpoints
             .WithSummary("Get order by slug ID")
             .WithDescription("Retrieves a specific order by slug ID for the authenticated user.")
             .Produces<GetOrderByIdResponse>(StatusCodes.Status200OK)
-            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
-            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
-            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
-
-        group.MapPatch("/{id:guid}/delivery-status", UpdateDeliveryStatusAsync)
-            .WithName("UpdateDeliveryStatus")
-            .WithSummary("Update delivery status")
-            .WithDescription("Updates the delivery status of an order.")
-            .Produces<UpdateDeliveryStatusResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
@@ -102,32 +92,13 @@ public static class OrderEndpoints
         CancellationToken cancellationToken)
     {
         var userId = httpContext.User.GetUserId();
+        var role = httpContext.User.GetRole();
 
         var request = new GetOrderByIdRequest
         {
             SlugId = slugId,
             UserId = userId,
-        };
-
-        var result = await mediator.Send(request, cancellationToken);
-
-        return Results.Ok(result);
-    }
-
-    private static async Task<IResult> UpdateDeliveryStatusAsync(
-        HttpContext httpContext,
-        IMediator mediator,
-        Guid id,
-        UpdateDeliveryStatusPayload payload,
-        CancellationToken cancellationToken)
-    {
-        var userId = httpContext.User.GetUserId();
-
-        var request = new UpdateDeliveryStatusRequest
-        {
-            OrderId = id,
-            UserId = userId,
-            DeliveryStatus = payload.DeliveryStatus,
+            Role = role,
         };
 
         var result = await mediator.Send(request, cancellationToken);
@@ -159,9 +130,4 @@ public record CreateOrderPayload
 {
     public string PaymentMethod { get; set; } = string.Empty;
     public List<Guid> CartItemIds { get; set; } = new();
-}
-
-public record UpdateDeliveryStatusPayload
-{
-    public string DeliveryStatus { get; set; } = string.Empty;
 }

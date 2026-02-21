@@ -6,4 +6,3 @@ public record GetCartItemCountRequest : IRequest<GetCartItemCountResponse>
 {
     public Guid UserId { get; set; }
 }
-

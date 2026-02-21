@@ -158,4 +158,3 @@ public class AddBulkCartItemsHandler : IRequestHandler<AddBulkCartItemsRequest, 
         return firstImage == null ? string.Empty : _storageService.GetPublicUrl(firstImage.FileKey);
     }
 }
-

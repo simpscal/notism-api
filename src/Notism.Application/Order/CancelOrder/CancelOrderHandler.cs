@@ -46,4 +46,3 @@ public class CancelOrderHandler : IRequestHandler<CancelOrderRequest>
             request.UserId);
     }
 }
-

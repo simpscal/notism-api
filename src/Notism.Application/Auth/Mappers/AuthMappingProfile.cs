@@ -24,4 +24,3 @@ public class AuthMappingProfile : Profile
             .ForMember(dest => dest.ExpiresAt, opt => opt.Ignore()); // Set manually in handler
     }
 }
-

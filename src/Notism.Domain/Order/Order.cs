@@ -8,6 +8,7 @@ namespace Notism.Domain.Order;
 public class Order : AggregateRoot
 {
     public Guid UserId { get; private set; }
+    public User.User? User { get; private set; }
     public string SlugId { get; private set; } = string.Empty;
     public decimal TotalAmount { get; private set; }
     public PaymentMethod PaymentMethod { get; private set; }

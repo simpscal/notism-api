@@ -16,4 +16,3 @@ public class AuthenticationUserInfoResponse
     public string? AvatarUrl { get; set; }
     public string Role { get; set; } = string.Empty;
 }
-

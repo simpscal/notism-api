@@ -348,21 +348,13 @@ notism-api/
 │   │   │   │   ├── UserCreatedEvent.cs
 │   │   │   │   ├── UserPasswordChangedEvent.cs
 │   │   │   │   └── UserProfileUpdatedEvent.cs
-│   │   │   ├── Specifications/
-│   │   │   │   ├── ActivePasswordResetTokenByUserIdSpecification.cs
-│   │   │   │   ├── PasswordResetTokenByTokenSpecification.cs
-│   │   │   │   ├── UserByEmailSpecification.cs
-│   │   │   │   └── UserByIdSpecification.cs
 │   │   │   └── ValueObjects/
 │   │   │       ├── Email.cs
 │   │   │       └── Password.cs
 │   │   │
 │   │   ├── RefreshToken/                          # RefreshToken Aggregate
 │   │   │   ├── RefreshToken.cs
-│   │   │   ├── IRefreshTokenRepository.cs
-│   │   │   └── Specifications/
-│   │   │       ├── RefreshTokenByTokenSpecification.cs
-│   │   │       └── RefreshTokenByUserIdSpecification.cs
+│   │   │   └── IRefreshTokenRepository.cs
 │   │   │
 │   │   └── Notism.Domain.csproj
 │   │
@@ -412,6 +404,22 @@ notism-api/
 │   │   │       ├── UpdateUserProfileRequest.cs
 │   │   │       ├── UpdateUserProfileRequestValidator.cs
 │   │   │       └── UpdateUserProfileResponse.cs
+│   │   │
+│   │   ├── Food/                                  # Food Management Features
+│   │   │   ├── GetFoods/
+│   │   │   │   ├── GetFoodsHandler.cs
+│   │   │   │   ├── GetFoodsRequest.cs
+│   │   │   │   ├── GetFoodsResponse.cs
+│   │   │   │   └── GetFoodsSpecification.cs        # Specification in Application layer
+│   │   │   └── ...
+│   │   │
+│   │   ├── Order/                                 # Order Management Features
+│   │   │   ├── GetAdminOrdersForKanban/
+│   │   │   │   ├── GetAdminOrdersForKanbanHandler.cs
+│   │   │   │   ├── GetAdminOrdersForKanbanRequest.cs
+│   │   │   │   ├── GetAdminOrdersForKanbanResponse.cs
+│   │   │   │   └── GetAdminOrdersForKanbanSpecification.cs
+│   │   │   └── ...
 │   │   │
 │   │   ├── DependencyInjection.cs
 │   │   └── Notism.Application.csproj
@@ -494,7 +502,7 @@ notism-api/
 - **Aggregates**: User and RefreshToken with clear boundaries
 - **Value Objects**: Email and Password with business validation
 - **Domain Events**: Comprehensive event handling for business actions
-- **Specifications**: Encapsulated query logic for all data access
+- **Specifications**: Encapsulated query logic located in Application layer feature folders
 
 #### 🔧 **CQRS Implementation**
 - **Handlers**: Separate command and query handlers for each feature

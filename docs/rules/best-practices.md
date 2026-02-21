@@ -59,7 +59,7 @@ public interface ICartItemRepository : IRepository<CartItem>
 
 ### Why Use Specifications?
 
-1. **Separation of Concerns**: Query logic lives in Domain layer as specifications, not Infrastructure
+1. **Separation of Concerns**: Query logic lives in Application layer as specifications, not Infrastructure
 2. **Reusability**: Specifications can be composed and reused across different queries
 3. **Testability**: Specifications are easy to unit test independently
 4. **Consistency**: All repositories follow the same pattern using `IRepository<T>`
@@ -99,14 +99,14 @@ Create dedicated specification classes when you need:
 - Reusable query logic across multiple handlers
 
 ```csharp
-// Domain/Food/Specifications/FoodsFilterSpecification.cs
-public class FoodsFilterSpecification : Specification<Food>
+// Application/Food/GetFoods/GetFoodsSpecification.cs
+public class GetFoodsSpecification : Specification<Food>
 {
     private readonly FoodCategory? _category;
     private readonly string? _keyword;
     private readonly bool? _isAvailable;
 
-    public FoodsFilterSpecification(
+    public GetFoodsSpecification(
         FoodCategory? category = null,
         string? keyword = null,
         bool? isAvailable = null)
@@ -216,13 +216,15 @@ var combinedSpec = userOrdersSpec.And(activeOrdersSpec)
 
 ### Specification Best Practices
 
-**✅ DO: Create Specifications in Domain Layer**
+**✅ DO: Create Specifications in Application Layer**
+
+Place specifications in the same feature folder as the handler that uses them:
 
 ```csharp
-// Domain/Food/Specifications/FoodsFilterSpecification.cs
-namespace Notism.Domain.Food.Specifications;
+// Application/Food/GetFoods/GetFoodsSpecification.cs
+namespace Notism.Application.Food.GetFoods;
 
-public class FoodsFilterSpecification : Specification<Food>
+public class GetFoodsSpecification : Specification<Food>
 {
     // Implementation...
 }
@@ -280,7 +282,8 @@ Create dedicated specification classes when:
 
 1. **Complex Filtering Logic**: Multiple conditions with business rules
    ```csharp
-   public class FoodsFilterSpecification : Specification<Food>
+   // Application/Food/GetFoods/GetFoodsSpecification.cs
+   public class GetFoodsSpecification : Specification<Food>
    {
        // Complex filtering with category, keyword, availability
    }
@@ -323,7 +326,7 @@ Create dedicated specification classes when:
 - **Use string-based includes** for nested navigation through collections
 - **Use expression-based includes** for direct navigation properties
 - **Compose specifications** using `And()`, `Or()`, and `Not()` for complex queries
-- **Keep specifications in Domain layer** to maintain separation of concerns
+- **Keep specifications in Application layer** in the same feature folder as the handler that uses them
 
 ---
 
@@ -945,19 +948,20 @@ Requests/
 **✅ DO: Group by Aggregate**
 
 ```
-Domain/
+Application/
 ├── Cart/
-│   ├── CartItem.cs
-│   ├── ICartItemRepository.cs
-│   ├── Events/
-│   │   ├── CartItemAddedEvent.cs
-│   │   └── CartItemQuantityUpdatedEvent.cs
-│   └── Specifications/
-│       ├── CartItemByUserIdSpecification.cs
-│       └── CartItemByUserAndFoodSpecification.cs
+│   ├── GetCartItems/
+│   │   ├── GetCartItemsHandler.cs
+│   │   ├── GetCartItemsRequest.cs
+│   │   ├── GetCartItemsResponse.cs
+│   │   └── GetCartItemsSpecification.cs
+│   └── ...
 ├── Food/
-│   ├── Food.cs
-│   ├── FoodImage.cs
+│   ├── GetFoods/
+│   │   ├── GetFoodsHandler.cs
+│   │   ├── GetFoodsRequest.cs
+│   │   ├── GetFoodsResponse.cs
+│   │   └── GetFoodsSpecification.cs
 │   └── ...
 ```
 
