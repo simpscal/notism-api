@@ -1,8 +1,17 @@
+using DotNetEnv;
+
 using Notism.Api;
 using Notism.Api.Endpoints;
 using Notism.Api.Middlewares;
 using Notism.Application;
 using Notism.Infrastructure;
+
+var envName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
+var envFile = $".env.{envName.ToLowerInvariant()}";
+if (File.Exists(envFile))
+{
+    Env.Load(envFile);
+}
 
 var builder = WebApplication.CreateBuilder(args);
 {

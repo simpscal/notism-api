@@ -450,8 +450,7 @@ notism-api/
 │   │   └── Notism.Infrastructure.csproj
 │   │
 │   └── Notism.Api/                                # 🌐 API Layer
-│       ├── .env.development                       # Development environment variables
-│       ├── .env.production                        # Production environment variables
+│       ├── .env.development                       # Development environment variables (production: CI/CD pipeline)
 │       │
 │       ├── Attributes/
 │       │   └── RequireAdminAttribute.cs           # Role-based authorization
