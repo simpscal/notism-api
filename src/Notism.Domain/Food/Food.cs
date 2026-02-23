@@ -109,6 +109,13 @@ public class Food : AggregateRoot
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void MarkAsDeleted()
+    {
+        IsDeleted = true;
+        DeletedAt = DateTime.UtcNow;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void UpdateStock(int quantity)
     {
         if (quantity < 0)

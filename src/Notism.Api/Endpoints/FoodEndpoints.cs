@@ -2,7 +2,6 @@ using MediatR;
 
 using Notism.Api.Extensions;
 using Notism.Api.Models;
-using Notism.Application.Food.AddFood;
 using Notism.Application.Food.GetFoodById;
 using Notism.Application.Food.GetFoods;
 using Notism.Application.Food.UpdateFood;
@@ -17,10 +16,10 @@ public static class FoodEndpoints
             .WithTags("Food Management")
             .WithOpenApi();
 
-        group.MapPost("/", GetFoodsAsync)
+        group.MapGet("/", GetFoodsAsync)
             .WithName("GetFoods")
             .WithSummary("Get list of foods")
-            .WithDescription("Retrieves a paginated list of foods with optional filtering by category and search term.")
+            .WithDescription("Retrieves a paginated list of foods with optional filtering by category, keyword, and sorting.")
             .Produces<GetFoodsResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
 
@@ -31,16 +30,6 @@ public static class FoodEndpoints
             .Produces<GetFoodByIdResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
-
-        group.MapPost("/add", AddFoodAsync)
-            .WithName("AddFood")
-            .WithSummary("Add new food")
-            .WithDescription("Creates a new food item. Requires admin authorization.")
-            .RequireAdmin()
-            .Produces<AddFoodResponse>(StatusCodes.Status200OK)
-            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
-            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
-            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
 
         group.MapPatch("/{id:guid}", UpdateFoodAsync)
             .WithName("UpdateFood")
@@ -56,7 +45,7 @@ public static class FoodEndpoints
 
     private static async Task<IResult> GetFoodsAsync(
         IMediator mediator,
-        GetFoodsRequest request,
+        [AsParameters] GetFoodsRequest request,
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(request, cancellationToken);
@@ -69,15 +58,6 @@ public static class FoodEndpoints
         CancellationToken cancellationToken)
     {
         var request = new GetFoodByIdRequest { FoodId = id };
-        var result = await mediator.Send(request, cancellationToken);
-        return Results.Ok(result);
-    }
-
-    private static async Task<IResult> AddFoodAsync(
-        IMediator mediator,
-        AddFoodRequest request,
-        CancellationToken cancellationToken)
-    {
         var result = await mediator.Send(request, cancellationToken);
         return Results.Ok(result);
     }

@@ -42,8 +42,7 @@ var app = builder.Build();
 
     app.MapAuthEndpoints();
     app.MapUserEndpoints();
-    app.MapAdminUserEndpoints();
-    app.MapAdminOrderEndpoints();
+    app.MapAdminEndpoints();
     app.MapStorageEndpoints();
     app.MapFoodEndpoints();
     app.MapCartEndpoints();

@@ -31,7 +31,12 @@ public class GetFoodsHandler : IRequestHandler<GetFoodsRequest, GetFoodsResponse
     {
         var category = request.Category?.ToEnum<FoodCategory>();
         var keywordLower = request.Keyword?.ToLower();
-        var specification = new GetFoodsSpecification(category, keywordLower, request.IsAvailable)
+        var specification = new GetFoodsSpecification(
+                category,
+                keywordLower,
+                request.IsAvailable,
+                request.SortBy,
+                request.SortOrder)
             .Include(f => f.Images);
 
         var pagedResult = await _foodRepository.FilterPagedByExpressionAsync(specification, request);

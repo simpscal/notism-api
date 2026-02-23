@@ -44,8 +44,8 @@ public class GenerateUploadUrlHandler : IRequestHandler<GenerateUploadUrlRequest
         };
     }
 
-    private string GetFolderName(string type)
+    private static string GetFolderName(string type)
     {
-        return type.ToEnum<UploadType>() == UploadType.Avatar ? "avatar" : "upload";
+        return type.ToEnum<UploadType>().GetStringValue();
     }
 }

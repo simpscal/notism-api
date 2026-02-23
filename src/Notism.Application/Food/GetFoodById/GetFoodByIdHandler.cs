@@ -30,7 +30,7 @@ public class GetFoodByIdHandler : IRequestHandler<GetFoodByIdRequest, GetFoodByI
         GetFoodByIdRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new FilterSpecification<Domain.Food.Food>(f => f.Id == request.FoodId)
+        var specification = new FilterSpecification<Domain.Food.Food>(f => f.Id == request.FoodId && !f.IsDeleted)
             .Include(f => f.Images);
         var food = await _foodRepository.FindByExpressionAsync(specification)
             ?? throw new ResultFailureException("Food not found");
@@ -45,6 +45,7 @@ public class GetFoodByIdHandler : IRequestHandler<GetFoodByIdRequest, GetFoodByI
             Price = food.Price,
             DiscountPrice = food.DiscountPrice,
             ImageUrls = GetImageUrls(food.Images),
+            Images = GetImages(food.Images),
             Category = food.Category.GetStringValue(),
             IsAvailable = food.IsAvailable,
             QuantityUnit = food.QuantityUnit.GetStringValue(),
@@ -59,6 +60,20 @@ public class GetFoodByIdHandler : IRequestHandler<GetFoodByIdRequest, GetFoodByI
         return images
             .OrderBy(img => img.DisplayOrder)
             .Select(img => _storageService.GetPublicUrl(img.FileKey))
+            .ToList();
+    }
+
+    private List<FoodImageResponse> GetImages(IReadOnlyCollection<Domain.Food.FoodImage> images)
+    {
+        return images
+            .OrderBy(img => img.DisplayOrder)
+            .Select(img => new FoodImageResponse
+            {
+                FileKey = img.FileKey,
+                DisplayOrder = img.DisplayOrder,
+                AltText = img.AltText,
+                ImageUrl = _storageService.GetPublicUrl(img.FileKey),
+            })
             .ToList();
     }
 }

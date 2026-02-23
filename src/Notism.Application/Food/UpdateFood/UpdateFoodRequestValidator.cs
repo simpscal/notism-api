@@ -28,21 +28,6 @@ public class UpdateFoodRequestValidator : AbstractValidator<UpdateFoodRequest>
             .WithMessage("Price must be greater than zero")
             .When(x => x.Price.HasValue);
 
-        RuleForEach(x => x.Images!)
-            .ChildRules(image =>
-            {
-                image.RuleFor(i => i.FileKey)
-                    .NotEmpty()
-                    .WithMessage("FileKey is required for each image")
-                    .MaximumLength(500)
-                    .WithMessage("FileKey cannot exceed 500 characters");
-
-                image.RuleFor(i => i.DisplayOrder)
-                    .GreaterThanOrEqualTo(0)
-                    .WithMessage("DisplayOrder must be greater than or equal to zero");
-            })
-            .When(x => x.Images != null && x.Images.Any());
-
         RuleFor(x => x.Category)
             .Must(category => category != null && category.ExistInEnum<FoodCategory>())
             .WithMessage("Invalid food category")
@@ -60,10 +45,21 @@ public class UpdateFoodRequestValidator : AbstractValidator<UpdateFoodRequest>
 
         RuleFor(x => x.DiscountPrice)
             .Must((request, discountPrice) => !discountPrice.HasValue || (request.Price.HasValue && discountPrice.Value < request.Price.Value))
-            .WithMessage("Discount price must be less than the original price")
-            .When(x => x.DiscountPrice.HasValue && x.Price.HasValue)
-            .Must((request, discountPrice) => !discountPrice.HasValue || discountPrice.Value > 0)
-            .WithMessage("Discount price must be greater than zero")
-            .When(x => x.DiscountPrice.HasValue);
+            .WithMessage("Discount price must be less than the original price");
+
+        RuleForEach(x => x.Images!)
+            .ChildRules(image =>
+            {
+                image.RuleFor(i => i.FileKey)
+                    .NotEmpty()
+                    .WithMessage("FileKey is required for each image")
+                    .MaximumLength(500)
+                    .WithMessage("FileKey cannot exceed 500 characters");
+
+                image.RuleFor(i => i.DisplayOrder)
+                    .GreaterThanOrEqualTo(0)
+                    .WithMessage("DisplayOrder must be greater than or equal to zero");
+            })
+            .When(x => x.Images != null && x.Images.Count > 0);
     }
 }
