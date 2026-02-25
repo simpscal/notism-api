@@ -9,6 +9,7 @@ using Notism.Application.Food.UpdateFood;
 using Notism.Application.Order.AdminOrdersForKanban;
 using Notism.Application.Order.AdminOrdersForTable;
 using Notism.Application.Order.AdminUpdateOrderDeliveryStatus;
+using Notism.Application.Order.GetOrderById;
 using Notism.Application.User.AdminDeleteUser;
 using Notism.Application.User.AdminGetUsers;
 
@@ -78,6 +79,16 @@ public static class AdminEndpoints
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
+
+        group.MapGet("/{slugId}", AdminGetOrderByIdAsync)
+            .WithName("AdminGetOrderById")
+            .WithSummary("Get order by slug ID")
+            .WithDescription("Retrieves detailed information about a specific order by slug ID. Reuses GetOrderById with admin authorization.")
+            .RequireAdmin()
+            .Produces<GetOrderByIdResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
 
         group.MapPatch("/{id:guid}/delivery-status", AdminUpdateOrderDeliveryStatusAsync)
             .WithName("AdminUpdateOrderDeliveryStatus")
@@ -179,6 +190,26 @@ public static class AdminEndpoints
         [AsParameters] AdminOrdersForTableRequest request,
         CancellationToken cancellationToken)
     {
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AdminGetOrderByIdAsync(
+        HttpContext httpContext,
+        IMediator mediator,
+        string slugId,
+        CancellationToken cancellationToken)
+    {
+        var userId = httpContext.User.GetUserId();
+        var role = httpContext.User.GetRole();
+
+        var request = new GetOrderByIdRequest
+        {
+            SlugId = slugId,
+            UserId = userId,
+            Role = role,
+        };
+
         var result = await mediator.Send(request, cancellationToken);
         return Results.Ok(result);
     }
