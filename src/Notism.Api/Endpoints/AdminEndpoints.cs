@@ -11,7 +11,9 @@ using Notism.Application.Order.AdminOrdersForTable;
 using Notism.Application.Order.AdminUpdateOrderDeliveryStatus;
 using Notism.Application.Order.GetOrderById;
 using Notism.Application.User.AdminDeleteUser;
+using Notism.Application.User.AdminGetUserDetail;
 using Notism.Application.User.AdminGetUsers;
+using Notism.Application.User.AdminUpdateUser;
 
 namespace Notism.Api.Endpoints;
 
@@ -40,6 +42,27 @@ public static class AdminEndpoints
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
+
+        group.MapGet("/{id:guid}", AdminGetUserDetailAsync)
+            .WithName("AdminGetUserDetail")
+            .WithSummary("Get user detail")
+            .WithDescription("Retrieves detailed information about a specific user by ID.")
+            .RequireAdmin()
+            .Produces<AdminUserDetailResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+
+        group.MapPatch("/{id:guid}", AdminUpdateUserAsync)
+            .WithName("AdminUpdateUser")
+            .WithSummary("Update user detail")
+            .WithDescription("Updates a user's detail. Returns the same shape as Get user detail.")
+            .RequireAdmin()
+            .Produces<AdminUserDetailResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
 
         group.MapDelete("/{id:guid}", AdminDeleteUserAsync)
             .WithName("AdminDeleteUser")
@@ -160,6 +183,34 @@ public static class AdminEndpoints
         return Results.Ok(result);
     }
 
+    private static async Task<IResult> AdminGetUserDetailAsync(
+        IMediator mediator,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var request = new AdminGetUserDetailRequest { UserId = id };
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AdminUpdateUserAsync(
+        HttpContext httpContext,
+        IMediator mediator,
+        Guid id,
+        AdminUpdateUserPayload payload,
+        CancellationToken cancellationToken)
+    {
+        var callerUserId = httpContext.User.GetUserId();
+        var request = new AdminUpdateUserRequest
+        {
+            TargetUserId = id,
+            CallerUserId = callerUserId,
+            Role = payload.Role,
+        };
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
     private static async Task<IResult> AdminDeleteUserAsync(
         HttpContext httpContext,
         IMediator mediator,
@@ -273,4 +324,9 @@ public static class AdminEndpoints
 public record AdminUpdateOrderDeliveryStatusPayload
 {
     public string DeliveryStatus { get; set; } = string.Empty;
+}
+
+public record AdminUpdateUserPayload
+{
+    public string Role { get; set; } = string.Empty;
 }
