@@ -1,5 +1,6 @@
 using FluentValidation;
 
+using Notism.Application.Common.Validators;
 using Notism.Shared.Enums;
 using Notism.Shared.Extensions;
 
@@ -9,14 +10,8 @@ public class AdminOrdersForTableRequestValidator : AbstractValidator<AdminOrders
 {
     public AdminOrdersForTableRequestValidator()
     {
-        RuleFor(x => x.Skip)
-            .GreaterThanOrEqualTo(0)
-            .WithMessage("Skip must be greater than or equal to 0");
-
-        RuleFor(x => x.Take)
-            .GreaterThan(0)
-            .LessThanOrEqualTo(100)
-            .WithMessage("Take must be between 1 and 100");
+        RuleFor(x => x.Skip).ValidSkip();
+        RuleFor(x => x.Take).ValidTake();
 
         RuleFor(x => x.SortOrder)
             .Must(sortOrder => sortOrder is null || sortOrder.FromCamelCase<SortOrder>() != null)

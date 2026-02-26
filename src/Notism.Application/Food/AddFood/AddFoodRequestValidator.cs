@@ -1,7 +1,7 @@
 using FluentValidation;
 
+using Notism.Application.Common.Validators;
 using Notism.Domain.Food.Enums;
-using Notism.Shared.Extensions;
 
 namespace Notism.Application.Food.AddFood;
 
@@ -26,16 +26,10 @@ public class AddFoodRequestValidator : AbstractValidator<AddFoodRequest>
             .WithMessage("Price must be greater than zero");
 
         RuleFor(x => x.Category)
-            .NotEmpty()
-            .WithMessage("Category is required")
-            .Must(category => category.ExistInEnum<FoodCategory>())
-            .WithMessage("Invalid food category");
+            .ValidRequiredEnum<AddFoodRequest, FoodCategory>("Category");
 
         RuleFor(x => x.QuantityUnit)
-            .NotEmpty()
-            .WithMessage("QuantityUnit is required")
-            .Must(quantityUnit => quantityUnit.ExistInEnum<QuantityUnit>())
-            .WithMessage("Invalid quantity unit");
+            .ValidRequiredEnum<AddFoodRequest, QuantityUnit>("QuantityUnit");
 
         RuleFor(x => x.StockQuantity)
             .GreaterThanOrEqualTo(0)
