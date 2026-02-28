@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Antiforgery;
 
+using Notism.Api.Constants;
 using Notism.Api.Interfaces;
-using Notism.Shared.Constants;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Api.Services;

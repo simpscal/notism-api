@@ -4,10 +4,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
+using Notism.Api.Constants;
 using Notism.Api.Interfaces;
 using Notism.Api.Services;
 using Notism.Shared.Configuration;
-using Notism.Shared.Constants;
 
 namespace Notism.Api;
 
