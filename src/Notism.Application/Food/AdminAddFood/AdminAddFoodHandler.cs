@@ -8,26 +8,26 @@ using Notism.Domain.Food.Enums;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Extensions;
 
-namespace Notism.Application.Food.AddFood;
+namespace Notism.Application.Food.AdminAddFood;
 
-public class AddFoodHandler : IRequestHandler<AddFoodRequest, AddFoodResponse>
+public class AdminAddFoodHandler : IRequestHandler<AdminAddFoodRequest, AdminAddFoodResponse>
 {
     private readonly IFoodRepository _foodRepository;
     private readonly IStorageService _storageService;
-    private readonly ILogger<AddFoodHandler> _logger;
+    private readonly ILogger<AdminAddFoodHandler> _logger;
 
-    public AddFoodHandler(
+    public AdminAddFoodHandler(
         IFoodRepository foodRepository,
         IStorageService storageService,
-        ILogger<AddFoodHandler> logger)
+        ILogger<AdminAddFoodHandler> logger)
     {
         _foodRepository = foodRepository;
         _storageService = storageService;
         _logger = logger;
     }
 
-    public async Task<AddFoodResponse> Handle(
-        AddFoodRequest request,
+    public async Task<AdminAddFoodResponse> Handle(
+        AdminAddFoodRequest request,
         CancellationToken cancellationToken)
     {
         var category = request.Category.ToEnum<FoodCategory>();
@@ -65,7 +65,7 @@ public class AddFoodHandler : IRequestHandler<AddFoodRequest, AddFoodResponse>
 
         _logger.LogInformation("Added food {FoodId} with name {Name}", food.Id, food.Name);
 
-        return new AddFoodResponse
+        return new AdminAddFoodResponse
         {
             Id = food.Id,
             Name = food.Name,

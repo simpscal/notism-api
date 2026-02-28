@@ -2,11 +2,11 @@ using MediatR;
 
 using Notism.Api.Extensions;
 using Notism.Api.Models;
-using Notism.Application.Food.AddFood;
-using Notism.Application.Food.DeleteFood;
+using Notism.Application.Food.AdminAddFood;
+using Notism.Application.Food.AdminDeleteFood;
+using Notism.Application.Food.AdminUpdateFood;
 using Notism.Application.Food.GetFoodById;
 using Notism.Application.Food.GetFoods;
-using Notism.Application.Food.UpdateFood;
 using Notism.Application.Order.AdminOrdersForKanban;
 using Notism.Application.Order.AdminOrdersForTable;
 using Notism.Application.Order.AdminUpdateOrderDeliveryStatus;
@@ -158,7 +158,7 @@ public static class AdminEndpoints
             .WithSummary("Add food")
             .WithDescription("Creates a new food item.")
             .RequireAdmin()
-            .Produces<AddFoodResponse>(StatusCodes.Status201Created)
+            .Produces<AdminAddFoodResponse>(StatusCodes.Status201Created)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
@@ -168,7 +168,7 @@ public static class AdminEndpoints
             .WithSummary("Update food")
             .WithDescription("Updates an existing food item.")
             .RequireAdmin()
-            .Produces<UpdateFoodResponse>(StatusCodes.Status200OK)
+            .Produces<AdminUpdateFoodResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
@@ -312,7 +312,7 @@ public static class AdminEndpoints
 
     private static async Task<IResult> AdminAddFoodAsync(
         IMediator mediator,
-        AddFoodRequest request,
+        AdminAddFoodRequest request,
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(request, cancellationToken);
@@ -322,7 +322,7 @@ public static class AdminEndpoints
     private static async Task<IResult> AdminUpdateFoodAsync(
         IMediator mediator,
         Guid id,
-        UpdateFoodRequest request,
+        AdminUpdateFoodRequest request,
         CancellationToken cancellationToken)
     {
         request = request with { FoodId = id };
@@ -335,7 +335,7 @@ public static class AdminEndpoints
         Guid id,
         CancellationToken cancellationToken)
     {
-        var request = new DeleteFoodRequest { FoodId = id };
+        var request = new AdminDeleteFoodRequest { FoodId = id };
         await mediator.Send(request, cancellationToken);
         return Results.NoContent();
     }

@@ -1,6 +1,6 @@
-namespace Notism.Application.Food.AddFood;
+namespace Notism.Application.Food.AdminAddFood;
 
-public class AddFoodResponse
+public class AdminAddFoodResponse
 {
     public Guid Id { get; set; }
     public required string Name { get; set; }

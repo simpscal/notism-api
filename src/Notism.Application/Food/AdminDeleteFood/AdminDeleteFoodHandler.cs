@@ -6,22 +6,22 @@ using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Shared.Exceptions;
 
-namespace Notism.Application.Food.DeleteFood;
+namespace Notism.Application.Food.AdminDeleteFood;
 
-public class DeleteFoodHandler : IRequestHandler<DeleteFoodRequest>
+public class AdminDeleteFoodHandler : IRequestHandler<AdminDeleteFoodRequest>
 {
     private readonly IFoodRepository _foodRepository;
-    private readonly ILogger<DeleteFoodHandler> _logger;
+    private readonly ILogger<AdminDeleteFoodHandler> _logger;
 
-    public DeleteFoodHandler(
+    public AdminDeleteFoodHandler(
         IFoodRepository foodRepository,
-        ILogger<DeleteFoodHandler> logger)
+        ILogger<AdminDeleteFoodHandler> logger)
     {
         _foodRepository = foodRepository;
         _logger = logger;
     }
 
-    public async Task Handle(DeleteFoodRequest request, CancellationToken cancellationToken)
+    public async Task Handle(AdminDeleteFoodRequest request, CancellationToken cancellationToken)
     {
         var specification = new FilterSpecification<Notism.Domain.Food.Food>(f => f.Id == request.FoodId);
         var food = await _foodRepository.FindByExpressionAsync(specification)

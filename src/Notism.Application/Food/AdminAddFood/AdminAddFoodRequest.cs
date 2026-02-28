@@ -1,10 +1,10 @@
 using MediatR;
 
-using Notism.Application.Food.UpdateFood;
+using Notism.Application.Food.AdminUpdateFood;
 
-namespace Notism.Application.Food.AddFood;
+namespace Notism.Application.Food.AdminAddFood;
 
-public record AddFoodRequest : IRequest<AddFoodResponse>
+public record AdminAddFoodRequest : IRequest<AdminAddFoodResponse>
 {
     public required string Name { get; set; }
     public required string Description { get; set; }

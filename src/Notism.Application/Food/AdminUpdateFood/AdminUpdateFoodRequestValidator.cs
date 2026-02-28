@@ -3,40 +3,44 @@ using FluentValidation;
 using Notism.Application.Common.Validators;
 using Notism.Domain.Food.Enums;
 
-namespace Notism.Application.Food.AddFood;
+namespace Notism.Application.Food.AdminUpdateFood;
 
-public class AddFoodRequestValidator : AbstractValidator<AddFoodRequest>
+public class AdminUpdateFoodRequestValidator : AbstractValidator<AdminUpdateFoodRequest>
 {
-    public AddFoodRequestValidator()
+    public AdminUpdateFoodRequestValidator()
     {
-        RuleFor(x => x.Name)
+        RuleFor(x => x.FoodId)
             .NotEmpty()
-            .WithMessage("Name is required")
+            .WithMessage("Food ID is required");
+
+        RuleFor(x => x.Name)
             .MaximumLength(200)
-            .WithMessage("Name cannot exceed 200 characters");
+            .WithMessage("Name cannot exceed 200 characters")
+            .When(x => !string.IsNullOrWhiteSpace(x.Name));
 
         RuleFor(x => x.Description)
-            .NotEmpty()
-            .WithMessage("Description is required")
             .MaximumLength(1000)
-            .WithMessage("Description cannot exceed 1000 characters");
+            .WithMessage("Description cannot exceed 1000 characters")
+            .When(x => !string.IsNullOrWhiteSpace(x.Description));
 
         RuleFor(x => x.Price)
             .GreaterThan(0)
-            .WithMessage("Price must be greater than zero");
+            .WithMessage("Price must be greater than zero")
+            .When(x => x.Price.HasValue);
 
         RuleFor(x => x.Category)
-            .ValidRequiredEnum<AddFoodRequest, FoodCategory>("Category");
+            .ValidOptionalEnum<AdminUpdateFoodRequest, FoodCategory>("Category");
 
         RuleFor(x => x.QuantityUnit)
-            .ValidRequiredEnum<AddFoodRequest, QuantityUnit>("QuantityUnit");
+            .ValidOptionalEnum<AdminUpdateFoodRequest, QuantityUnit>("QuantityUnit");
 
         RuleFor(x => x.StockQuantity)
             .GreaterThanOrEqualTo(0)
-            .WithMessage("StockQuantity must be greater than or equal to zero");
+            .WithMessage("StockQuantity must be greater than or equal to zero")
+            .When(x => x.StockQuantity.HasValue);
 
         RuleFor(x => x.DiscountPrice)
-            .Must((request, discountPrice) => !discountPrice.HasValue || discountPrice.Value < request.Price)
+            .Must((request, discountPrice) => !discountPrice.HasValue || (request.Price.HasValue && discountPrice.Value < request.Price.Value))
             .WithMessage("Discount price must be less than the original price");
 
         RuleForEach(x => x.Images!)
