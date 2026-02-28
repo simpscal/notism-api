@@ -11,13 +11,9 @@ using Notism.Domain.Food;
 using Notism.Domain.Order;
 using Notism.Domain.RefreshToken;
 using Notism.Domain.User;
-using Notism.Infrastructure.Carts;
-using Notism.Infrastructure.Common;
-using Notism.Infrastructure.Foods;
-using Notism.Infrastructure.Orders;
-using Notism.Infrastructure.RefreshTokens;
+using Notism.Infrastructure.Persistence;
+using Notism.Infrastructure.Repositories;
 using Notism.Infrastructure.Services;
-using Notism.Infrastructure.Users;
 
 using Resend;
 
