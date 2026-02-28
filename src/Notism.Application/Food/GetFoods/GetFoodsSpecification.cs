@@ -43,7 +43,7 @@ public class GetFoodsSpecification : Specification<Domain.Food.Food>
 
     public override IQueryable<Domain.Food.Food> ApplyOrdering(IQueryable<Domain.Food.Food> queryable)
     {
-        return _sortBy?.ToLower() switch
+        return _sortBy switch
         {
             "name" => _isDescending
                 ? queryable.OrderByDescending(f => f.Name)
@@ -51,12 +51,9 @@ public class GetFoodsSpecification : Specification<Domain.Food.Food>
             "price" => _isDescending
                 ? queryable.OrderByDescending(f => f.Price)
                 : queryable.OrderBy(f => f.Price),
-            "createdAt" => _isDescending
-                ? queryable.OrderByDescending(f => f.CreatedAt)
-                : queryable.OrderBy(f => f.CreatedAt),
-            "category" => _isDescending
-                ? queryable.OrderByDescending(f => f.Category)
-                : queryable.OrderBy(f => f.Category),
+            "discountPrice" => _isDescending
+                ? queryable.OrderByDescending(f => f.DiscountPrice)
+                : queryable.OrderBy(f => f.DiscountPrice),
             _ => queryable.OrderByDescending(f => f.CreatedAt),
         };
     }

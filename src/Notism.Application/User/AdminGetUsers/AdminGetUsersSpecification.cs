@@ -43,7 +43,7 @@ public class AdminGetUsersSpecification : Specification<DomainUser>
 
     public override IQueryable<DomainUser> ApplyOrdering(IQueryable<DomainUser> queryable)
     {
-        return _sortBy?.ToLower() switch
+        return _sortBy switch
         {
             "firstName" => _isDescending
                 ? queryable.OrderByDescending(u => u.FirstName)

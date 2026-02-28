@@ -47,7 +47,7 @@ public class AdminOrdersForTableSpecification : Specification<DomainOrder>
 
     public override IQueryable<DomainOrder> ApplyOrdering(IQueryable<DomainOrder> queryable)
     {
-        return _sortBy?.ToLower() switch
+        return _sortBy switch
         {
             "slugId" => _isDescending
                 ? queryable.OrderByDescending(o => o.SlugId)
@@ -55,6 +55,12 @@ public class AdminOrdersForTableSpecification : Specification<DomainOrder>
             "totalAmount" => _isDescending
                 ? queryable.OrderByDescending(o => o.TotalAmount)
                 : queryable.OrderBy(o => o.TotalAmount),
+            "userName" => _isDescending
+                ? queryable.OrderByDescending(o => o.User != null ? (o.User.FirstName ?? string.Empty) + " " + (o.User.LastName ?? string.Empty) : string.Empty)
+                : queryable.OrderBy(o => o.User != null ? (o.User.FirstName ?? string.Empty) + " " + (o.User.LastName ?? string.Empty) : string.Empty),
+            "email" => _isDescending
+                ? queryable.OrderByDescending(o => o.User != null ? (string)o.User.Email : string.Empty)
+                : queryable.OrderBy(o => o.User != null ? (string)o.User.Email : string.Empty),
             _ => queryable.OrderByDescending(o => o.CreatedAt),
         };
     }

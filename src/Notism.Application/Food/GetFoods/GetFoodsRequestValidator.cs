@@ -23,7 +23,7 @@ public class GetFoodsRequestValidator : AbstractValidator<GetFoodsRequest>
 
         RuleFor(x => x.SortBy)
             .Must(sortBy => sortBy is null || IsValidSortBy(sortBy))
-            .WithMessage("Sort by must be 'name', 'price', 'createdAt', or 'category'");
+            .WithMessage("Sort by must be 'name', 'price', 'discountPrice', or 'createdAt'");
     }
 
     private static bool IsValidSortBy(string? sortBy)
@@ -33,7 +33,6 @@ public class GetFoodsRequestValidator : AbstractValidator<GetFoodsRequest>
             return true;
         }
 
-        var lower = sortBy.ToLowerInvariant();
-        return lower is "name" or "price" or "createdat" or "category";
+        return sortBy is "name" or "price" or "discountPrice" or "createdAt";
     }
 }

@@ -19,7 +19,7 @@ public class AdminOrdersForTableRequestValidator : AbstractValidator<AdminOrders
 
         RuleFor(x => x.SortBy)
             .Must(sortBy => sortBy is null || IsValidSortBy(sortBy))
-            .WithMessage("Sort by must be 'slugId' or 'totalAmount'");
+            .WithMessage("Sort by must be 'slugId', 'totalAmount', 'userName' or 'email'");
     }
 
     private static bool IsValidSortBy(string? sortBy)
@@ -29,7 +29,6 @@ public class AdminOrdersForTableRequestValidator : AbstractValidator<AdminOrders
             return true;
         }
 
-        var sortByLower = sortBy.ToLower();
-        return sortByLower == "slugId" || sortByLower == "totalAmount";
+        return sortBy == "slugId" || sortBy == "totalAmount" || sortBy == "userName" || sortBy == "email";
     }
 }

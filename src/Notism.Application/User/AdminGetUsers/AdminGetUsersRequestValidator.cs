@@ -29,10 +29,9 @@ public class AdminGetUsersRequestValidator : AbstractValidator<AdminGetUsersRequ
             return true;
         }
 
-        var sortByLower = sortBy.ToLower();
-        return sortByLower == "firstname" ||
-               sortByLower == "lastname" ||
-               sortByLower == "email" ||
-               sortByLower == "role";
+        return sortBy == "firstName" ||
+               sortBy == "lastName" ||
+               sortBy == "email" ||
+               sortBy == "role";
     }
 }
