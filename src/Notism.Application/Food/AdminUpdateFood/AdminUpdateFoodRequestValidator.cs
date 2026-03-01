@@ -29,7 +29,11 @@ public class AdminUpdateFoodRequestValidator : AbstractValidator<AdminUpdateFood
             .When(x => x.Price.HasValue);
 
         RuleFor(x => x.Category)
-            .ValidOptionalEnum<AdminUpdateFoodRequest, FoodCategory>("Category");
+            .NotEmpty()
+            .WithMessage("Category cannot be empty when provided")
+            .MaximumLength(200)
+            .WithMessage("Category cannot exceed 200 characters")
+            .When(x => !string.IsNullOrWhiteSpace(x.Category));
 
         RuleFor(x => x.QuantityUnit)
             .ValidOptionalEnum<AdminUpdateFoodRequest, QuantityUnit>("QuantityUnit");

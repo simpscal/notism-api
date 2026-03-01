@@ -48,6 +48,7 @@ public class GetCartItemsHandler : IRequestHandler<GetCartItemsRequest, GetCartI
     {
         var specification = new FilterSpecification<CartItem>(c => c.UserId == _request!.UserId)
             .Include(c => c.Food)
+            .Include("Food.Category")
             .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1));
         return await _cartItemRepository.FilterByExpressionAsync(specification);
     }
@@ -63,7 +64,7 @@ public class GetCartItemsHandler : IRequestHandler<GetCartItemsRequest, GetCartI
             Price = cartItem.Food.Price,
             DiscountPrice = cartItem.Food.DiscountPrice,
             ImageUrl = GetImageUrl(cartItem.Food.Images),
-            Category = cartItem.Food.Category.GetStringValue(),
+            Category = cartItem.Food.Category?.Name ?? string.Empty,
             Quantity = cartItem.Quantity,
             StockQuantity = cartItem.Food.StockQuantity,
             QuantityUnit = cartItem.Food.QuantityUnit.GetStringValue(),

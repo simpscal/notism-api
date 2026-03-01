@@ -9,7 +9,8 @@ public class Food : AggregateRoot
     public string Name { get; private set; }
     public string Description { get; private set; }
     public decimal Price { get; private set; }
-    public FoodCategory Category { get; private set; }
+    public Guid? CategoryId { get; private set; }
+    public Category? Category { get; private set; }
     public bool IsAvailable { get; private set; }
     public QuantityUnit QuantityUnit { get; private set; }
     public decimal? DiscountPrice { get; private set; }
@@ -22,7 +23,7 @@ public class Food : AggregateRoot
         string name,
         string description,
         decimal price,
-        FoodCategory category,
+        Guid? categoryId,
         QuantityUnit quantityUnit,
         int stockQuantity,
         decimal? discountPrice = null)
@@ -30,20 +31,20 @@ public class Food : AggregateRoot
         Name = name;
         Description = description;
         Price = price;
-        Category = category;
+        CategoryId = categoryId;
         IsAvailable = true;
         QuantityUnit = quantityUnit;
         DiscountPrice = discountPrice;
         StockQuantity = stockQuantity;
 
-        AddDomainEvent(new FoodCreatedEvent(Id, Name, Category));
+        AddDomainEvent(new FoodCreatedEvent(Id, Name, categoryId));
     }
 
     public static Food Create(
         string name,
         string description,
         decimal price,
-        FoodCategory category,
+        Guid categoryId,
         QuantityUnit quantityUnit,
         int stockQuantity,
         decimal? discountPrice = null)
@@ -63,44 +64,80 @@ public class Food : AggregateRoot
             throw new ArgumentException("Discount price must be less than the original price", nameof(discountPrice));
         }
 
-        return new Food(name, description, price, category, quantityUnit, stockQuantity, discountPrice);
+        return new Food(name, description, price, categoryId, quantityUnit, stockQuantity, discountPrice);
     }
 
     public void Update(
-        string name,
-        string description,
-        decimal price,
-        FoodCategory category,
-        QuantityUnit quantityUnit,
-        int stockQuantity,
+        string? name = null,
+        string? description = null,
+        decimal? price = null,
+        Guid? categoryId = null,
+        QuantityUnit? quantityUnit = null,
+        int? stockQuantity = null,
         decimal? discountPrice = null)
     {
-        if (string.IsNullOrWhiteSpace(name))
+        var hasAny = name != null || description != null || price.HasValue || categoryId.HasValue
+            || quantityUnit.HasValue || stockQuantity.HasValue || discountPrice.HasValue;
+        if (!hasAny)
         {
-            throw new ArgumentException("Food name cannot be empty", nameof(name));
+            throw new ArgumentException("At least one update parameter must be provided.");
         }
 
-        if (price <= 0)
+        if (name != null)
         {
-            throw new ArgumentException("Price must be greater than zero", nameof(price));
+            if (string.IsNullOrWhiteSpace(name))
+            {
+                throw new ArgumentException("Food name cannot be empty", nameof(name));
+            }
+
+            Name = name;
         }
 
-        if (discountPrice.HasValue && discountPrice.Value >= price)
+        if (description != null)
         {
-            throw new ArgumentException("Discount price must be less than the original price", nameof(discountPrice));
+            Description = description;
         }
 
-        Name = name;
-        Description = description;
-        Price = price;
-        Category = category;
-        QuantityUnit = quantityUnit;
-        StockQuantity = stockQuantity;
-        DiscountPrice = discountPrice;
+        if (price.HasValue)
+        {
+            if (price.Value <= 0)
+            {
+                throw new ArgumentException("Price must be greater than zero", nameof(price));
+            }
+
+            Price = price.Value;
+        }
+
+        if (categoryId.HasValue)
+        {
+            CategoryId = categoryId;
+        }
+
+        if (quantityUnit.HasValue)
+        {
+            QuantityUnit = quantityUnit.Value;
+        }
+
+        if (stockQuantity.HasValue)
+        {
+            StockQuantity = stockQuantity.Value;
+        }
+
+        if (discountPrice.HasValue)
+        {
+            var priceToCompare = Price;
+            if (discountPrice.Value >= priceToCompare)
+            {
+                throw new ArgumentException("Discount price must be less than the original price", nameof(discountPrice));
+            }
+
+            DiscountPrice = discountPrice;
+        }
+
         UpdatedAt = DateTime.UtcNow;
 
         ClearDomainEvents();
-        AddDomainEvent(new FoodUpdatedEvent(Id, Name, Category));
+        AddDomainEvent(new FoodUpdatedEvent(Id, Name, CategoryId));
     }
 
     public void SetAvailability(bool isAvailable)

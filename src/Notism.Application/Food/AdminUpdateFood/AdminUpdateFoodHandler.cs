@@ -14,15 +14,18 @@ namespace Notism.Application.Food.AdminUpdateFood;
 public class AdminUpdateFoodHandler : IRequestHandler<AdminUpdateFoodRequest, AdminUpdateFoodResponse>
 {
     private readonly IFoodRepository _foodRepository;
+    private readonly ICategoryRepository _categoryRepository;
     private readonly IStorageService _storageService;
     private readonly ILogger<AdminUpdateFoodHandler> _logger;
 
     public AdminUpdateFoodHandler(
         IFoodRepository foodRepository,
+        ICategoryRepository categoryRepository,
         IStorageService storageService,
         ILogger<AdminUpdateFoodHandler> logger)
     {
         _foodRepository = foodRepository;
+        _categoryRepository = categoryRepository;
         _storageService = storageService;
         _logger = logger;
     }
@@ -31,33 +34,40 @@ public class AdminUpdateFoodHandler : IRequestHandler<AdminUpdateFoodRequest, Ad
         AdminUpdateFoodRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new FilterSpecification<Domain.Food.Food>(f => f.Id == request.FoodId && !f.IsDeleted)
-            .Include(f => f.Images);
-        var food = await _foodRepository.FindByExpressionAsync(specification)
-            ?? throw new ResultFailureException("Food not found");
+        var specification = new FilterSpecification<Notism.Domain.Food.Food>(f => f.Id == request.FoodId && !f.IsDeleted)
+            .Include(f => f.Images)
+            .Include("Category");
+        var food = await _foodRepository.FindByExpressionAsync(specification);
+        if (food == null)
+        {
+            throw new ResultFailureException("Food not found");
+        }
 
         var name = request.Name ?? food.Name;
         var description = request.Description ?? food.Description;
         var price = request.Price ?? food.Price;
-        var category = !string.IsNullOrWhiteSpace(request.Category)
-            ? request.Category.ToEnum<FoodCategory>()
-            : food.Category;
+        Category? category = null;
+
+        if (!string.IsNullOrWhiteSpace(request.Category))
+        {
+            var categoryName = request.Category.Trim();
+            var categorySpec = new FilterSpecification<Domain.Food.Category>(
+                c => c.Name == categoryName && !c.IsDeleted);
+            category = await _categoryRepository.FindByExpressionAsync(categorySpec)
+                ?? throw new ResultFailureException("Category not found.");
+        }
+
         var quantityUnit = !string.IsNullOrWhiteSpace(request.QuantityUnit)
             ? request.QuantityUnit.ToEnum<QuantityUnit>()
             : food.QuantityUnit;
         var stockQuantity = request.StockQuantity ?? food.StockQuantity;
         var discountPrice = request.DiscountPrice;
 
-        if (discountPrice.HasValue && discountPrice.Value >= price)
-        {
-            throw new ResultFailureException("Discount price must be less than the original price");
-        }
-
         food.Update(
             name,
             description,
             price,
-            category,
+            category?.Id,
             quantityUnit,
             stockQuantity,
             discountPrice);
@@ -89,7 +99,7 @@ public class AdminUpdateFoodHandler : IRequestHandler<AdminUpdateFoodRequest, Ad
             Price = food.Price,
             DiscountPrice = food.DiscountPrice,
             ImageUrls = GetImageUrls(food.Images),
-            Category = food.Category.GetStringValue(),
+            Category = category?.Name ?? food.Category?.Name ?? string.Empty,
             IsAvailable = food.IsAvailable,
             QuantityUnit = food.QuantityUnit.GetStringValue(),
             StockQuantity = food.StockQuantity,

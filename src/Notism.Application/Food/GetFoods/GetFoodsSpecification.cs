@@ -1,22 +1,23 @@
 using System.Linq.Expressions;
 
 using Notism.Domain.Common.Specifications;
-using Notism.Domain.Food.Enums;
 using Notism.Shared.Enums;
 using Notism.Shared.Extensions;
 
+using DomainFood = Notism.Domain.Food.Food;
+
 namespace Notism.Application.Food.GetFoods;
 
-public class GetFoodsSpecification : Specification<Domain.Food.Food>
+public class GetFoodsSpecification : Specification<DomainFood>
 {
-    private readonly FoodCategory? _category;
+    private readonly string? _category;
     private readonly string? _keyword;
     private readonly bool? _isAvailable;
     private readonly string? _sortBy;
     private readonly bool _isDescending;
 
     public GetFoodsSpecification(
-        FoodCategory? category = null,
+        string? category = null,
         string? keyword = null,
         bool? isAvailable = null,
         string? sortBy = null,
@@ -30,18 +31,18 @@ public class GetFoodsSpecification : Specification<Domain.Food.Food>
         _isDescending = sortOrderEnum == SortOrder.Desc;
     }
 
-    public override Expression<Func<Domain.Food.Food, bool>> ToExpression()
+    public override Expression<Func<DomainFood, bool>> ToExpression()
     {
         return food =>
             !food.IsDeleted &&
-            (!_category.HasValue || food.Category == _category.Value) &&
+            (string.IsNullOrWhiteSpace(_category) || (food.Category != null && food.Category.Name == _category)) &&
             (!_isAvailable.HasValue || food.IsAvailable == _isAvailable.Value) &&
             (string.IsNullOrWhiteSpace(_keyword) ||
                 food.Name.ToLower().Contains(_keyword) ||
                 food.Description.ToLower().Contains(_keyword));
     }
 
-    public override IQueryable<Domain.Food.Food> ApplyOrdering(IQueryable<Domain.Food.Food> queryable)
+    public override IQueryable<DomainFood> ApplyOrdering(IQueryable<DomainFood> queryable)
     {
         return _sortBy switch
         {

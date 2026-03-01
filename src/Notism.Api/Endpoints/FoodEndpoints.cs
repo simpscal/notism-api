@@ -1,6 +1,7 @@
 using MediatR;
 
 using Notism.Api.Models;
+using Notism.Application.Food.GetCategories;
 using Notism.Application.Food.GetFoodById;
 using Notism.Application.Food.GetFoods;
 
@@ -21,6 +22,12 @@ public static class FoodEndpoints
             .Produces<GetFoodsResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
 
+        group.MapGet("/categories", GetCategoriesAsync)
+            .WithName("GetCategories")
+            .WithSummary("Get categories")
+            .WithDescription("Retrieves all categories for the client, excluding deleted ones.")
+            .Produces<GetCategoriesResponse>(StatusCodes.Status200OK);
+
         group.MapGet("/{id:guid}", GetFoodByIdAsync)
             .WithName("GetFoodById")
             .WithSummary("Get food by ID")
@@ -35,6 +42,15 @@ public static class FoodEndpoints
         [AsParameters] GetFoodsRequest request,
         CancellationToken cancellationToken)
     {
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> GetCategoriesAsync(
+        IMediator mediator,
+        CancellationToken cancellationToken)
+    {
+        var request = new GetCategoriesRequest();
         var result = await mediator.Send(request, cancellationToken);
         return Results.Ok(result);
     }

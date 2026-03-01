@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Interfaces;
+using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
 using Notism.Shared.Exceptions;
@@ -13,15 +14,18 @@ namespace Notism.Application.Food.AdminAddFood;
 public class AdminAddFoodHandler : IRequestHandler<AdminAddFoodRequest, AdminAddFoodResponse>
 {
     private readonly IFoodRepository _foodRepository;
+    private readonly ICategoryRepository _categoryRepository;
     private readonly IStorageService _storageService;
     private readonly ILogger<AdminAddFoodHandler> _logger;
 
     public AdminAddFoodHandler(
         IFoodRepository foodRepository,
+        ICategoryRepository categoryRepository,
         IStorageService storageService,
         ILogger<AdminAddFoodHandler> logger)
     {
         _foodRepository = foodRepository;
+        _categoryRepository = categoryRepository;
         _storageService = storageService;
         _logger = logger;
     }
@@ -30,7 +34,12 @@ public class AdminAddFoodHandler : IRequestHandler<AdminAddFoodRequest, AdminAdd
         AdminAddFoodRequest request,
         CancellationToken cancellationToken)
     {
-        var category = request.Category.ToEnum<FoodCategory>();
+        var categoryName = request.Category.Trim();
+        var categorySpec = new FilterSpecification<Domain.Food.Category>(
+            c => c.Name == categoryName && !c.IsDeleted);
+        var category = await _categoryRepository.FindByExpressionAsync(categorySpec)
+            ?? throw new ResultFailureException("Category not found.");
+
         var quantityUnit = request.QuantityUnit.ToEnum<QuantityUnit>();
 
         if (request.DiscountPrice.HasValue && request.DiscountPrice.Value >= request.Price)
@@ -42,7 +51,7 @@ public class AdminAddFoodHandler : IRequestHandler<AdminAddFoodRequest, AdminAdd
             request.Name,
             request.Description,
             request.Price,
-            category,
+            category.Id,
             quantityUnit,
             request.StockQuantity,
             request.DiscountPrice);
@@ -73,7 +82,7 @@ public class AdminAddFoodHandler : IRequestHandler<AdminAddFoodRequest, AdminAdd
             Price = food.Price,
             DiscountPrice = food.DiscountPrice,
             ImageUrls = GetImageUrls(food.Images),
-            Category = food.Category.GetStringValue(),
+            Category = category.Name,
             IsAvailable = food.IsAvailable,
             QuantityUnit = food.QuantityUnit.GetStringValue(),
             StockQuantity = food.StockQuantity,

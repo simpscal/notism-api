@@ -31,9 +31,13 @@ public class GetFoodByIdHandler : IRequestHandler<GetFoodByIdRequest, GetFoodByI
         CancellationToken cancellationToken)
     {
         var specification = new FilterSpecification<Domain.Food.Food>(f => f.Id == request.FoodId && !f.IsDeleted)
-            .Include(f => f.Images);
-        var food = await _foodRepository.FindByExpressionAsync(specification)
-            ?? throw new ResultFailureException("Food not found");
+            .Include(f => f.Images)
+            .Include("Category");
+        var food = await _foodRepository.FindByExpressionAsync(specification);
+        if (food == null)
+        {
+            throw new ResultFailureException("Food not found");
+        }
 
         _logger.LogInformation("Retrieved food {FoodId}", request.FoodId);
 
@@ -46,7 +50,7 @@ public class GetFoodByIdHandler : IRequestHandler<GetFoodByIdRequest, GetFoodByI
             DiscountPrice = food.DiscountPrice,
             ImageUrls = GetImageUrls(food.Images),
             Images = GetImages(food.Images),
-            Category = food.Category.GetStringValue(),
+            Category = food.Category?.Name ?? string.Empty,
             IsAvailable = food.IsAvailable,
             QuantityUnit = food.QuantityUnit.GetStringValue(),
             StockQuantity = food.StockQuantity,

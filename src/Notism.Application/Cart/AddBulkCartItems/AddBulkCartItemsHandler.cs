@@ -71,6 +71,7 @@ public class AddBulkCartItemsHandler : IRequestHandler<AddBulkCartItemsRequest, 
     {
         var foodIds = _request!.Items.Select(i => i.FoodId).Distinct().ToList();
         var foodSpecification = new FilterSpecification<Domain.Food.Food>(f => foodIds.Contains(f.Id))
+            .Include("Category")
             .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1));
         var foods = await _foodRepository.FilterByExpressionAsync(foodSpecification);
 
@@ -145,7 +146,7 @@ public class AddBulkCartItemsHandler : IRequestHandler<AddBulkCartItemsRequest, 
             Price = food.Price,
             DiscountPrice = food.DiscountPrice,
             ImageUrl = GetImageUrl(food.Images),
-            Category = food.Category.GetStringValue(),
+            Category = food.Category?.Name ?? string.Empty,
             Quantity = cartItem.Quantity,
             StockQuantity = food.StockQuantity,
             QuantityUnit = food.QuantityUnit.GetStringValue(),

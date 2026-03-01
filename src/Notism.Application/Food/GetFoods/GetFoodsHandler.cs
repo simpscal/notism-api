@@ -4,7 +4,6 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.Food;
-using Notism.Domain.Food.Enums;
 using Notism.Shared.Extensions;
 
 namespace Notism.Application.Food.GetFoods;
@@ -29,15 +28,16 @@ public class GetFoodsHandler : IRequestHandler<GetFoodsRequest, GetFoodsResponse
         GetFoodsRequest request,
         CancellationToken cancellationToken)
     {
-        var category = request.Category?.ToEnum<FoodCategory>();
         var keywordLower = request.Keyword?.ToLower();
+        var categoryFilter = request.Category?.Trim();
         var specification = new GetFoodsSpecification(
-                category,
+                categoryFilter,
                 keywordLower,
                 request.IsAvailable,
                 request.SortBy,
                 request.SortOrder)
-            .Include(f => f.Images);
+            .Include(f => f.Images)
+            .Include("Category");
 
         var pagedResult = await _foodRepository.FilterPagedByExpressionAsync(specification, request);
 
@@ -49,7 +49,7 @@ public class GetFoodsHandler : IRequestHandler<GetFoodsRequest, GetFoodsResponse
             Price = food.Price,
             DiscountPrice = food.DiscountPrice,
             ImageUrl = GetImageUrl(food.Images),
-            Category = food.Category.GetStringValue(),
+            Category = food.Category?.Name ?? string.Empty,
             IsAvailable = food.IsAvailable,
             QuantityUnit = food.QuantityUnit.GetStringValue(),
             StockQuantity = food.StockQuantity,

@@ -2,8 +2,13 @@ using MediatR;
 
 using Notism.Api.Extensions;
 using Notism.Api.Models;
+using Notism.Application.Food.AdminAddCategory;
 using Notism.Application.Food.AdminAddFood;
+using Notism.Application.Food.AdminDeleteCategory;
 using Notism.Application.Food.AdminDeleteFood;
+using Notism.Application.Food.AdminGetCategories;
+using Notism.Application.Food.AdminGetCategoryDetail;
+using Notism.Application.Food.AdminUpdateCategory;
 using Notism.Application.Food.AdminUpdateFood;
 using Notism.Application.Food.GetFoodById;
 using Notism.Application.Food.GetFoods;
@@ -24,6 +29,7 @@ public static class AdminEndpoints
     {
         MapAdminUserEndpoints(app);
         MapAdminOrderEndpoints(app);
+        MapAdminCategoryEndpoints(app);
         MapAdminFoodEndpoints(app);
     }
 
@@ -126,6 +132,64 @@ public static class AdminEndpoints
             .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
     }
 
+    private static void MapAdminCategoryEndpoints(IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/api/admin/categories")
+            .WithTags("Admin Category Management")
+            .WithOpenApi()
+            .RequireAuthorization();
+
+        group.MapGet("/", AdminGetCategoriesAsync)
+            .WithName("AdminGetCategories")
+            .WithSummary("Get categories")
+            .WithDescription("Retrieves all categories, excluding deleted ones.")
+            .RequireAdmin()
+            .Produces<AdminGetCategoriesResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
+
+        group.MapGet("/{id:guid}", AdminGetCategoryDetailAsync)
+            .WithName("AdminGetCategoryDetail")
+            .WithSummary("Get category detail")
+            .WithDescription("Retrieves a single category by ID for the admin portal. Excludes deleted categories.")
+            .RequireAdmin()
+            .Produces<AdminGetCategoryDetailResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+
+        group.MapPost("/", AdminAddCategoryAsync)
+            .WithName("AdminAddCategory")
+            .WithSummary("Add category")
+            .WithDescription("Creates a new category. Validates name uniqueness.")
+            .RequireAdmin()
+            .Produces<AdminAddCategoryResponse>(StatusCodes.Status201Created)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
+
+        group.MapPatch("/{id:guid}", AdminUpdateCategoryAsync)
+            .WithName("AdminUpdateCategory")
+            .WithSummary("Update category")
+            .WithDescription("Updates a category. Validates name uniqueness excluding the current name.")
+            .RequireAdmin()
+            .Produces<AdminUpdateCategoryResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+
+        group.MapDelete("/{id:guid}", AdminDeleteCategoryAsync)
+            .WithName("AdminDeleteCategory")
+            .WithSummary("Delete category")
+            .WithDescription("Soft deletes a category by ID.")
+            .RequireAdmin()
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+    }
+
     private static void MapAdminFoodEndpoints(IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api/admin/foods")
@@ -183,6 +247,59 @@ public static class AdminEndpoints
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
             .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+    }
+
+    private static async Task<IResult> AdminGetCategoriesAsync(
+        IMediator mediator,
+        CancellationToken cancellationToken)
+    {
+        var request = new AdminGetCategoriesRequest();
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AdminGetCategoryDetailAsync(
+        IMediator mediator,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var request = new AdminGetCategoryDetailRequest { CategoryId = id };
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AdminAddCategoryAsync(
+        IMediator mediator,
+        AdminAddCategoryRequest request,
+        CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Created($"/api/admin/categories/{result.Id}", result);
+    }
+
+    private static async Task<IResult> AdminUpdateCategoryAsync(
+        IMediator mediator,
+        Guid id,
+        AdminUpdateCategoryPayload payload,
+        CancellationToken cancellationToken)
+    {
+        var request = new AdminUpdateCategoryRequest
+        {
+            CategoryId = id,
+            Name = payload.Name,
+        };
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AdminDeleteCategoryAsync(
+        IMediator mediator,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var request = new AdminDeleteCategoryRequest { CategoryId = id };
+        await mediator.Send(request, cancellationToken);
+        return Results.NoContent();
     }
 
     private static async Task<IResult> AdminGetUsersAsync(
@@ -349,4 +466,9 @@ public record AdminUpdateOrderDeliveryStatusPayload
 public record AdminUpdateUserPayload
 {
     public string Role { get; set; } = string.Empty;
+}
+
+public record AdminUpdateCategoryPayload
+{
+    public string Name { get; set; } = string.Empty;
 }

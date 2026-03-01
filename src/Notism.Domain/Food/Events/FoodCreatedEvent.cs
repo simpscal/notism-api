@@ -1,5 +1,4 @@
 using Notism.Domain.Common;
-using Notism.Domain.Food.Enums;
 
 namespace Notism.Domain.Food.Events;
 
@@ -7,12 +6,12 @@ public class FoodCreatedEvent : DomainEvent
 {
     public Guid FoodId { get; }
     public string Name { get; }
-    public FoodCategory Category { get; }
+    public Guid? CategoryId { get; }
 
-    public FoodCreatedEvent(Guid foodId, string name, FoodCategory category)
+    public FoodCreatedEvent(Guid foodId, string name, Guid? categoryId)
     {
         FoodId = foodId;
         Name = name;
-        Category = category;
+        CategoryId = categoryId;
     }
 }

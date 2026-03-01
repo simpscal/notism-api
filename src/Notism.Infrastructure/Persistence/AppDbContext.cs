@@ -22,6 +22,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
     public DbSet<User> Users { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
     public DbSet<PasswordResetToken> PasswordResetTokens { get; set; }
+    public DbSet<Category> Categories { get; set; }
     public DbSet<Food> Foods { get; set; }
     public DbSet<FoodImage> FoodImages { get; set; }
     public DbSet<CartItem> CartItems { get; set; }
@@ -49,6 +50,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
         ConfigureUser(modelBuilder);
         ConfigureRefreshToken(modelBuilder);
         ConfigurePasswordResetToken(modelBuilder);
+        ConfigureCategory(modelBuilder);
         ConfigureFood(modelBuilder);
         ConfigureFoodImage(modelBuilder);
         ConfigureCartItem(modelBuilder);
@@ -167,6 +169,29 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
         });
     }
 
+    private static void ConfigureCategory(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Category>(entity =>
+        {
+            entity.HasKey(c => c.Id);
+
+            entity.Property(c => c.Name)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(c => c.CreatedAt)
+                .IsRequired();
+
+            entity.Property(c => c.UpdatedAt)
+                .IsRequired();
+
+            entity.HasIndex(c => c.Name)
+                .IsUnique()
+                .HasFilter("\"IsDeleted\" = false");
+            entity.HasIndex(c => c.IsDeleted);
+        });
+    }
+
     private static void ConfigureFood(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Food>(entity =>
@@ -188,12 +213,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
             entity.Property(f => f.DiscountPrice)
                 .HasPrecision(18, 2);
 
-            entity.Property(f => f.Category)
-                .HasConversion(
-                    category => category.GetStringValue(),
-                    value => value.ToEnum<FoodCategory>())
-                .HasMaxLength(50)
-                .IsRequired();
+            entity.Property(f => f.CategoryId);
+
+            entity.HasOne(f => f.Category)
+                .WithMany()
+                .HasForeignKey(f => f.CategoryId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             entity.Property(f => f.IsAvailable)
                 .IsRequired();
@@ -214,9 +239,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
             entity.Property(f => f.UpdatedAt)
                 .IsRequired();
 
-            entity.HasIndex(f => f.Category);
+            entity.HasIndex(f => f.CategoryId);
             entity.HasIndex(f => f.IsAvailable);
-            entity.HasIndex(f => new { f.Category, f.IsAvailable });
+            entity.HasIndex(f => new { f.CategoryId, f.IsAvailable });
 
             entity.HasMany(f => f.Images)
                 .WithOne(i => i.Food)

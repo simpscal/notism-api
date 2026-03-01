@@ -26,7 +26,10 @@ public class AdminAddFoodRequestValidator : AbstractValidator<AdminAddFoodReques
             .WithMessage("Price must be greater than zero");
 
         RuleFor(x => x.Category)
-            .ValidRequiredEnum<AdminAddFoodRequest, FoodCategory>("Category");
+            .NotEmpty()
+            .WithMessage("Category is required")
+            .MaximumLength(200)
+            .WithMessage("Category cannot exceed 200 characters");
 
         RuleFor(x => x.QuantityUnit)
             .ValidRequiredEnum<AdminAddFoodRequest, QuantityUnit>("QuantityUnit");

@@ -14,9 +14,6 @@ public class GetFoodsRequestValidator : AbstractValidator<GetFoodsRequest>
         RuleFor(x => x.Skip).ValidSkip();
         RuleFor(x => x.Take).ValidTake();
 
-        RuleFor(x => x.Category)
-            .ValidOptionalEnum<GetFoodsRequest, FoodCategory>("Category");
-
         RuleFor(x => x.SortOrder)
             .Must(sortOrder => sortOrder is null || sortOrder.FromCamelCase<SortOrder>() != null)
             .WithMessage("Sort order must be 'asc' or 'desc'");

@@ -51,6 +51,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
     private async Task<Domain.Food.Food> ValidateAndFetchFoodAsync()
     {
         var foodSpecification = new FilterSpecification<Domain.Food.Food>(f => f.Id == _request!.FoodId)
+            .Include("Category")
             .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1));
         var food = await _foodRepository.FindByExpressionAsync(foodSpecification)
             ?? throw new ResultFailureException("Food not found");
@@ -67,6 +68,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
     {
         var cartItemSpecification = new FilterSpecification<CartItem>(c => c.UserId == _request!.UserId && c.FoodId == _request.FoodId)
             .Include(c => c.Food)
+            .Include("Food.Category")
             .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1));
         return await _cartItemRepository.FindByExpressionAsync(cartItemSpecification);
     }
@@ -99,7 +101,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             Price = existingCartItem.Food.Price,
             DiscountPrice = existingCartItem.Food.DiscountPrice,
             ImageUrl = GetImageUrl(existingCartItem.Food.Images),
-            Category = existingCartItem.Food.Category.GetStringValue(),
+            Category = existingCartItem.Food.Category?.Name ?? string.Empty,
             Quantity = existingCartItem.Quantity,
             StockQuantity = existingCartItem.Food.StockQuantity,
             QuantityUnit = existingCartItem.Food.QuantityUnit.GetStringValue(),
@@ -132,7 +134,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             Price = food.Price,
             DiscountPrice = food.DiscountPrice,
             ImageUrl = GetImageUrl(food.Images),
-            Category = food.Category.GetStringValue(),
+            Category = food.Category?.Name ?? string.Empty,
             Quantity = cartItem.Quantity,
             StockQuantity = food.StockQuantity,
             QuantityUnit = food.QuantityUnit.GetStringValue(),
