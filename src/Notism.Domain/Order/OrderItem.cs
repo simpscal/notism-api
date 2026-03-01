@@ -28,7 +28,7 @@ public class OrderItem : Entity
         UnitPrice = unitPrice;
         DiscountPrice = discountPrice;
         Quantity = quantity;
-        TotalPrice = (discountPrice ?? unitPrice) * quantity;
+        TotalPrice = (discountPrice.HasValue && discountPrice.Value > 0 ? discountPrice.Value : unitPrice) * quantity;
     }
 
     public static OrderItem Create(
