@@ -4,6 +4,7 @@ using Amazon.S3.Model;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
+using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
 using Notism.Shared.Configuration;
 
@@ -11,6 +12,13 @@ namespace Notism.Infrastructure.Services;
 
 public class S3StorageService : IStorageService
 {
+    private static readonly HashSet<string> ValidStorageTypes = new(StringComparer.OrdinalIgnoreCase)
+    {
+        StorageTypeConstants.Avatar,
+        StorageTypeConstants.Food,
+        StorageTypeConstants.FoodDetail,
+    };
+
     private readonly IAmazonS3 _s3Client;
     private readonly AwsSettings _awsSettings;
     private readonly ILogger<S3StorageService> _logger;
@@ -78,24 +86,36 @@ public class S3StorageService : IStorageService
         }
     }
 
-    public string GetPublicUrl(string fileKey)
+    public string GetPublicUrl(string fileKey, string storageType)
     {
-        return $"https://{_awsSettings.PublicBucketName}.s3.{_awsSettings.Region}.amazonaws.com/{fileKey}";
+        if (string.IsNullOrEmpty(fileKey))
+        {
+            return string.Empty;
+        }
+
+        var fullKey = GetFullS3Key(fileKey, storageType);
+        return $"https://{_awsSettings.PublicBucketName}.s3.{_awsSettings.Region}.amazonaws.com/{fullKey}";
     }
 
-    public async Task<bool> DeleteFileAsync(string fileKey)
+    public async Task<bool> DeleteFileAsync(string fileKey, string storageType)
     {
         try
         {
+            var fullKey = GetFullS3Key(fileKey, storageType);
+            if (string.IsNullOrEmpty(fullKey))
+            {
+                return false;
+            }
+
             var request = new DeleteObjectRequest
             {
                 BucketName = _awsSettings.PrivateBucketName,
-                Key = fileKey,
+                Key = fullKey,
             };
 
             await _s3Client.DeleteObjectAsync(request);
 
-            _logger.LogInformation("Deleted file: {FileKey}", fileKey);
+            _logger.LogInformation("Deleted file: {FileKey}", fullKey);
 
             return true;
         }
@@ -104,5 +124,26 @@ public class S3StorageService : IStorageService
             _logger.LogError(ex, "Error deleting file: {FileKey}", fileKey);
             return false;
         }
+    }
+
+    private static string GetFullS3Key(string fileKey, string storageType)
+    {
+        if (!ValidStorageTypes.Contains(storageType))
+        {
+            throw new ArgumentException($"Unknown storage type: {storageType}", nameof(storageType));
+        }
+
+        var prefixWithSlash = storageType + "/";
+        if (string.IsNullOrEmpty(fileKey))
+        {
+            return string.Empty;
+        }
+
+        if (fileKey.StartsWith(prefixWithSlash, StringComparison.Ordinal))
+        {
+            return fileKey;
+        }
+
+        return prefixWithSlash + fileKey;
     }
 }

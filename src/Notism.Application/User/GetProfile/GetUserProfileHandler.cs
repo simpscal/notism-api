@@ -2,6 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
@@ -37,7 +38,7 @@ public class GetUserProfileHandler : IRequestHandler<GetUserProfileRequest, GetU
         string avatarUrl = user.AvatarUrl ?? string.Empty;
         if (!string.IsNullOrWhiteSpace(user.AvatarUrl) && !avatarUrl.IsValidUrl())
         {
-            avatarUrl = _storageService.GetPublicUrl(user.AvatarUrl);
+            avatarUrl = _storageService.GetPublicUrl(user.AvatarUrl, StorageTypeConstants.Avatar);
         }
 
         _logger.LogInformation("User profile retrieved successfully for user {UserId}", request.UserId);

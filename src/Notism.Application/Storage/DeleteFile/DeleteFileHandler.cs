@@ -24,7 +24,7 @@ public class DeleteFileHandler : IRequestHandler<DeleteFileRequest>
     {
         _logger.LogInformation("Deleting file with key: {FileKey}", request.FileKey);
 
-        var success = await _storageService.DeleteFileAsync(request.FileKey);
+        var success = await _storageService.DeleteFileAsync(request.FileKey, request.Type);
 
         if (!success)
         {

@@ -24,22 +24,29 @@ public class GenerateUploadUrlHandler : IRequestHandler<GenerateUploadUrlRequest
         GenerateUploadUrlRequest request,
         CancellationToken cancellationToken)
     {
-        var (uploadUrl, fileKey) = await _storageService.GeneratePresignedUploadUrlAsync(
-            GetFolderName(request.Type),
+        var folderName = GetFolderName(request.Type);
+        var (uploadUrl, fullKey) = await _storageService.GeneratePresignedUploadUrlAsync(
+            folderName,
             request.FileName,
             request.ContentType,
             request.ExpirationMinutes);
+
+        // Return file key without prefix for storage in database (client saves this)
+        var prefixToStrip = folderName + "/";
+        var fileKeyForDb = fullKey.StartsWith(prefixToStrip, StringComparison.Ordinal)
+            ? fullKey.Substring(prefixToStrip.Length)
+            : fullKey;
 
         _logger.LogInformation(
             "Generated presigned upload URL for file: {FileName}, ContentType: {ContentType}, Key: {FileKey}",
             request.FileName,
             request.ContentType,
-            fileKey);
+            fileKeyForDb);
 
         return new GenerateUploadUrlResponse
         {
             UploadUrl = uploadUrl,
-            FileKey = fileKey,
+            FileKey = fileKeyForDb,
             ExpiresAt = DateTime.UtcNow.AddMinutes(request.ExpirationMinutes),
         };
     }

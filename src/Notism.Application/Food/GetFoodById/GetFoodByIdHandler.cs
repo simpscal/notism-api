@@ -2,6 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
@@ -63,7 +64,7 @@ public class GetFoodByIdHandler : IRequestHandler<GetFoodByIdRequest, GetFoodByI
     {
         return images
             .OrderBy(img => img.DisplayOrder)
-            .Select(img => _storageService.GetPublicUrl(img.FileKey))
+            .Select(img => GetDetailImageUrl(img.FileKey))
             .ToList();
     }
 
@@ -76,8 +77,13 @@ public class GetFoodByIdHandler : IRequestHandler<GetFoodByIdRequest, GetFoodByI
                 FileKey = img.FileKey,
                 DisplayOrder = img.DisplayOrder,
                 AltText = img.AltText,
-                ImageUrl = _storageService.GetPublicUrl(img.FileKey),
+                ImageUrl = GetDetailImageUrl(img.FileKey),
             })
             .ToList();
+    }
+
+    private string GetDetailImageUrl(string fileKey)
+    {
+        return _storageService.GetPublicUrl(fileKey, StorageTypeConstants.FoodDetail);
     }
 }

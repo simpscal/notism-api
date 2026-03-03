@@ -2,6 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.Cart;
 using Notism.Domain.Common.Interfaces;
@@ -144,6 +145,6 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
     private string GetImageUrl(IReadOnlyCollection<Domain.Food.FoodImage> images)
     {
         var firstImage = images.OrderBy(img => img.DisplayOrder).FirstOrDefault();
-        return firstImage == null ? string.Empty : _storageService.GetPublicUrl(firstImage.FileKey);
+        return firstImage == null ? string.Empty : _storageService.GetPublicUrl(firstImage.FileKey, StorageTypeConstants.Food);
     }
 }

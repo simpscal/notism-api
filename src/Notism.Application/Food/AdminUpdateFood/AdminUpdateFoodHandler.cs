@@ -2,6 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
@@ -112,7 +113,7 @@ public class AdminUpdateFoodHandler : IRequestHandler<AdminUpdateFoodRequest, Ad
     {
         return images
             .OrderBy(img => img.DisplayOrder)
-            .Select(img => _storageService.GetPublicUrl(img.FileKey))
+            .Select(img => _storageService.GetPublicUrl(img.FileKey, StorageTypeConstants.Food))
             .ToList();
     }
 }

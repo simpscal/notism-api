@@ -2,6 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.Food;
 using Notism.Shared.Extensions;
@@ -67,6 +68,6 @@ public class GetFoodsHandler : IRequestHandler<GetFoodsRequest, GetFoodsResponse
     private string GetImageUrl(IReadOnlyCollection<FoodImage> images)
     {
         var firstImage = images.OrderBy(img => img.DisplayOrder).FirstOrDefault();
-        return firstImage == null ? string.Empty : _storageService.GetPublicUrl(firstImage.FileKey);
+        return firstImage == null ? string.Empty : _storageService.GetPublicUrl(firstImage.FileKey, StorageTypeConstants.Food);
     }
 }

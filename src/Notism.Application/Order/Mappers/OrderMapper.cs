@@ -1,3 +1,4 @@
+using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Order.Models;
 using Notism.Domain.Order;
@@ -48,7 +49,7 @@ public static class OrderMapper
         IStorageService storageService)
     {
         var firstImage = images.OrderBy(img => img.DisplayOrder).FirstOrDefault();
-        return firstImage == null ? string.Empty : storageService.GetPublicUrl(firstImage.FileKey);
+        return firstImage == null ? string.Empty : storageService.GetPublicUrl(firstImage.FileKey, StorageTypeConstants.Food);
     }
 
     private static DeliveryStatusTimingResponse CalculateDeliveryStatusTiming(Domain.Order.Order order)
