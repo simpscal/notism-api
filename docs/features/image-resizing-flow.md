@@ -28,7 +28,7 @@ Client → API → Presigned URL → Private S3 Bucket → S3 Event → Lambda �
 
 ### 2. AWS Lambda Functions
 
-There are three resizing functions, each triggered by S3 `ObjectCreated` on the private bucket with different prefixes:
+There are three resizing functions, each triggered by S3 `ObjectCreated` on the private bucket with different prefixes. All three use the same IAM execution role: **notism-image-resizing-role**.
 
 | Function | S3 prefix | Dimensions | Destination folder (public bucket) |
 |----------|-----------|------------|-------------------------------------|
