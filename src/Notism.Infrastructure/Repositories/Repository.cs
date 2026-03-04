@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+
 using Microsoft.EntityFrameworkCore;
 
 using Notism.Application.Common.Constants;
@@ -32,6 +34,14 @@ public class Repository<T>(AppDbContext appDbContext) : IRepository<T>
         return queryable.FirstOrDefaultAsync();
     }
 
+    public async Task<TProjection?> FindByExpressionAsync<TProjection>(ISpecification<T> specification, Expression<Func<T, TProjection>> select)
+    {
+        var queryable = _dbSet.AsQueryable();
+        queryable = queryable.Where(specification.ToExpression());
+        queryable = specification.ApplyOrdering(queryable);
+        return await queryable.Select(select).FirstOrDefaultAsync();
+    }
+
     public async Task<IEnumerable<T>> FilterByExpressionAsync(ISpecification<T> specification)
     {
         var queryable = _dbSet.AsQueryable();
@@ -51,6 +61,14 @@ public class Repository<T>(AppDbContext appDbContext) : IRepository<T>
         queryable = specification.ApplyOrdering(queryable);
 
         return await queryable.ToListAsync();
+    }
+
+    public async Task<IEnumerable<TProjection>> FilterByExpressionAsync<TProjection>(ISpecification<T> specification, Expression<Func<T, TProjection>> select)
+    {
+        var queryable = _dbSet.AsQueryable();
+        queryable = queryable.Where(specification.ToExpression());
+        queryable = specification.ApplyOrdering(queryable);
+        return await queryable.Select(select).ToListAsync();
     }
 
     public async Task<PagedResult<T>> FilterPagedByExpressionAsync(
@@ -77,6 +95,19 @@ public class Repository<T>(AppDbContext appDbContext) : IRepository<T>
         var items = await queryable.ToListAsync();
 
         return new PagedResult<T>() { TotalCount = totalCount, Items = items, };
+    }
+
+    public async Task<PagedResult<TProjection>> FilterPagedByExpressionAsync<TProjection>(
+        ISpecification<T> specification,
+        Pagination pagination,
+        Expression<Func<T, TProjection>> select)
+    {
+        var queryable = _dbSet.AsQueryable();
+        queryable = queryable.Where(specification.ToExpression());
+        queryable = specification.ApplyOrdering(queryable);
+        var totalCount = await queryable.CountAsync();
+        var items = await queryable.Skip(pagination.Skip).Take(pagination.Take).Select(select).ToListAsync();
+        return new PagedResult<TProjection>() { TotalCount = totalCount, Items = items };
     }
 
     public async Task<T> AddAsync(T entity)
