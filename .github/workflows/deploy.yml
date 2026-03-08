@@ -139,7 +139,8 @@ jobs:
         run: |
           echo "Deploying $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG to $EC2_HOST"
           mkdir -p ~/.ssh
-          echo "$EC2_SSH_KEY" > ~/.ssh/deploy_key.pem
+          # Write key without CRLF and with correct permissions (avoids "Permission denied" from bad key format)
+          printf '%s\n' "$EC2_SSH_KEY" | sed 's/\r$//' > ~/.ssh/deploy_key.pem
           chmod 600 ~/.ssh/deploy_key.pem
           ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
           # Copy env file built from GitHub secrets to EC2
