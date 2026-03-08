@@ -6,8 +6,7 @@ using Notism.Api.Middlewares;
 using Notism.Application;
 using Notism.Infrastructure;
 
-var envName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Development";
-var envFile = $".env.{envName.ToLowerInvariant()}";
+var envFile = ".env";
 if (File.Exists(envFile))
 {
     Env.Load(envFile);
