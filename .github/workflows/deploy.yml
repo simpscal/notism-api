@@ -144,7 +144,7 @@ jobs:
           chmod 600 ~/.ssh/deploy_key.pem
           ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts 2>/dev/null || true
           # Copy env file built from GitHub secrets to EC2
-          ssh -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=accept-new "${EC2_USER:-ec2-user}@$EC2_HOST" "mkdir -p /opt/notism"
+          ssh -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=accept-new "${EC2_USER:-ec2-user}@$EC2_HOST" "sudo mkdir -p /opt/notism && sudo chown \$(id -u):\$(id -g) /opt/notism"
           scp -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=accept-new .env-build/.env "${EC2_USER:-ec2-user}@$EC2_HOST:/opt/notism/.env"
           ssh -i ~/.ssh/deploy_key.pem -o StrictHostKeyChecking=accept-new "${EC2_USER:-ec2-user}@$EC2_HOST" << EOF
             set -e
