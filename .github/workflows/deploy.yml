@@ -93,6 +93,8 @@ jobs:
             printf 'Resend__ApiKey=%s\n' "$RESEND_API_KEY"
             printf 'ClientApp__Url=%s\n' "$CLIENT_APP_URL"
             printf 'AWS__Region=%s\n' "$AWS_REGION_ENV"
+            printf 'GoogleOAuth__ClientId=%s\n' "$GOOGLE_OAUTH_CLIENT_ID"
+            printf 'GoogleOAuth__ClientSecret=%s\n' "$GOOGLE_OAUTH_CLIENT_SECRET"
           } > .deploy/.env.api
 
           {
