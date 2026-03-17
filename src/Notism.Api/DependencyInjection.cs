@@ -20,7 +20,7 @@ public static class DependencyInjection
         services.AddConfigurationOptions(configuration);
         services.AddSwaggerConfiguration();
         services.AddJwtAuthentication(configuration);
-        services.AddCorsConfiguration();
+        services.AddCorsConfiguration(configuration);
         services.AddAntiforgeryConfiguration(environment);
 
         services.AddProblemDetails();
@@ -42,14 +42,17 @@ public static class DependencyInjection
         return services;
     }
 
-    private static IServiceCollection AddCorsConfiguration(this IServiceCollection services)
+    private static IServiceCollection AddCorsConfiguration(this IServiceCollection services, IConfiguration configuration)
     {
+        var clientAppUrl = configuration["ClientApp:Url"]
+            ?? throw new InvalidOperationException("ClientApp:Url is not configured.");
+
         services.AddCors(options =>
         {
             options.AddPolicy("DevelopmentCorsPolicy", builder =>
             {
                 builder
-                    .WithOrigins("http://localhost:4200")
+                    .WithOrigins(clientAppUrl)
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .WithExposedHeaders(HeaderNames.AntiForgeryToken)
@@ -59,7 +62,7 @@ public static class DependencyInjection
             options.AddPolicy("ProductionCorsPolicy", builder =>
             {
                 builder
-                    .WithOrigins("https://localhost:3000", "https://yourdomain.com")
+                    .WithOrigins(clientAppUrl)
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .WithExposedHeaders(HeaderNames.AntiForgeryToken)
