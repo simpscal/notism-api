@@ -2,8 +2,8 @@ using MediatR;
 
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.Common.Interfaces;
+using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
-using Notism.Domain.User.Specifications;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Auth.ResetPassword;
@@ -31,9 +31,9 @@ public class ResetPasswordHandler : IRequestHandler<ResetPasswordRequest, ResetP
         ResetPasswordRequest request,
         CancellationToken cancellationToken)
     {
-        var resetToken = await _passwordResetTokenRepository.FindByExpressionAsync(
-            new PasswordResetTokenByTokenSpecification(request.Token))
-        ?? throw new ResultFailureException("Invalid or expired reset token");
+        var tokenSpec = new FilterSpecification<PasswordResetToken>(t => t.Token == request.Token && !t.IsUsed && t.ExpiresAt > DateTime.UtcNow);
+        var resetToken = await _passwordResetTokenRepository.FindByExpressionAsync(tokenSpec)
+            ?? throw new ResultFailureException("Invalid or expired reset token");
 
         if (!resetToken.IsValid())
         {
@@ -42,7 +42,8 @@ public class ResetPasswordHandler : IRequestHandler<ResetPasswordRequest, ResetP
 
         await _unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            var user = await _userRepository.FindByExpressionAsync(new UserByIdSpecification(resetToken.UserId)) ?? throw new ResultFailureException("User not found");
+            var userSpec = new FilterSpecification<Domain.User.User>(u => u.Id == resetToken.UserId);
+            var user = await _userRepository.FindByExpressionAsync(userSpec) ?? throw new ResultFailureException("User not found");
 
             var hashedPassword = _passwordService.HashPassword(request.NewPassword);
             user.ResetPassword(hashedPassword);

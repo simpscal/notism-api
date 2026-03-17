@@ -43,5 +43,7 @@
     <!-- Auth -->
     <PackageVersion Include="Microsoft.Extensions.Identity.Core" Version="8.0.0" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication" Version="2.2.0" />
+    <!-- Environment -->
+    <PackageVersion Include="DotNetEnv" Version="3.0.0" />
   </ItemGroup>
 </Project>

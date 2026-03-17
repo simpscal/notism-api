@@ -71,17 +71,16 @@ git clone <repository-url>
 cd notism-api
 ```
 
-### 2. Configure Database
+### 2. Configure sensitive settings (.env.development)
 
-Update the connection string in `src/Notism.Api/appsettings.Development.json`:
+Sensitive environment variables **must** be in an environment-specific .env file; they are loaded when you run the app. For local development, create `src/Notism.Api/.env.development` with at least:
 
-```json
-{
-  "ConnectionStrings": {
-    "DefaultConnection": "Host=localhost;Database=notism_db;Username=your_username;Password=your_password;Port=5432"
-  }
-}
+```bash
+ConnectionStrings__DefaultConnection=Host=localhost;Database=notism_db;Username=your_username;Password=your_password;Port=5432
+JwtSettings__Secret=your-super-secret-jwt-key-minimum-32-characters
 ```
+
+Add other secrets (e.g. `Resend__ApiKey`, AWS keys) as needed. See [Configuration](#configuration).
 
 ### 3. Run Database Migrations
 
@@ -89,14 +88,6 @@ Update the connection string in `src/Notism.Api/appsettings.Development.json`:
 cd src/Notism.Infrastructure
 dotnet ef database update --project ../Notism.Infrastructure/Notism.Infrastructure.csproj --startup-project ../Notism.Api/Notism.Api.csproj
 ```
-
-### 4. Configure Application Settings
-
-Update `src/Notism.Api/appsettings.Development.json` with your settings:
-
-- **JWT Secret**: Generate a secure secret key
-- **Resend API Key**: For email functionality
-- **Client App URL**: Your frontend application URL
 
 ## Running the Application
 
@@ -215,61 +206,18 @@ Set the following environment variables for production:
 
 ## Configuration
 
-### Application Settings
+### Sensitive environment variables and .env files
 
-Key configuration sections in `appsettings.json`:
+- **Sensitive environment variables must be stored in environment-specific .env files** (e.g. connection strings, API keys, JWT secrets).
+- **Do not** put secrets in `appsettings.json` or commit them to version control.
+- **Local development:** use `src/Notism.Api/.env.development`; variable values are loaded when you run the application.
+- **Production:** configure environment variables in your CI/CD pipeline (or your host’s environment); no .env file is used in production.
 
-- **ConnectionStrings**: Database connection
-- **JwtSettings**: JWT token configuration
-- **Resend**: Email service API key
-- **Email**: Email sender configuration
-- **ClientApp**: Frontend application URL
+### Loading variables from .env files (development only)
 
-### Environment-Specific Settings
+When you run the API in development, it loads environment variables from `.env.development` **before** building configuration (when `ASPNETCORE_ENVIRONMENT=Development`). In production, variables are provided by the CI/CD pipeline or host environment—no .env file is loaded.
 
-- `appsettings.Development.json` - Development environment
-- `appsettings.Production.json` - Production environment
-
-### Secret Environment Variables
-
-For security, sensitive configuration values should be stored as environment variables rather than in configuration files. The following secrets should be configured:
-
-#### Required Secrets
-
-- `ConnectionStrings__DefaultConnection` - PostgreSQL database connection string (includes password)
-- `JwtSettings__Secret` - Secret key for JWT token signing (minimum 32 characters recommended)
-- `Resend__ApiKey` - Resend email service API key
-
-#### Optional Secrets
-
-- `AWS__AccessKeyId` - AWS access key for S3 storage (if using AWS S3)
-- `AWS__SecretAccessKey` - AWS secret key for S3 storage (if using AWS S3)
-
-#### Setting Environment Variables
-
-**Development (Local):**
-```bash
-# Using .NET User Secrets (recommended for local development)
-dotnet user-secrets set "ConnectionStrings:DefaultConnection" "Host=localhost;Database=notism_db;Username=user;Password=password;Port=5432"
-dotnet user-secrets set "JwtSettings:Secret" "your-super-secret-jwt-key-minimum-32-characters"
-dotnet user-secrets set "Resend:ApiKey" "re_your-resend-api-key"
-```
-
-**Production:**
-```bash
-# Set as environment variables in your hosting platform
-export ConnectionStrings__DefaultConnection="Host=db.example.com;Database=notism_db;Username=user;Password=password;Port=5432"
-export JwtSettings__Secret="your-production-jwt-secret-key"
-export Resend__ApiKey="re_your-production-resend-api-key"
-```
-
-**Docker:**
-```bash
-# In docker-compose.yml or as environment variables
-environment:
-  - ConnectionStrings__DefaultConnection=Host=db;Database=notism_db;Username=user;Password=password;Port=5432
-  - JwtSettings__Secret=your-jwt-secret
-  - Resend__ApiKey=re_your-resend-api-key
-```
-
-> **⚠️ Security Note**: Never commit secrets to version control. Use environment variables, user secrets, or a secrets management service in production.
+- Place `.env.development` in **`src/Notism.Api/`** and run the API from that directory (or the repo root with `dotnet run -p src/Notism.Api`).
+- Use `KEY=value` per line. For nested config use double underscores: `Section__Key=value` (e.g. `GoogleOAuth__ClientId=...`).
+- Values from the .env file override `appsettings.json` because they are loaded as environment variables.
+- **Do not commit .env.development**; it is listed in `.gitignore`.

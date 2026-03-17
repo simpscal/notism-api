@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Antiforgery;
 
+using Notism.Api.Constants;
 using Notism.Api.Interfaces;
-using Notism.Shared.Constants;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Api.Services;
@@ -22,8 +22,8 @@ public class CookieService : ICookieService
         var cookieOptions = new CookieOptions
         {
             HttpOnly = true,
-            Secure = !_environment.IsDevelopment(),
-            SameSite = _environment.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
+            Secure = false,
+            SameSite = SameSiteMode.Lax,
             Expires = expiresAt,
             Path = "/",
         };
@@ -41,8 +41,8 @@ public class CookieService : ICookieService
         var cookieOptions = new CookieOptions
         {
             HttpOnly = true,
-            Secure = !_environment.IsDevelopment(),
-            SameSite = _environment.IsDevelopment() ? SameSiteMode.Lax : SameSiteMode.None,
+            Secure = false,
+            SameSite = SameSiteMode.Lax,
             Path = "/",
         };
 

@@ -20,6 +20,6 @@ public enum UploadType
 {
     [StringValue("avatar")]
     Avatar,
-    [StringValue("upload")]
-    Upload,
+    [StringValue("food")]
+    Food,
 }

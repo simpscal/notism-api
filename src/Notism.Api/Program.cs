@@ -1,8 +1,16 @@
+using DotNetEnv;
+
 using Notism.Api;
 using Notism.Api.Endpoints;
 using Notism.Api.Middlewares;
 using Notism.Application;
 using Notism.Infrastructure;
+
+var envFile = ".env";
+if (File.Exists(envFile))
+{
+    Env.Load(envFile);
+}
 
 var builder = WebApplication.CreateBuilder(args);
 {
@@ -33,7 +41,11 @@ var app = builder.Build();
 
     app.MapAuthEndpoints();
     app.MapUserEndpoints();
+    app.MapAdminEndpoints();
     app.MapStorageEndpoints();
+    app.MapFoodEndpoints();
+    app.MapCartEndpoints();
+    app.MapOrderEndpoints();
 
     app.Run();
 }

@@ -6,8 +6,9 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.Common.Interfaces;
+using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
-using Notism.Domain.User.Specifications;
+using Notism.Domain.User.ValueObjects;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Auth.RequestPasswordReset;
@@ -38,7 +39,9 @@ public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetR
         RequestPasswordResetRequest request,
         CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByExpressionAsync(new UserByEmailSpecification(request.Email));
+        var email = Email.Create(request.Email);
+        var userSpec = new FilterSpecification<Domain.User.User>(u => u.Email.Equals(email));
+        var user = await _userRepository.FindByExpressionAsync(userSpec);
 
         if (user is null)
         {
@@ -50,8 +53,8 @@ public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetR
         }
 
         // Check if there's already an active token for this user
-        var existingToken = await _passwordResetTokenRepository.FindByExpressionAsync(
-            new ActivePasswordResetTokenByUserIdSpecification(user.Id));
+        var tokenSpec = new FilterSpecification<PasswordResetToken>(t => t.UserId == user.Id && !t.IsUsed && t.ExpiresAt > DateTime.UtcNow);
+        var existingToken = await _passwordResetTokenRepository.FindByExpressionAsync(tokenSpec);
 
         if (existingToken is not null && existingToken.IsValid())
         {

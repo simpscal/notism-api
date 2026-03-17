@@ -9,4 +9,3 @@ public interface ICookieService
     Task<string> GenerateAntiForgeryTokenAsync(HttpContext context);
     Task ValidateAntiForgeryTokenAsync(HttpContext context);
 }
-

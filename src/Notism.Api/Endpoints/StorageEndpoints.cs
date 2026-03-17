@@ -47,10 +47,11 @@ public static class StorageEndpoints
 
     private static async Task<IResult> DeleteFileAsync(
         [FromQuery] string fileKey,
+        [FromQuery] string type,
         IMediator mediator,
         CancellationToken cancellationToken)
     {
-        var request = new DeleteFileRequest { FileKey = fileKey };
+        var request = new DeleteFileRequest { FileKey = fileKey, Type = type };
         await mediator.Send(request, cancellationToken);
         return Results.Ok();
     }

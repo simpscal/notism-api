@@ -4,10 +4,10 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
+using Notism.Api.Constants;
 using Notism.Api.Interfaces;
 using Notism.Api.Services;
 using Notism.Shared.Configuration;
-using Notism.Shared.Constants;
 
 namespace Notism.Api;
 
@@ -78,13 +78,8 @@ public static class DependencyInjection
             options.HeaderName = HeaderNames.AntiForgeryToken;
             options.Cookie.Name = CookieNames.AntiForgery;
             options.Cookie.HttpOnly = true;
-            options.Cookie.SecurePolicy = environment.IsDevelopment()
-                ? CookieSecurePolicy.None
-                : CookieSecurePolicy.Always;
-
-            options.Cookie.SameSite = environment.IsDevelopment()
-                ? SameSiteMode.Lax
-                : SameSiteMode.None;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+            options.Cookie.SameSite = SameSiteMode.Lax;
         });
 
         return services;
@@ -94,6 +89,8 @@ public static class DependencyInjection
     {
         services.AddSwaggerGen(options =>
         {
+            // Use fully qualified names to avoid schema ID conflicts
+            options.CustomSchemaIds(type => type.FullName);
             options.AddSecurityDefinition(
                 "Bearer",
                 new OpenApiSecurityScheme
