@@ -6,6 +6,11 @@ data "aws_cloudfront_cache_policy" "caching_optimized" {
   name = "Managed-CachingOptimized"
 }
 
+locals {
+  cloudfront_web_origin_id      = aws_s3_bucket.web.bucket_regional_domain_name
+  cloudfront_web_prod_origin_id = aws_s3_bucket.web_prod.bucket_regional_domain_name
+}
+
 # ------------------------------------------------------------------------------
 # Origin Access Controls
 # ------------------------------------------------------------------------------
@@ -40,15 +45,15 @@ resource "aws_cloudfront_distribution" "web" {
 
   origin {
     domain_name              = aws_s3_bucket.web.bucket_regional_domain_name
-    origin_id                = "notism-web.s3.us-east-1.amazonaws.com-mhrx2wqq6hp"
+    origin_id                = local.cloudfront_web_origin_id
     origin_access_control_id = aws_cloudfront_origin_access_control.web.id
     connection_attempts      = 3
     connection_timeout       = 10
   }
 
   default_cache_behavior {
-    target_origin_id       = "notism-web.s3.us-east-1.amazonaws.com-mhrx2wqq6hp"
-    viewer_protocol_policy = "redirect-to-https"
+    target_origin_id       = local.cloudfront_web_origin_id
+    viewer_protocol_policy = "allow-all"
     compress               = true
     cache_policy_id        = data.aws_cloudfront_cache_policy.caching_optimized.id
 
@@ -93,14 +98,14 @@ resource "aws_cloudfront_distribution" "web_prod" {
 
   origin {
     domain_name              = aws_s3_bucket.web_prod.bucket_regional_domain_name
-    origin_id                = "notism-web-prod.s3.us-east-1.amazonaws.com-mhulc0cnt2u"
+    origin_id                = local.cloudfront_web_prod_origin_id
     origin_access_control_id = aws_cloudfront_origin_access_control.web_prod.id
     connection_attempts      = 3
     connection_timeout       = 10
   }
 
   default_cache_behavior {
-    target_origin_id       = "notism-web-prod.s3.us-east-1.amazonaws.com-mhulc0cnt2u"
+    target_origin_id       = local.cloudfront_web_prod_origin_id
     viewer_protocol_policy = "redirect-to-https"
     compress               = true
     cache_policy_id        = data.aws_cloudfront_cache_policy.caching_optimized.id
