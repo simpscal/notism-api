@@ -34,7 +34,6 @@ public static class DependencyInjection
     {
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
         services.Configure<AwsSettings>(configuration.GetSection(AwsSettings.SectionName));
-        services.Configure<ResendSettings>(configuration.GetSection(ResendSettings.SectionName));
         services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
         services.Configure<ClientAppSettings>(configuration.GetSection(ClientAppSettings.SectionName));
         services.Configure<GoogleOAuthSettings>(configuration.GetSection(GoogleOAuthSettings.SectionName));

@@ -75,7 +75,7 @@ jobs:
         env:
           CONNECTION_STRING: ${{ secrets.CONNECTION_STRING }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          MAILERSEND_API_KEY: ${{ secrets.MAILERSEND_API_KEY }}
           CLIENT_APP_URL: ${{ vars.CLIENT_APP_URL }}
           AWS_REGION_ENV: ${{ vars.AWS_REGION }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
@@ -90,7 +90,7 @@ jobs:
             printf 'ASPNETCORE_ENVIRONMENT=Production\n'
             printf 'ConnectionStrings__DefaultConnection=%s\n' "$CONNECTION_STRING"
             printf 'JwtSettings__Secret=%s\n' "$JWT_SECRET"
-            printf 'Resend__ApiKey=%s\n' "$RESEND_API_KEY"
+            printf 'Email__ApiKey=%s\n' "$MAILERSEND_API_KEY"
             printf 'ClientApp__Url=%s\n' "$CLIENT_APP_URL"
             printf 'AWS__Region=%s\n' "$AWS_REGION_ENV"
             printf 'GoogleOAuth__ClientId=%s\n' "$GOOGLE_OAUTH_CLIENT_ID"

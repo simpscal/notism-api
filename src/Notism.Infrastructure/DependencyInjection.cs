@@ -1,3 +1,5 @@
+using System.Net.Http.Headers;
+
 using Amazon.S3;
 
 using Microsoft.EntityFrameworkCore;
@@ -14,8 +16,7 @@ using Notism.Domain.User;
 using Notism.Infrastructure.Persistence;
 using Notism.Infrastructure.Repositories;
 using Notism.Infrastructure.Services;
-
-using Resend;
+using Notism.Shared.Configuration;
 
 namespace Notism.Infrastructure;
 
@@ -42,14 +43,13 @@ public static class DependencyInjection
 
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IPasswordService, PasswordService>();
-        services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IStorageService, S3StorageService>();
 
         services.AddHttpClient<IHttpService, HttpService>();
         services.AddScoped<IGoogleOAuthService, GoogleOAuthService>();
 
         services.AddAWSS3(configuration);
-        services.AddResend(configuration);
+        services.AddMailerSend(configuration);
 
         return services;
     }
@@ -67,17 +67,16 @@ public static class DependencyInjection
         return services;
     }
 
-    private static IServiceCollection AddResend(this IServiceCollection services, IConfiguration configuration)
+    private static IServiceCollection AddMailerSend(this IServiceCollection services, IConfiguration configuration)
     {
-        var apiKey = configuration["Resend:ApiKey"] ?? throw new ArgumentNullException("Resend:ApiKey configuration is missing");
+        var apiKey = configuration[$"{EmailSettings.SectionName}:ApiKey"]
+            ?? throw new ArgumentNullException("Email:ApiKey", "MailerSend API key configuration is missing");
 
-        services.AddOptions();
-        services.Configure<ResendClientOptions>(o =>
+        services.AddHttpClient<IEmailService, EmailService>(client =>
         {
-            o.ApiToken = apiKey;
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         });
-        services.AddHttpClient<ResendClient>();
-        services.AddTransient<IResend, ResendClient>();
 
         return services;
     }
