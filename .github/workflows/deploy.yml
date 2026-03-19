@@ -78,7 +78,6 @@ jobs:
           CONNECTION_STRING: ${{ secrets.CONNECTION_STRING }}
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           MAILERSEND_API_KEY: ${{ secrets.MAILERSEND_API_KEY }}
-          CLIENT_APP_URL: ${{ vars.CLIENT_APP_URL }}
           AWS_REGION_ENV: ${{ vars.AWS_REGION }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           ECR_REGISTRY: ${{ needs.build-and-push.outputs.ecr-registry }}
@@ -94,7 +93,6 @@ jobs:
             printf 'ConnectionStrings__DefaultConnection=%s\n' "$CONNECTION_STRING"
             printf 'JwtSettings__Secret=%s\n' "$JWT_SECRET"
             printf 'Email__ApiKey=%s\n' "$MAILERSEND_API_KEY"
-            printf 'ClientApp__Url=%s\n' "$CLIENT_APP_URL"
             printf 'AWS__Region=%s\n' "$AWS_REGION_ENV"
             printf 'GoogleOAuth__ClientId=%s\n' "$GOOGLE_OAUTH_CLIENT_ID"
             printf 'GoogleOAuth__ClientSecret=%s\n' "$GOOGLE_OAUTH_CLIENT_SECRET"
