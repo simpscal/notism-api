@@ -79,6 +79,8 @@ jobs:
           JWT_SECRET: ${{ secrets.JWT_SECRET }}
           MAILERSEND_API_KEY: ${{ secrets.MAILERSEND_API_KEY }}
           AWS_REGION: ${{ vars.AWS_REGION }}
+          AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
+          AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
           DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           ECR_REGISTRY: ${{ needs.build-and-push.outputs.ecr-registry }}
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
@@ -96,6 +98,8 @@ jobs:
             printf 'JwtSettings__Secret=%s\n' "$JWT_SECRET"
             printf 'Email__ApiKey=%s\n' "$MAILERSEND_API_KEY"
             printf 'AWS__Region=%s\n' "$AWS_REGION"
+            printf 'AWS__AccessKey=%s\n' "$AWS_ACCESS_KEY"
+            printf 'AWS__SecretKey=%s\n' "$AWS_SECRET_KEY"
             printf 'GoogleOAuth__ClientId=%s\n' "$GOOGLE_OAUTH_CLIENT_ID"
             printf 'GoogleOAuth__ClientSecret=%s\n' "$GOOGLE_OAUTH_CLIENT_SECRET"
           } > .deploy/.env.api
