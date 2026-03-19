@@ -1,5 +1,7 @@
 using DotNetEnv;
 
+using Microsoft.AspNetCore.HttpOverrides;
+
 using Notism.Api;
 using Notism.Api.Endpoints;
 using Notism.Api.Middlewares;
@@ -22,6 +24,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 var app = builder.Build();
 {
+    var forwardedHeadersOptions = new ForwardedHeadersOptions
+    {
+        ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto,
+    };
+    forwardedHeadersOptions.KnownNetworks.Clear();
+    forwardedHeadersOptions.KnownProxies.Clear();
+    app.UseForwardedHeaders(forwardedHeadersOptions);
+
     app.UseCors(app.Environment.IsDevelopment() ? "DevelopmentCorsPolicy" : "ProductionCorsPolicy");
 
     if (app.Environment.IsDevelopment())

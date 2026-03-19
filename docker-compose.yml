@@ -1,4 +1,17 @@
 services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
   db:
     image: postgres:16-alpine
     container_name: notism-db
@@ -6,21 +19,21 @@ services:
       - pgdata:/var/lib/postgresql/data
     environment:
       POSTGRES_USER: notismadmin
-      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
       POSTGRES_DB: notism_db
     restart: unless-stopped
 
   api:
     image: ${API_IMAGE}
     container_name: notism-api
-    ports:
-      - "5000:5000"
+    expose:
+      - "5000"
     env_file:
       - .env.api
-    depends_on:
-      - db
     restart: unless-stopped
 
 volumes:
   pgdata:
     name: notism-pgdata
+  caddy_data:
+  caddy_config:
