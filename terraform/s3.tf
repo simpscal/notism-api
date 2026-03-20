@@ -152,7 +152,13 @@ resource "aws_s3_bucket_cors_configuration" "private_storage" {
   cors_rule {
     allowed_headers = ["*"]
     allowed_methods = ["PUT", "GET", "DELETE", "HEAD"]
-    allowed_origins = ["http://localhost:4200"]
+    allowed_origins = [
+      "http://localhost:4200",
+      "https://${aws_cloudfront_distribution.web.domain_name}",
+      "https://${aws_cloudfront_distribution.web_prod.domain_name}",
+      "http://${aws_cloudfront_distribution.web.domain_name}",
+      "http://${aws_cloudfront_distribution.web_prod.domain_name}",
+    ]
     expose_headers  = ["ETag", "x-amz-server-side-encryption", "x-amz-request-id", "x-amz-id-2"]
     max_age_seconds = 3000
   }
@@ -192,7 +198,13 @@ resource "aws_s3_bucket_policy" "private_storage" {
         Resource = "${aws_s3_bucket.private_storage.arn}/*"
         Condition = {
           StringLike = {
-            "aws:Referer" = "http://localhost:4200/*"
+            "aws:Referer" = [
+              "http://localhost:4200/*",
+              "https://${aws_cloudfront_distribution.web.domain_name}/*",
+              "https://${aws_cloudfront_distribution.web_prod.domain_name}/*",
+              "http://${aws_cloudfront_distribution.web.domain_name}/*",
+              "http://${aws_cloudfront_distribution.web_prod.domain_name}/*",
+            ]
           }
         }
       }
