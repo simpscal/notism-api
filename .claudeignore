@@ -1,0 +1,55 @@
+# Build outputs
+bin/
+obj/
+*.o
+*.a
+*.so
+
+# Dependencies
+packages/
+node_modules/
+vendor/
+
+# IDE and editor files
+.vs/
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment and secrets
+.env
+.env.local
+.env.*.local
+appsettings.*.json
+!appsettings.Development.json
+!appsettings.json
+
+# Test and coverage
+coverage/
+.coverage/
+*.trx
+TestResults/
+
+# Logs
+logs/
+*.log
+
+# Temporary files
+tmp/
+temp/
+*.tmp
+
+# OS files
+Thumbs.db
+.DS_Store
+
+# NuGet
+*.nupkg
+*.snupkg
+
+# User-specific files
+*.user
+*.suo
