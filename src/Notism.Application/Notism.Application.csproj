@@ -11,5 +11,6 @@
         <PackageReference Include="FluentValidation.DependencyInjectionExtensions" />
         <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
         <PackageReference Include="System.IdentityModel.Tokens.Jwt" />
+        <PackageReference Include="System.Resources.Extensions" />
     </ItemGroup>
 </Project>

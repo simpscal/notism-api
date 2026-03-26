@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
 using Notism.Shared.Exceptions;
@@ -16,15 +17,18 @@ public class GetUserProfileHandler : IRequestHandler<GetUserProfileRequest, GetU
     private readonly IRepository<Domain.User.User> _userRepository;
     private readonly IStorageService _storageService;
     private readonly ILogger<GetUserProfileHandler> _logger;
+    private readonly IMessages _messages;
 
     public GetUserProfileHandler(
         IRepository<Domain.User.User> userRepository,
         IStorageService storageService,
-        ILogger<GetUserProfileHandler> logger)
+        ILogger<GetUserProfileHandler> logger,
+        IMessages messages)
     {
         _userRepository = userRepository;
         _storageService = storageService;
         _logger = logger;
+        _messages = messages;
     }
 
     public async Task<GetUserProfileResponse> Handle(
@@ -33,7 +37,7 @@ public class GetUserProfileHandler : IRequestHandler<GetUserProfileRequest, GetU
     {
         var specification = new FilterSpecification<Domain.User.User>(u => u.Id == request.UserId);
         var user = await _userRepository.FindByExpressionAsync(specification)
-            ?? throw new ResultFailureException("User not found");
+            ?? throw new ResultFailureException(_messages.UserNotFound);
 
         string avatarUrl = user.AvatarUrl ?? string.Empty;
         if (!string.IsNullOrWhiteSpace(user.AvatarUrl) && !avatarUrl.IsValidUrl())

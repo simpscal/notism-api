@@ -1,5 +1,8 @@
 using FluentValidation;
 
+using Microsoft.Extensions.Localization;
+
+using Notism.Application.Common.Services;
 using Notism.Application.Common.Validators;
 using Notism.Domain.Food.Enums;
 
@@ -7,7 +10,7 @@ namespace Notism.Application.Food.AdminUpdateFood;
 
 public class AdminUpdateFoodRequestValidator : AbstractValidator<AdminUpdateFoodRequest>
 {
-    public AdminUpdateFoodRequestValidator()
+    public AdminUpdateFoodRequestValidator(IStringLocalizer<Messages> localizer)
     {
         RuleFor(x => x.FoodId)
             .NotEmpty()
@@ -36,7 +39,7 @@ public class AdminUpdateFoodRequestValidator : AbstractValidator<AdminUpdateFood
             .When(x => !string.IsNullOrWhiteSpace(x.Category));
 
         RuleFor(x => x.QuantityUnit)
-            .ValidOptionalEnum<AdminUpdateFoodRequest, QuantityUnit>("QuantityUnit");
+            .ValidOptionalEnum<AdminUpdateFoodRequest, QuantityUnit>(localizer, "QuantityUnit");
 
         RuleFor(x => x.StockQuantity)
             .GreaterThanOrEqualTo(0)

@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
@@ -18,18 +19,21 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
     private readonly IRepository<Domain.Food.Food> _foodRepository;
     private readonly IStorageService _storageService;
     private readonly ILogger<AddCartItemHandler> _logger;
+    private readonly IMessages _messages;
     private AddCartItemRequest? _request;
 
     public AddCartItemHandler(
         ICartItemRepository cartItemRepository,
         IRepository<Domain.Food.Food> foodRepository,
         IStorageService storageService,
-        ILogger<AddCartItemHandler> logger)
+        ILogger<AddCartItemHandler> logger,
+        IMessages messages)
     {
         _cartItemRepository = cartItemRepository;
         _foodRepository = foodRepository;
         _storageService = storageService;
         _logger = logger;
+        _messages = messages;
     }
 
     public async Task<AddCartItemResponse> Handle(
@@ -55,11 +59,11 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             .Include("Category")
             .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1));
         var food = await _foodRepository.FindByExpressionAsync(foodSpecification)
-            ?? throw new ResultFailureException("Food not found");
+            ?? throw new ResultFailureException(_messages.FoodNotFound);
 
         if (!food.IsAvailable)
         {
-            throw new ResultFailureException("Food is not available");
+            throw new ResultFailureException(_messages.FoodNotAvailable);
         }
 
         return food;
@@ -81,7 +85,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         var newQuantity = existingCartItem.Quantity + _request!.Quantity;
         if (newQuantity > food.StockQuantity)
         {
-            throw new ResultFailureException("Insufficient stock");
+            throw new ResultFailureException(_messages.InsufficientStock);
         }
 
         existingCartItem.UpdateQuantity(newQuantity);
@@ -113,7 +117,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
     {
         if (_request!.Quantity > food.StockQuantity)
         {
-            throw new ResultFailureException("Insufficient stock");
+            throw new ResultFailureException(_messages.InsufficientStock);
         }
 
         var cartItem = CartItem.Create(_request.UserId, _request.FoodId, _request.Quantity);

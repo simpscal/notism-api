@@ -2,6 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Services;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Shared.Exceptions;
@@ -12,13 +13,16 @@ public class AdminAddCategoryHandler : IRequestHandler<AdminAddCategoryRequest, 
 {
     private readonly ICategoryRepository _categoryRepository;
     private readonly ILogger<AdminAddCategoryHandler> _logger;
+    private readonly IMessages _messages;
 
     public AdminAddCategoryHandler(
         ICategoryRepository categoryRepository,
-        ILogger<AdminAddCategoryHandler> logger)
+        ILogger<AdminAddCategoryHandler> logger,
+        IMessages messages)
     {
         _categoryRepository = categoryRepository;
         _logger = logger;
+        _messages = messages;
     }
 
     public async Task<AdminAddCategoryResponse> Handle(
@@ -31,7 +35,7 @@ public class AdminAddCategoryHandler : IRequestHandler<AdminAddCategoryRequest, 
         var existing = await _categoryRepository.FindByExpressionAsync(existingSpec);
         if (existing != null)
         {
-            throw new ResultFailureException("A category with this name already exists.");
+            throw new ResultFailureException(_messages.CategoryAlreadyExists);
         }
 
         var category = Notism.Domain.Food.Category.Create(request.Name);

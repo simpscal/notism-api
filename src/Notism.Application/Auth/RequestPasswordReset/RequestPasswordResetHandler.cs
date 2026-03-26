@@ -5,6 +5,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
@@ -20,19 +21,22 @@ public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetR
     private readonly IEmailService _emailService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<RequestPasswordResetHandler> _logger;
+    private readonly IMessages _messages;
 
     public RequestPasswordResetHandler(
         IRepository<Domain.User.User> userRepository,
         IRepository<PasswordResetToken> passwordResetTokenRepository,
         IEmailService emailService,
         IUnitOfWork unitOfWork,
-        ILogger<RequestPasswordResetHandler> logger)
+        ILogger<RequestPasswordResetHandler> logger,
+        IMessages messages)
     {
         _userRepository = userRepository;
         _passwordResetTokenRepository = passwordResetTokenRepository;
         _emailService = emailService;
         _unitOfWork = unitOfWork;
         _logger = logger;
+        _messages = messages;
     }
 
     public async Task<RequestPasswordResetResponse> Handle(
@@ -48,7 +52,7 @@ public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetR
             // Don't reveal if email exists for security reasons
             return new RequestPasswordResetResponse
             {
-                Message = "If the email exists, a password reset link has been sent.",
+                Message = _messages.PasswordResetEmailSent,
             };
         }
 
@@ -75,7 +79,7 @@ public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetR
             var result = await _passwordResetTokenRepository.SaveChangesAsync();
             if (result < 1)
             {
-                throw new ResultFailureException("Failed to process password reset request. Please try again later.");
+                throw new ResultFailureException(_messages.RequestPasswordResetFailed);
             }
 
             _logger.LogInformation("Password reset token created for user {UserId}. Attempting to send email.", user.Id);
@@ -86,13 +90,13 @@ public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetR
 
             return new RequestPasswordResetResponse
             {
-                Message = "If the email exists, a password reset link has been sent.",
+                Message = _messages.PasswordResetEmailSent,
             };
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Failed to complete password reset process for user {UserId}", user.Id);
-            throw new ResultFailureException("Failed to process password reset request. Please try again later.");
+            throw new ResultFailureException(_messages.RequestPasswordResetFailed);
         }
     }
 

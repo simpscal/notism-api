@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
@@ -18,17 +19,20 @@ public class AdminUpdateFoodHandler : IRequestHandler<AdminUpdateFoodRequest, Ad
     private readonly ICategoryRepository _categoryRepository;
     private readonly IStorageService _storageService;
     private readonly ILogger<AdminUpdateFoodHandler> _logger;
+    private readonly IMessages _messages;
 
     public AdminUpdateFoodHandler(
         IFoodRepository foodRepository,
         ICategoryRepository categoryRepository,
         IStorageService storageService,
-        ILogger<AdminUpdateFoodHandler> logger)
+        ILogger<AdminUpdateFoodHandler> logger,
+        IMessages messages)
     {
         _foodRepository = foodRepository;
         _categoryRepository = categoryRepository;
         _storageService = storageService;
         _logger = logger;
+        _messages = messages;
     }
 
     public async Task<AdminUpdateFoodResponse> Handle(
@@ -41,7 +45,7 @@ public class AdminUpdateFoodHandler : IRequestHandler<AdminUpdateFoodRequest, Ad
         var food = await _foodRepository.FindByExpressionAsync(specification);
         if (food == null)
         {
-            throw new ResultFailureException("Food not found");
+            throw new ResultFailureException(_messages.FoodNotFound);
         }
 
         var name = request.Name ?? food.Name;
@@ -55,7 +59,7 @@ public class AdminUpdateFoodHandler : IRequestHandler<AdminUpdateFoodRequest, Ad
             var categorySpec = new FilterSpecification<Domain.Food.Category>(
                 c => c.Name == categoryName && !c.IsDeleted);
             category = await _categoryRepository.FindByExpressionAsync(categorySpec)
-                ?? throw new ResultFailureException("Category not found.");
+                ?? throw new ResultFailureException(_messages.CategoryNotFound);
         }
 
         var quantityUnit = !string.IsNullOrWhiteSpace(request.QuantityUnit)

@@ -6,6 +6,7 @@ using MediatR;
 
 using Notism.Application.Auth.Models;
 using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
 using Notism.Domain.User.Enums;
@@ -21,19 +22,22 @@ public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackReq
     private readonly IPasswordService _passwordService;
     private readonly IMapper _mapper;
     private readonly IGoogleOAuthService _googleOAuthService;
+    private readonly IMessages _messages;
 
     public GoogleOAuthCallbackHandler(
         IUserRepository userRepository,
         ITokenService tokenService,
         IPasswordService passwordService,
         IMapper mapper,
-        IGoogleOAuthService googleOAuthService)
+        IGoogleOAuthService googleOAuthService,
+        IMessages messages)
     {
         _userRepository = userRepository;
         _tokenService = tokenService;
         _passwordService = passwordService;
         _mapper = mapper;
         _googleOAuthService = googleOAuthService;
+        _messages = messages;
     }
 
     public async Task<(AuthenticationResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)> Handle(
@@ -69,7 +73,7 @@ public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackReq
 
             if (await _userRepository.SaveChangesAsync() < 1)
             {
-                throw new ResultFailureException("There was an error creating the user");
+                throw new ResultFailureException(_messages.ErrorCreatingUser);
             }
         }
 

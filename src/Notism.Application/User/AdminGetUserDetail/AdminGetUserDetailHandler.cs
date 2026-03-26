@@ -2,6 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Services;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
 using Notism.Shared.Exceptions;
@@ -13,13 +14,16 @@ public class AdminGetUserDetailHandler : IRequestHandler<AdminGetUserDetailReque
 {
     private readonly IUserRepository _userRepository;
     private readonly ILogger<AdminGetUserDetailHandler> _logger;
+    private readonly IMessages _messages;
 
     public AdminGetUserDetailHandler(
         IUserRepository userRepository,
-        ILogger<AdminGetUserDetailHandler> logger)
+        ILogger<AdminGetUserDetailHandler> logger,
+        IMessages messages)
     {
         _userRepository = userRepository;
         _logger = logger;
+        _messages = messages;
     }
 
     public async Task<AdminUserDetailResponse> Handle(
@@ -28,7 +32,7 @@ public class AdminGetUserDetailHandler : IRequestHandler<AdminGetUserDetailReque
     {
         var specification = new FilterSpecification<Domain.User.User>(u => u.Id == request.UserId);
         var user = await _userRepository.FindByExpressionAsync(specification)
-            ?? throw new NotFoundException("User not found.");
+            ?? throw new NotFoundException(_messages.UserNotFound);
 
         _logger.LogInformation("Admin retrieved detail for user {UserId}", request.UserId);
 

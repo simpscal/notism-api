@@ -1,5 +1,8 @@
 using FluentValidation;
 
+using Microsoft.Extensions.Localization;
+
+using Notism.Application.Common.Services;
 using Notism.Application.Common.Validators;
 using Notism.Shared.Enums;
 using Notism.Shared.Extensions;
@@ -8,10 +11,10 @@ namespace Notism.Application.Order.AdminOrdersForTable;
 
 public class AdminOrdersForTableRequestValidator : AbstractValidator<AdminOrdersForTableRequest>
 {
-    public AdminOrdersForTableRequestValidator()
+    public AdminOrdersForTableRequestValidator(IStringLocalizer<Messages> localizer)
     {
-        RuleFor(x => x.Skip).ValidSkip();
-        RuleFor(x => x.Take).ValidTake();
+        RuleFor(x => x.Skip).ValidSkip(localizer);
+        RuleFor(x => x.Take).ValidTake(localizer);
 
         RuleFor(x => x.SortOrder)
             .Must(sortOrder => sortOrder is null || sortOrder.FromCamelCase<SortOrder>() != null)

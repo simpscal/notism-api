@@ -22,6 +22,7 @@ public static class DependencyInjection
         services.AddJwtAuthentication(configuration);
         services.AddCorsConfiguration(configuration);
         services.AddAntiforgeryConfiguration(environment);
+        services.AddLocalizationConfiguration();
 
         services.AddProblemDetails();
 
@@ -141,6 +142,13 @@ public static class DependencyInjection
                         throw new Exception("Empty JWTSettings Secret"))),
                 };
             });
+
+        return services;
+    }
+
+    private static IServiceCollection AddLocalizationConfiguration(this IServiceCollection services)
+    {
+        services.AddLocalization(opts => opts.ResourcesPath = "Resources");
 
         return services;
     }

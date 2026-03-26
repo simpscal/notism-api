@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" use="required" type="xsd:string" />
+              <xsd:attribute name="mimetype" use="required" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <assembly alias="System.Windows.Forms" name="System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089" />
+  <data name="UserAlreadyExists" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Người dùng với email này đã tồn tại</value>
+  </data>
+  <data name="ErrorCreatingUser" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Có lỗi xảy ra khi tạo người dùng</value>
+  </data>
+  <data name="InvalidCredentials" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Email hoặc mật khẩu không hợp lệ</value>
+  </data>
+  <data name="InvalidOrExpiredResetToken" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Token không hợp lệ hoặc đã hết hạn</value>
+  </data>
+  <data name="UserNotFound" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Không tìm thấy người dùng</value>
+  </data>
+  <data name="PasswordResetEmailSent" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Nếu email tồn tại, liên kết đặt lại mật khẩu đã được gửi.</value>
+  </data>
+  <data name="PasswordResetSuccess" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Mật khẩu đã được đặt lại thành công.</value>
+  </data>
+  <data name="RequestPasswordResetFailed" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Không thể xử lý yêu cầu đặt lại mật khẩu. Vui lòng thử lại sau.</value>
+  </data>
+  <data name="RefreshTokenNotFound" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Refresh token không tìm thấy</value>
+  </data>
+  <data name="CategoryNotFound" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Danh mục không tìm thấy.</value>
+  </data>
+  <data name="CategoryAlreadyExists" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Danh mục có tên này đã tồn tại.</value>
+  </data>
+  <data name="FoodNotFound" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Thực phẩm không tìm thấy</value>
+  </data>
+  <data name="FoodNotAvailable" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Thực phẩm không có sẵn</value>
+  </data>
+  <data name="DiscountPriceMustBeLess" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Giá giảm phải nhỏ hơn giá gốc</value>
+  </data>
+  <data name="InsufficientStock" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Hàng tồn kho không đủ</value>
+  </data>
+  <data name="CartItemNotFound" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Mục trong giỏ hàng không tìm thấy</value>
+  </data>
+  <data name="CartItemNotBelongToUser" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Mục giỏ hàng không thuộc về người dùng</value>
+  </data>
+  <data name="OrderNotFound" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Đơn hàng không tìm thấy</value>
+  </data>
+  <data name="NoCartItemsFound" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Không tìm thấy mục giỏ hàng nào với các ID được cung cấp.</value>
+  </data>
+  <data name="CartItemsNotFound" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Không tìm thấy mục giỏ hàng: {0}</value>
+  </data>
+  <data name="CannotDeleteOwnAccount" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Bạn không thể xóa tài khoản của riêng mình.</value>
+  </data>
+  <data name="CannotDeleteAdmin" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Không thể xóa một quản trị viên khác.</value>
+  </data>
+  <data name="CannotUpdateOwnRole" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Bạn không thể cập nhật vai trò của riêng mình.</value>
+  </data>
+  <data name="FailedToDeleteFile" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Không thể xóa tệp.</value>
+  </data>
+  <data name="UnexpectedError" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Có lỗi không mong muốn xảy ra. Vui lòng thử lại sau.</value>
+  </data>
+  <data name="LoggedOutSuccessfully" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Đã đăng xuất thành công</value>
+  </data>
+  <data name="PasswordRequired" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Mật khẩu là bắt buộc</value>
+  </data>
+  <data name="PasswordMinLength" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Mật khẩu phải có ít nhất 8 ký tự</value>
+  </data>
+  <data name="PasswordSpecialChar" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Mật khẩu phải chứa ít nhất một ký tự đặc biệt</value>
+  </data>
+  <data name="PasswordUppercase" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Mật khẩu phải chứa ít nhất một chữ hoa</value>
+  </data>
+  <data name="PasswordNumber" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Mật khẩu phải chứa ít nhất một số</value>
+  </data>
+  <data name="PasswordsDoNotMatch" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Mật khẩu không khớp</value>
+  </data>
+  <data name="FieldRequired" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>{0} là bắt buộc</value>
+  </data>
+  <data name="InvalidValue" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>{0} không hợp lệ</value>
+  </data>
+  <data name="SkipMustBeNonNegative" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Skip phải lớn hơn hoặc bằng 0</value>
+  </data>
+  <data name="TakeMustBeBetween" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Take phải từ 1 đến {0}</value>
+  </data>
+  <data name="UserId Required" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>UserId là bắt buộc</value>
+  </data>
+  <data name="FoodId Required" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>FoodId là bắt buộc</value>
+  </data>
+  <data name="QuantityMustBeGreaterThanZero" type="System.Resources.ResXString, System.Windows.Forms">
+    <value>Số lượng phải lớn hơn không</value>
+  </data>
+</root>

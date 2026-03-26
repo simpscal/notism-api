@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
 using Notism.Shared.Exceptions;
@@ -16,15 +17,18 @@ public class GetFoodByIdHandler : IRequestHandler<GetFoodByIdRequest, GetFoodByI
     private readonly IRepository<Domain.Food.Food> _foodRepository;
     private readonly IStorageService _storageService;
     private readonly ILogger<GetFoodByIdHandler> _logger;
+    private readonly IMessages _messages;
 
     public GetFoodByIdHandler(
         IRepository<Domain.Food.Food> foodRepository,
         IStorageService storageService,
-        ILogger<GetFoodByIdHandler> logger)
+        ILogger<GetFoodByIdHandler> logger,
+        IMessages messages)
     {
         _foodRepository = foodRepository;
         _storageService = storageService;
         _logger = logger;
+        _messages = messages;
     }
 
     public async Task<GetFoodByIdResponse> Handle(
@@ -37,7 +41,7 @@ public class GetFoodByIdHandler : IRequestHandler<GetFoodByIdRequest, GetFoodByI
         var food = await _foodRepository.FindByExpressionAsync(specification);
         if (food == null)
         {
-            throw new ResultFailureException("Food not found");
+            throw new ResultFailureException(_messages.FoodNotFound);
         }
 
         _logger.LogInformation("Retrieved food {FoodId}", request.FoodId);

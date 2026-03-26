@@ -2,6 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
@@ -14,15 +15,18 @@ public class UpdateCartItemQuantityHandler : IRequestHandler<UpdateCartItemQuant
     private readonly ICartItemRepository _cartItemRepository;
     private readonly IRepository<Domain.Food.Food> _foodRepository;
     private readonly ILogger<UpdateCartItemQuantityHandler> _logger;
+    private readonly IMessages _messages;
 
     public UpdateCartItemQuantityHandler(
         ICartItemRepository cartItemRepository,
         IRepository<Domain.Food.Food> foodRepository,
-        ILogger<UpdateCartItemQuantityHandler> logger)
+        ILogger<UpdateCartItemQuantityHandler> logger,
+        IMessages messages)
     {
         _cartItemRepository = cartItemRepository;
         _foodRepository = foodRepository;
         _logger = logger;
+        _messages = messages;
     }
 
     public async Task<UpdateCartItemQuantityResponse> Handle(
@@ -31,27 +35,27 @@ public class UpdateCartItemQuantityHandler : IRequestHandler<UpdateCartItemQuant
     {
         var cartItemSpecification = new FilterSpecification<CartItem>(c => c.Id == request.CartItemId);
         var cartItem = await _cartItemRepository.FindByExpressionAsync(cartItemSpecification)
-            ?? throw new ResultFailureException("Cart item not found");
+            ?? throw new ResultFailureException(_messages.CartItemNotFound);
 
         // Verify the cart item belongs to the user
         if (cartItem.UserId != request.UserId)
         {
-            throw new ResultFailureException("Cart item does not belong to the user");
+            throw new ResultFailureException(_messages.CartItemNotBelongToUser);
         }
 
         // Check if food is still available
         var foodSpecification = new FilterSpecification<Domain.Food.Food>(f => f.Id == cartItem.FoodId);
         var food = await _foodRepository.FindByExpressionAsync(foodSpecification)
-            ?? throw new ResultFailureException("Food not found");
+            ?? throw new ResultFailureException(_messages.FoodNotFound);
 
         if (!food.IsAvailable)
         {
-            throw new ResultFailureException("Food is not available");
+            throw new ResultFailureException(_messages.FoodNotAvailable);
         }
 
         if (request.Quantity > food.StockQuantity)
         {
-            throw new ResultFailureException("Insufficient stock");
+            throw new ResultFailureException(_messages.InsufficientStock);
         }
 
         cartItem.UpdateQuantity(request.Quantity);

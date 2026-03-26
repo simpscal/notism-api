@@ -2,10 +2,10 @@ using FluentValidation;
 
 using MediatR;
 
-using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.DependencyInjection;
 
 using Notism.Application.Common.Behaviors;
+using Notism.Application.Common.Services;
 
 namespace Notism.Application;
 
@@ -46,6 +46,8 @@ public static class DependencyInjection
 
     private static IServiceCollection AddUtilities(this IServiceCollection services)
     {
+        services.AddScoped<IMessages, Messages>();
+
         return services;
     }
 }

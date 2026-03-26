@@ -2,6 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Services;
 using Notism.Application.User.AdminGetUserDetail;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
@@ -15,13 +16,16 @@ public class AdminUpdateUserHandler : IRequestHandler<AdminUpdateUserRequest, Ad
 {
     private readonly IUserRepository _userRepository;
     private readonly ILogger<AdminUpdateUserHandler> _logger;
+    private readonly IMessages _messages;
 
     public AdminUpdateUserHandler(
         IUserRepository userRepository,
-        ILogger<AdminUpdateUserHandler> logger)
+        ILogger<AdminUpdateUserHandler> logger,
+        IMessages messages)
     {
         _userRepository = userRepository;
         _logger = logger;
+        _messages = messages;
     }
 
     public async Task<AdminUserDetailResponse> Handle(
@@ -30,12 +34,12 @@ public class AdminUpdateUserHandler : IRequestHandler<AdminUpdateUserRequest, Ad
     {
         if (request.TargetUserId == request.CallerUserId)
         {
-            throw new ResultFailureException("You cannot update your own role.");
+            throw new ResultFailureException(_messages.CannotUpdateOwnRole);
         }
 
         var specification = new FilterSpecification<Domain.User.User>(u => u.Id == request.TargetUserId);
         var user = await _userRepository.FindByExpressionAsync(specification)
-            ?? throw new NotFoundException("User not found.");
+            ?? throw new NotFoundException(_messages.UserNotFound);
 
         if (Enum.TryParse<UserRole>(request.Role, true, out var newRole))
         {

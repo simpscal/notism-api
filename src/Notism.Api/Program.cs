@@ -42,6 +42,14 @@ var app = builder.Build();
 
     app.UseHttpsRedirection();
 
+    var supportedCultures = new[] { "en", "vi" };
+    var localizationOptions = new RequestLocalizationOptions()
+        .SetDefaultCulture("en")
+        .AddSupportedCultures(supportedCultures)
+        .AddSupportedUICultures(supportedCultures);
+
+    app.UseRequestLocalization(localizationOptions);
+
     app.UseAuthentication();
     app.UseAuthorization();
 

@@ -1,5 +1,8 @@
 using FluentValidation;
 
+using Microsoft.Extensions.Localization;
+
+using Notism.Application.Common.Services;
 using Notism.Application.Common.Validators;
 using Notism.Domain.Food.Enums;
 
@@ -7,8 +10,12 @@ namespace Notism.Application.Food.AdminAddFood;
 
 public class AdminAddFoodRequestValidator : AbstractValidator<AdminAddFoodRequest>
 {
-    public AdminAddFoodRequestValidator()
+    private readonly IStringLocalizer<Messages> _localizer;
+
+    public AdminAddFoodRequestValidator(IStringLocalizer<Messages> localizer)
     {
+        _localizer = localizer;
+
         RuleFor(x => x.Name)
             .NotEmpty()
             .WithMessage("Name is required")
@@ -32,7 +39,7 @@ public class AdminAddFoodRequestValidator : AbstractValidator<AdminAddFoodReques
             .WithMessage("Category cannot exceed 200 characters");
 
         RuleFor(x => x.QuantityUnit)
-            .ValidRequiredEnum<AdminAddFoodRequest, QuantityUnit>("QuantityUnit");
+            .ValidRequiredEnum<AdminAddFoodRequest, QuantityUnit>(_localizer, "QuantityUnit");
 
         RuleFor(x => x.StockQuantity)
             .GreaterThanOrEqualTo(0)

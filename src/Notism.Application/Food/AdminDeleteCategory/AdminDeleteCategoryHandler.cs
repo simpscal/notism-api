@@ -2,6 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Services;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Shared.Exceptions;
@@ -13,15 +14,18 @@ public class AdminDeleteCategoryHandler : IRequestHandler<AdminDeleteCategoryReq
     private readonly ICategoryRepository _categoryRepository;
     private readonly IFoodRepository _foodRepository;
     private readonly ILogger<AdminDeleteCategoryHandler> _logger;
+    private readonly IMessages _messages;
 
     public AdminDeleteCategoryHandler(
         ICategoryRepository categoryRepository,
         IFoodRepository foodRepository,
-        ILogger<AdminDeleteCategoryHandler> logger)
+        ILogger<AdminDeleteCategoryHandler> logger,
+        IMessages messages)
     {
         _categoryRepository = categoryRepository;
         _foodRepository = foodRepository;
         _logger = logger;
+        _messages = messages;
     }
 
     public async Task Handle(AdminDeleteCategoryRequest request, CancellationToken cancellationToken)
@@ -29,7 +33,7 @@ public class AdminDeleteCategoryHandler : IRequestHandler<AdminDeleteCategoryReq
         var specification = new FilterSpecification<Domain.Food.Category>(
             c => c.Id == request.CategoryId && !c.IsDeleted);
         var category = await _categoryRepository.FindByExpressionAsync(specification)
-            ?? throw new NotFoundException("Category not found.");
+            ?? throw new NotFoundException(_messages.CategoryNotFound);
 
         category.MarkAsDeleted();
 

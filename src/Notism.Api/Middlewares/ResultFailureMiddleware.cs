@@ -2,6 +2,7 @@ using System.Net;
 using System.Text.Json;
 
 using Notism.Api.Models;
+using Notism.Application.Common.Services;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Api.Middlewares;
@@ -17,7 +18,7 @@ public class ResultFailureMiddleware
         _logger = logger;
     }
 
-    public async Task InvokeAsync(HttpContext context)
+    public async Task InvokeAsync(HttpContext context, IMessages messages)
     {
         try
         {
@@ -25,11 +26,11 @@ public class ResultFailureMiddleware
         }
         catch (Exception ex)
         {
-            await HandleExceptionAsync(context, ex);
+            await HandleExceptionAsync(context, ex, messages);
         }
     }
 
-    private async Task HandleExceptionAsync(HttpContext context, Exception exception)
+    private async Task HandleExceptionAsync(HttpContext context, Exception exception, IMessages messages)
     {
         var (statusCode, message, errors) = exception switch
         {
@@ -39,7 +40,7 @@ public class ResultFailureMiddleware
             UnauthorizedException unauthorizedEx => (HttpStatusCode.Unauthorized, unauthorizedEx.Message, null),
             ForbiddenException forbiddenEx => (HttpStatusCode.Forbidden, forbiddenEx.Message, null),
             InvalidRefreshTokenException refreshEx => (HttpStatusCode.Unauthorized, refreshEx.Message, null),
-            _ => (HttpStatusCode.InternalServerError, "An unexpected error occurred. Please try again later.", null),
+            _ => (HttpStatusCode.InternalServerError, messages.UnexpectedError, null),
         };
 
         _logger.LogWarning(

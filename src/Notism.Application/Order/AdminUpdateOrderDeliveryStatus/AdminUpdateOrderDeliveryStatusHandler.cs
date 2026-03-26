@@ -2,6 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Services;
 using Notism.Application.Order.Mappers;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
@@ -14,13 +15,16 @@ public class AdminUpdateOrderDeliveryStatusHandler : IRequestHandler<AdminUpdate
 {
     private readonly IOrderRepository _orderRepository;
     private readonly ILogger<AdminUpdateOrderDeliveryStatusHandler> _logger;
+    private readonly IMessages _messages;
 
     public AdminUpdateOrderDeliveryStatusHandler(
         IOrderRepository orderRepository,
-        ILogger<AdminUpdateOrderDeliveryStatusHandler> logger)
+        ILogger<AdminUpdateOrderDeliveryStatusHandler> logger,
+        IMessages messages)
     {
         _orderRepository = orderRepository;
         _logger = logger;
+        _messages = messages;
     }
 
     public async Task<AdminUpdateOrderDeliveryStatusResponse> Handle(
@@ -29,7 +33,7 @@ public class AdminUpdateOrderDeliveryStatusHandler : IRequestHandler<AdminUpdate
     {
         var specification = new AdminUpdateOrderDeliveryStatusSpecification(request.OrderId);
         var order = await _orderRepository.FindByExpressionAsync(specification)
-            ?? throw new ResultFailureException("Order not found");
+            ?? throw new ResultFailureException(_messages.OrderNotFound);
 
         var deliveryStatus = request.DeliveryStatus.ToEnum<DeliveryStatus>();
 

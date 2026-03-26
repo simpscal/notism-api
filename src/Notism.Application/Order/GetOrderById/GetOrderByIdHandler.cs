@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Application.Order.Mappers;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Order;
@@ -17,15 +18,18 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
     private readonly IOrderRepository _orderRepository;
     private readonly IStorageService _storageService;
     private readonly ILogger<GetOrderByIdHandler> _logger;
+    private readonly IMessages _messages;
 
     public GetOrderByIdHandler(
         IOrderRepository orderRepository,
         IStorageService storageService,
-        ILogger<GetOrderByIdHandler> logger)
+        ILogger<GetOrderByIdHandler> logger,
+        IMessages messages)
     {
         _orderRepository = orderRepository;
         _storageService = storageService;
         _logger = logger;
+        _messages = messages;
     }
 
     public async Task<GetOrderByIdResponse> Handle(
@@ -41,7 +45,7 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
             .Include("Items.Food.Images")
             .Include(o => o.StatusHistory);
         var order = await _orderRepository.FindByExpressionAsync(specification)
-            ?? throw new ResultFailureException("Order not found");
+            ?? throw new ResultFailureException(_messages.OrderNotFound);
 
         _logger.LogInformation("Retrieved order {SlugId} for user {UserId} (Admin: {IsAdmin})", request.SlugId, request.UserId, isAdmin);
 

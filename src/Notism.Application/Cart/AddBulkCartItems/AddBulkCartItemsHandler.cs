@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Notism.Application.Cart.Models;
 using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
@@ -20,6 +21,7 @@ public class AddBulkCartItemsHandler : IRequestHandler<AddBulkCartItemsRequest, 
     private readonly IStorageService _storageService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<AddBulkCartItemsHandler> _logger;
+    private readonly IMessages _messages;
     private AddBulkCartItemsRequest? _request;
 
     public AddBulkCartItemsHandler(
@@ -27,13 +29,15 @@ public class AddBulkCartItemsHandler : IRequestHandler<AddBulkCartItemsRequest, 
         IRepository<Domain.Food.Food> foodRepository,
         IStorageService storageService,
         IUnitOfWork unitOfWork,
-        ILogger<AddBulkCartItemsHandler> logger)
+        ILogger<AddBulkCartItemsHandler> logger,
+        IMessages messages)
     {
         _cartItemRepository = cartItemRepository;
         _foodRepository = foodRepository;
         _storageService = storageService;
         _unitOfWork = unitOfWork;
         _logger = logger;
+        _messages = messages;
     }
 
     public async Task<AddBulkCartItemsResponse> Handle(
@@ -110,17 +114,17 @@ public class AddBulkCartItemsHandler : IRequestHandler<AddBulkCartItemsRequest, 
     {
         if (!foodDictionary.TryGetValue(item.FoodId, out var food))
         {
-            throw new ResultFailureException("Food not found");
+            throw new ResultFailureException(_messages.FoodNotFound);
         }
 
         if (!food.IsAvailable)
         {
-            throw new ResultFailureException("Food is not available");
+            throw new ResultFailureException(_messages.FoodNotAvailable);
         }
 
         if (item.Quantity > food.StockQuantity)
         {
-            throw new ResultFailureException("Insufficient stock");
+            throw new ResultFailureException(_messages.InsufficientStock);
         }
 
         var cartItem = CartItem.Create(_request!.UserId, item.FoodId, item.Quantity);

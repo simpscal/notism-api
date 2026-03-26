@@ -2,6 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
@@ -18,17 +19,20 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
     private readonly IOrderRepository _orderRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<CreateOrderHandler> _logger;
+    private readonly IMessages _messages;
 
     public CreateOrderHandler(
         ICartItemRepository cartItemRepository,
         IOrderRepository orderRepository,
         IUnitOfWork unitOfWork,
-        ILogger<CreateOrderHandler> logger)
+        ILogger<CreateOrderHandler> logger,
+        IMessages messages)
     {
         _cartItemRepository = cartItemRepository;
         _orderRepository = orderRepository;
         _unitOfWork = unitOfWork;
         _logger = logger;
+        _messages = messages;
     }
 
     public async Task<CreateOrderResponse> Handle(
@@ -72,13 +76,13 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
 
         if (cartItems.Count == 0)
         {
-            throw new ResultFailureException("No cart items found with the provided IDs.");
+            throw new ResultFailureException(_messages.NoCartItemsFound);
         }
 
         var foundIds = cartItems.Select(c => c.Id).ToHashSet();
         var missingIds = request.CartItemIds.Where(id => !foundIds.Contains(id)).ToList();
 
-        return missingIds.Any() ? throw new ResultFailureException($"Cart items not found: {string.Join(", ", missingIds)}") : cartItems;
+        return missingIds.Any() ? throw new ResultFailureException(string.Format(_messages.CartItemsNotFound, string.Join(", ", missingIds))) : cartItems;
     }
 
     private void AddOrderItems(Domain.Order.Order order, List<CartItem> cartItems)

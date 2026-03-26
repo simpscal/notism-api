@@ -1,7 +1,9 @@
 using FluentValidation;
 
+using Microsoft.Extensions.Localization;
+
+using Notism.Application.Common.Services;
 using Notism.Application.Common.Validators;
-using Notism.Domain.Food.Enums;
 using Notism.Shared.Enums;
 using Notism.Shared.Extensions;
 
@@ -9,10 +11,10 @@ namespace Notism.Application.Food.GetFoods;
 
 public class GetFoodsRequestValidator : AbstractValidator<GetFoodsRequest>
 {
-    public GetFoodsRequestValidator()
+    public GetFoodsRequestValidator(IStringLocalizer<Messages> localizer)
     {
-        RuleFor(x => x.Skip).ValidSkip();
-        RuleFor(x => x.Take).ValidTake();
+        RuleFor(x => x.Skip).ValidSkip(localizer);
+        RuleFor(x => x.Take).ValidTake(localizer);
 
         RuleFor(x => x.SortOrder)
             .Must(sortOrder => sortOrder is null || sortOrder.FromCamelCase<SortOrder>() != null)
