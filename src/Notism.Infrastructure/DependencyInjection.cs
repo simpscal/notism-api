@@ -1,3 +1,5 @@
+using System.Net.Http.Headers;
+
 using Amazon.S3;
 
 using Microsoft.EntityFrameworkCore;
@@ -5,15 +7,16 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 using Notism.Application.Common.Interfaces;
+using Notism.Domain.Cart;
 using Notism.Domain.Common.Interfaces;
+using Notism.Domain.Food;
+using Notism.Domain.Order;
 using Notism.Domain.RefreshToken;
 using Notism.Domain.User;
-using Notism.Infrastructure.Common;
-using Notism.Infrastructure.RefreshTokens;
+using Notism.Infrastructure.Persistence;
+using Notism.Infrastructure.Repositories;
 using Notism.Infrastructure.Services;
-using Notism.Infrastructure.Users;
-
-using Resend;
+using Notism.Shared.Configuration;
 
 namespace Notism.Infrastructure;
 
@@ -33,17 +36,20 @@ public static class DependencyInjection
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IPasswordResetTokenRepository, PasswordResetTokenRepository>();
+        services.AddScoped<ICategoryRepository, CategoryRepository>();
+        services.AddScoped<IFoodRepository, FoodRepository>();
+        services.AddScoped<ICartItemRepository, CartItemRepository>();
+        services.AddScoped<IOrderRepository, OrderRepository>();
 
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IPasswordService, PasswordService>();
-        services.AddScoped<IEmailService, EmailService>();
         services.AddScoped<IStorageService, S3StorageService>();
 
         services.AddHttpClient<IHttpService, HttpService>();
         services.AddScoped<IGoogleOAuthService, GoogleOAuthService>();
 
         services.AddAWSS3(configuration);
-        services.AddResend(configuration);
+        services.AddMailerSend(configuration);
 
         return services;
     }
@@ -61,17 +67,16 @@ public static class DependencyInjection
         return services;
     }
 
-    private static IServiceCollection AddResend(this IServiceCollection services, IConfiguration configuration)
+    private static IServiceCollection AddMailerSend(this IServiceCollection services, IConfiguration configuration)
     {
-        var apiKey = configuration["Resend:ApiKey"] ?? throw new ArgumentNullException("Resend:ApiKey configuration is missing");
+        var apiKey = configuration[$"{EmailSettings.SectionName}:ApiKey"]
+            ?? throw new ArgumentNullException("Email:ApiKey", "MailerSend API key configuration is missing");
 
-        services.AddOptions();
-        services.Configure<ResendClientOptions>(o =>
+        services.AddHttpClient<IEmailService, EmailService>(client =>
         {
-            o.ApiToken = apiKey;
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", apiKey);
+            client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
         });
-        services.AddHttpClient<ResendClient>();
-        services.AddTransient<IResend, ResendClient>();
 
         return services;
     }

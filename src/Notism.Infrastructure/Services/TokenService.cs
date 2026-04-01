@@ -7,10 +7,9 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 using Notism.Application.Common.Interfaces;
+using Notism.Domain.Common.Specifications;
 using Notism.Domain.RefreshToken;
-using Notism.Domain.RefreshToken.Specifications;
 using Notism.Domain.User;
-using Notism.Domain.User.Specifications;
 using Notism.Shared.Configuration;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Extensions;
@@ -85,7 +84,7 @@ public class TokenService : ITokenService
 
     public async Task<TokenResult> RefreshTokenAsync(string refreshToken)
     {
-        var refreshTokenSpec = new RefreshTokenByTokenSpecification(refreshToken);
+        var refreshTokenSpec = new FilterSpecification<RefreshToken>(rt => rt.Token == refreshToken);
         var refreshTokenEntity = await _refreshTokenRepository.FindByExpressionAsync(refreshTokenSpec);
 
         if (refreshTokenEntity == null || !refreshTokenEntity.IsValid())
@@ -93,7 +92,8 @@ public class TokenService : ITokenService
             throw new InvalidRefreshTokenException("Invalid refresh token");
         }
 
-        var user = await _userRepository.FindByExpressionAsync(new UserByIdSpecification(refreshTokenEntity.UserId)) ?? throw new InvalidRefreshTokenException("User not found");
+        var userSpec = new FilterSpecification<Domain.User.User>(u => u.Id == refreshTokenEntity.UserId);
+        var user = await _userRepository.FindByExpressionAsync(userSpec) ?? throw new InvalidRefreshTokenException("User not found");
 
         return await GenerateTokenAsync(user);
     }

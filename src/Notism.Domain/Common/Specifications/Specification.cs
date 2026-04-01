@@ -9,6 +9,7 @@ namespace Notism.Domain.Common.Specifications;
 public abstract class Specification<T> : ISpecification<T>
 {
     protected readonly List<Expression<Func<T, object>>> _includes = new();
+    protected readonly List<string> _stringIncludes = new();
 
     public abstract Expression<Func<T, bool>> ToExpression();
 
@@ -19,6 +20,7 @@ public abstract class Specification<T> : ISpecification<T>
     }
 
     public IReadOnlyCollection<Expression<Func<T, object>>> Includes => _includes.AsReadOnly();
+    public IReadOnlyCollection<string> StringIncludes => _stringIncludes.AsReadOnly();
 
     public virtual IQueryable<T> ApplyOrdering(IQueryable<T> queryable)
     {
@@ -28,6 +30,12 @@ public abstract class Specification<T> : ISpecification<T>
     public Specification<T> Include(Expression<Func<T, object>> includeExpression)
     {
         _includes.Add(includeExpression);
+        return this!;
+    }
+
+    public Specification<T> Include(string includePath)
+    {
+        _stringIncludes.Add(includePath);
         return this!;
     }
 

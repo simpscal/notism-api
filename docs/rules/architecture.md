@@ -348,21 +348,13 @@ notism-api/
 │   │   │   │   ├── UserCreatedEvent.cs
 │   │   │   │   ├── UserPasswordChangedEvent.cs
 │   │   │   │   └── UserProfileUpdatedEvent.cs
-│   │   │   ├── Specifications/
-│   │   │   │   ├── ActivePasswordResetTokenByUserIdSpecification.cs
-│   │   │   │   ├── PasswordResetTokenByTokenSpecification.cs
-│   │   │   │   ├── UserByEmailSpecification.cs
-│   │   │   │   └── UserByIdSpecification.cs
 │   │   │   └── ValueObjects/
 │   │   │       ├── Email.cs
 │   │   │       └── Password.cs
 │   │   │
 │   │   ├── RefreshToken/                          # RefreshToken Aggregate
 │   │   │   ├── RefreshToken.cs
-│   │   │   ├── IRefreshTokenRepository.cs
-│   │   │   └── Specifications/
-│   │   │       ├── RefreshTokenByTokenSpecification.cs
-│   │   │       └── RefreshTokenByUserIdSpecification.cs
+│   │   │   └── IRefreshTokenRepository.cs
 │   │   │
 │   │   └── Notism.Domain.csproj
 │   │
@@ -413,6 +405,22 @@ notism-api/
 │   │   │       ├── UpdateUserProfileRequestValidator.cs
 │   │   │       └── UpdateUserProfileResponse.cs
 │   │   │
+│   │   ├── Food/                                  # Food Management Features
+│   │   │   ├── GetFoods/
+│   │   │   │   ├── GetFoodsHandler.cs
+│   │   │   │   ├── GetFoodsRequest.cs
+│   │   │   │   ├── GetFoodsResponse.cs
+│   │   │   │   └── GetFoodsSpecification.cs        # Specification in Application layer
+│   │   │   └── ...
+│   │   │
+│   │   ├── Order/                                 # Order Management Features
+│   │   │   ├── GetAdminOrdersForKanban/
+│   │   │   │   ├── GetAdminOrdersForKanbanHandler.cs
+│   │   │   │   ├── GetAdminOrdersForKanbanRequest.cs
+│   │   │   │   ├── GetAdminOrdersForKanbanResponse.cs
+│   │   │   │   └── GetAdminOrdersForKanbanSpecification.cs
+│   │   │   └── ...
+│   │   │
 │   │   ├── DependencyInjection.cs
 │   │   └── Notism.Application.csproj
 │   │
@@ -442,8 +450,7 @@ notism-api/
 │   │   └── Notism.Infrastructure.csproj
 │   │
 │   └── Notism.Api/                                # 🌐 API Layer
-│       ├── .env.development                       # Development environment variables
-│       ├── .env.production                        # Production environment variables
+│       ├── .env.development                       # Development environment variables (production: CI/CD pipeline)
 │       │
 │       ├── Attributes/
 │       │   └── RequireAdminAttribute.cs           # Role-based authorization
@@ -494,7 +501,7 @@ notism-api/
 - **Aggregates**: User and RefreshToken with clear boundaries
 - **Value Objects**: Email and Password with business validation
 - **Domain Events**: Comprehensive event handling for business actions
-- **Specifications**: Encapsulated query logic for all data access
+- **Specifications**: Encapsulated query logic located in Application layer feature folders
 
 #### 🔧 **CQRS Implementation**
 - **Handlers**: Separate command and query handlers for each feature
@@ -520,3 +527,24 @@ notism-api/
 - **Separation**: Clear test organization matching source structure
 
 This structure demonstrates clean architecture principles with proper separation of concerns, dependency inversion, and comprehensive testing coverage.
+
+---
+
+## Reference Implementations
+
+These files serve as canonical examples of each pattern. When implementing a new feature, follow these as templates:
+
+| Pattern | Reference File(s) |
+|---|---|
+| **CQRS Command (create)** | `src/Notism.Application/Auth/Register/` |
+| **CQRS Command (update)** | `src/Notism.Application/User/UpdateProfile/` |
+| **CQRS Query (filtered, paginated)** | `src/Notism.Application/Food/GetFoods/` |
+| **Domain Aggregate** | `src/Notism.Domain/User/User.cs` |
+| **Value Object** | `src/Notism.Domain/User/ValueObjects/Email.cs` |
+| **Domain Event** | `src/Notism.Domain/User/Events/UserCreatedEvent.cs` |
+| **Repository** | `src/Notism.Infrastructure/Users/UserRepository.cs` |
+| **API Endpoint Group** | `src/Notism.Api/Endpoints/AuthEndpoints.cs` |
+| **Specification (complex)** | `src/Notism.Application/Food/GetFoods/GetFoodsSpecification.cs` |
+| **Specification (simple/inline)** | Uses `FilterSpecification<T>` directly in handler |
+
+Use these as templates: examine the full file structure, naming patterns, validation approach, and handler orchestration from these examples.

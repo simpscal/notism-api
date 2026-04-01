@@ -1,0 +1,25 @@
+name: Prepare Environment
+description: Determine target environment and .NET environment from the current branch.
+
+outputs:
+  environment:
+    description: GitHub environment name (prod or dev)
+    value: ${{ steps.set-env.outputs.environment }}
+  dotnet-env:
+    description: ASPNETCORE_ENVIRONMENT value (Production or Development)
+    value: ${{ steps.set-env.outputs.dotnet-env }}
+
+runs:
+  using: composite
+  steps:
+    - name: Decide Target Environment
+      id: set-env
+      shell: bash
+      run: |
+        if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
+          echo "environment=prod" >> "$GITHUB_OUTPUT"
+          echo "dotnet-env=Production" >> "$GITHUB_OUTPUT"
+        else
+          echo "environment=dev" >> "$GITHUB_OUTPUT"
+          echo "dotnet-env=Development" >> "$GITHUB_OUTPUT"
+        fi

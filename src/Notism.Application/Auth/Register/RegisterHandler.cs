@@ -2,41 +2,49 @@ using AutoMapper;
 
 using MediatR;
 
+using Notism.Application.Auth.Models;
 using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
+using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
 using Notism.Domain.User.Enums;
-using Notism.Domain.User.Specifications;
+using Notism.Domain.User.ValueObjects;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Auth.Register;
 
-public class RegisterHandler : IRequestHandler<RegisterRequest, (RegisterResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
+public class RegisterHandler : IRequestHandler<RegisterRequest, (AuthenticationResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
 {
     private readonly IUserRepository _userRepository;
     private readonly ITokenService _tokenService;
     private readonly IPasswordService _passwordService;
     private readonly IMapper _mapper;
+    private readonly IMessages _messages;
 
     public RegisterHandler(
         IUserRepository userRepository,
         ITokenService tokenService,
         IPasswordService passwordService,
-        IMapper mapper)
+        IMapper mapper,
+        IMessages messages)
     {
         _userRepository = userRepository;
         _tokenService = tokenService;
         _passwordService = passwordService;
         _mapper = mapper;
+        _messages = messages;
     }
 
-    public async Task<(RegisterResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)> Handle(RegisterRequest request, CancellationToken cancellationToken)
+    public async Task<(AuthenticationResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)> Handle(RegisterRequest request, CancellationToken cancellationToken)
     {
         // 1. Check if user already exists
-        var existingUser = await _userRepository.FindByExpressionAsync(new UserByEmailSpecification(request.Email));
+        var email = Email.Create(request.Email);
+        var specification = new FilterSpecification<Domain.User.User>(u => u.Email.Equals(email));
+        var existingUser = await _userRepository.FindByExpressionAsync(specification);
 
         if (existingUser != null)
         {
-            throw new ResultFailureException("User with this email already exists");
+            throw new ResultFailureException(_messages.UserAlreadyExists);
         }
 
         // 2. Create new user with hashed password
@@ -47,14 +55,14 @@ public class RegisterHandler : IRequestHandler<RegisterRequest, (RegisterRespons
 
         if (await _userRepository.SaveChangesAsync() < 1)
         {
-            throw new ResultFailureException("There was an error creating the user");
+            throw new ResultFailureException(_messages.ErrorCreatingUser);
         }
 
         // 3. Generate JWT token
         var token = await _tokenService.GenerateTokenAsync(user);
 
         // 4. Map to response using AutoMapper
-        var response = _mapper.Map<RegisterResponse>(user);
+        var response = _mapper.Map<AuthenticationResponse>(user);
         response.Token = token.Token;
         response.ExpiresAt = token.ExpiresAt;
 

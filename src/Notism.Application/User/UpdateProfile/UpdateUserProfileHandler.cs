@@ -2,8 +2,9 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Services;
+using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
-using Notism.Domain.User.Specifications;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Extensions;
 
@@ -13,22 +14,25 @@ public class UpdateUserProfileHandler : IRequestHandler<UpdateUserProfileRequest
 {
     private readonly IUserRepository _userRepository;
     private readonly ILogger<UpdateUserProfileHandler> _logger;
+    private readonly IMessages _messages;
 
     public UpdateUserProfileHandler(
         IUserRepository userRepository,
-        ILogger<UpdateUserProfileHandler> logger)
+        ILogger<UpdateUserProfileHandler> logger,
+        IMessages messages)
     {
         _userRepository = userRepository;
         _logger = logger;
+        _messages = messages;
     }
 
     public async Task<UpdateUserProfileResponse> Handle(
         UpdateUserProfileRequest request,
         CancellationToken cancellationToken)
     {
-        var user = await _userRepository.FindByExpressionAsync(
-            new UserByIdSpecification(request.UserId))
-        ?? throw new ResultFailureException("User not found");
+        var specification = new FilterSpecification<Domain.User.User>(u => u.Id == request.UserId);
+        var user = await _userRepository.FindByExpressionAsync(specification)
+            ?? throw new ResultFailureException(_messages.UserNotFound);
 
         user.UpdateProfile(
             request.FirstName,

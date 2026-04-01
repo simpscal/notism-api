@@ -9,5 +9,6 @@ public interface ISpecification<T>
     Expression<Func<T, bool>> ToExpression();
     bool IsSatisfiedBy(T entity);
     IReadOnlyCollection<Expression<Func<T, object>>> Includes { get; }
+    IReadOnlyCollection<string> StringIncludes { get; }
     IQueryable<T> ApplyOrdering(IQueryable<T> queryable);
 }

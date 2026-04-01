@@ -4,10 +4,9 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
-using Notism.Api.Interfaces;
+using Notism.Api.Constants;
 using Notism.Api.Services;
 using Notism.Shared.Configuration;
-using Notism.Shared.Constants;
 
 namespace Notism.Api;
 
@@ -21,8 +20,9 @@ public static class DependencyInjection
         services.AddConfigurationOptions(configuration);
         services.AddSwaggerConfiguration();
         services.AddJwtAuthentication(configuration);
-        services.AddCorsConfiguration();
+        services.AddCorsConfiguration(configuration);
         services.AddAntiforgeryConfiguration(environment);
+        services.AddLocalizationConfiguration();
 
         services.AddProblemDetails();
 
@@ -35,7 +35,6 @@ public static class DependencyInjection
     {
         services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.SectionName));
         services.Configure<AwsSettings>(configuration.GetSection(AwsSettings.SectionName));
-        services.Configure<ResendSettings>(configuration.GetSection(ResendSettings.SectionName));
         services.Configure<EmailSettings>(configuration.GetSection(EmailSettings.SectionName));
         services.Configure<ClientAppSettings>(configuration.GetSection(ClientAppSettings.SectionName));
         services.Configure<GoogleOAuthSettings>(configuration.GetSection(GoogleOAuthSettings.SectionName));
@@ -43,14 +42,17 @@ public static class DependencyInjection
         return services;
     }
 
-    private static IServiceCollection AddCorsConfiguration(this IServiceCollection services)
+    private static IServiceCollection AddCorsConfiguration(this IServiceCollection services, IConfiguration configuration)
     {
+        var clientAppUrl = configuration["ClientApp:Url"]
+            ?? throw new InvalidOperationException("ClientApp:Url is not configured.");
+
         services.AddCors(options =>
         {
             options.AddPolicy("DevelopmentCorsPolicy", builder =>
             {
                 builder
-                    .WithOrigins("http://localhost:4200")
+                    .WithOrigins(clientAppUrl)
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .WithExposedHeaders(HeaderNames.AntiForgeryToken)
@@ -60,7 +62,7 @@ public static class DependencyInjection
             options.AddPolicy("ProductionCorsPolicy", builder =>
             {
                 builder
-                    .WithOrigins("https://localhost:3000", "https://yourdomain.com")
+                    .WithOrigins(clientAppUrl)
                     .AllowAnyMethod()
                     .AllowAnyHeader()
                     .WithExposedHeaders(HeaderNames.AntiForgeryToken)
@@ -78,13 +80,8 @@ public static class DependencyInjection
             options.HeaderName = HeaderNames.AntiForgeryToken;
             options.Cookie.Name = CookieNames.AntiForgery;
             options.Cookie.HttpOnly = true;
-            options.Cookie.SecurePolicy = environment.IsDevelopment()
-                ? CookieSecurePolicy.None
-                : CookieSecurePolicy.Always;
-
-            options.Cookie.SameSite = environment.IsDevelopment()
-                ? SameSiteMode.Lax
-                : SameSiteMode.None;
+            options.Cookie.SecurePolicy = CookieSecurePolicy.None;
+            options.Cookie.SameSite = SameSiteMode.Lax;
         });
 
         return services;
@@ -94,6 +91,8 @@ public static class DependencyInjection
     {
         services.AddSwaggerGen(options =>
         {
+            // Use fully qualified names to avoid schema ID conflicts
+            options.CustomSchemaIds(type => type.FullName);
             options.AddSecurityDefinition(
                 "Bearer",
                 new OpenApiSecurityScheme
@@ -143,6 +142,13 @@ public static class DependencyInjection
                         throw new Exception("Empty JWTSettings Secret"))),
                 };
             });
+
+        return services;
+    }
+
+    private static IServiceCollection AddLocalizationConfiguration(this IServiceCollection services)
+    {
+        services.AddLocalization(opts => opts.ResourcesPath = "Resources");
 
         return services;
     }

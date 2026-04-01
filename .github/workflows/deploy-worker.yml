@@ -22,19 +22,15 @@ jobs:
     name: Prepare Deployment Context
     runs-on: ubuntu-latest
     outputs:
-      environment: ${{ steps.set-env.outputs.environment }}
-      dotnet-env: ${{ steps.set-env.outputs.dotnet-env }}
+      environment: ${{ steps.env.outputs.environment }}
+      dotnet-env: ${{ steps.env.outputs.dotnet-env }}
     steps:
-      - name: Decide Target Environment
-        id: set-env
-        run: |
-          if [[ "${GITHUB_REF_NAME}" == "main" ]]; then
-            echo "environment=prod" >> "$GITHUB_OUTPUT"
-            echo "dotnet-env=Production" >> "$GITHUB_OUTPUT"
-          else
-            echo "environment=dev" >> "$GITHUB_OUTPUT"
-            echo "dotnet-env=Development" >> "$GITHUB_OUTPUT"
-          fi
+      - name: Checkout
+        uses: actions/checkout@v5
+
+      - name: Determine environment
+        id: env
+        uses: ./.github/actions/prepare-env
 
   deploy:
     name: Build and Deploy Worker
@@ -46,7 +42,7 @@ jobs:
       id-token: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Setup .NET ${{ env.DOTNET_VERSION }}
         uses: actions/setup-dotnet@v4
@@ -56,31 +52,16 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore Notism.sln
 
-      - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+      - name: Build and push image
+        id: build
+        uses: ./.github/actions/build-push-ecr
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
-          aws-region: ${{ secrets.AWS_REGION }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Login to Amazon ECR
-        id: ecr-login
-        uses: aws-actions/amazon-ecr-login@v2
-
-      - name: Build and Push Docker image
-        env:
-          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_WORKER }}
-        run: |
-          # Use buildx for cross-platform builds (AMD64 runner building ARM64 image)
-          docker buildx build \
-            --platform linux/arm64 \
-            --build-arg ASPNETCORE_ENVIRONMENT=${{ needs.prepare.outputs.dotnet-env }} \
-            -t "$ECR_REGISTRY/$ECR_REPOSITORY:${{ env.IMAGE_TAG }}" \
-            --push \
-            -f Dockerfile.Worker .
+          aws-region: ${{ vars.AWS_REGION }}
+          ecr-repository: ${{ secrets.ECR_REPOSITORY_WORKER }}
+          image-tag: ${{ env.IMAGE_TAG }}
+          dotnet-env: ${{ needs.prepare.outputs.dotnet-env }}
+          dockerfile: Dockerfile.Worker
 
       - name: Fetch task definition
         id: fetch-task-def
@@ -88,7 +69,6 @@ jobs:
           aws ecs describe-task-definition \
             --task-definition ${{ secrets.ECS_TASK_DEFINITION_WORKER }} \
             --query 'taskDefinition' > task-definition-raw.json
-          # Remove read-only fields that cannot be used in task definition registration
           jq 'del(.taskDefinitionArn, .revision, .status, .requiresAttributes, .compatibilities, .registeredAt, .registeredBy, .enableFaultInjection)' \
             task-definition-raw.json > task-definition.json
 
@@ -98,7 +78,7 @@ jobs:
         with:
           task-definition: task-definition.json
           container-name: ${{ secrets.ECS_CONTAINER_NAME_WORKER }}
-          image: ${{ steps.ecr-login.outputs.registry }}/${{ secrets.ECR_REPOSITORY_WORKER }}:${{ env.IMAGE_TAG }}
+          image: ${{ steps.build.outputs.ecr-registry }}/${{ secrets.ECR_REPOSITORY_WORKER }}:${{ env.IMAGE_TAG }}
 
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
@@ -108,14 +88,3 @@ jobs:
           cluster: ${{ secrets.ECS_CLUSTER }}
           wait-for-service-stability: true
           force-new-deployment: true
-
-      - name: Clean up untagged images
-        if: github.ref_name == 'main'
-        env:
-          ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY_WORKER }}
-        run: |
-          IMAGE_IDS=$(aws ecr list-images --repository-name "$ECR_REPOSITORY" --filter tagStatus=UNTAGGED --query 'imageIds[*]' --output json)
-          if [[ "$IMAGE_IDS" != "[]" ]]; then
-            aws ecr batch-delete-image --repository-name "$ECR_REPOSITORY" --image-ids "$IMAGE_IDS"
-          fi
-

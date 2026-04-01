@@ -4,11 +4,13 @@ using AutoMapper;
 
 using MediatR;
 
+using Notism.Application.Auth.Models;
 using Notism.Application.Common.Interfaces;
-using Notism.Application.Common.Models;
+using Notism.Application.Common.Services;
+using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
 using Notism.Domain.User.Enums;
-using Notism.Domain.User.Specifications;
+using Notism.Domain.User.ValueObjects;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Auth.GoogleOAuth;
@@ -20,19 +22,22 @@ public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackReq
     private readonly IPasswordService _passwordService;
     private readonly IMapper _mapper;
     private readonly IGoogleOAuthService _googleOAuthService;
+    private readonly IMessages _messages;
 
     public GoogleOAuthCallbackHandler(
         IUserRepository userRepository,
         ITokenService tokenService,
         IPasswordService passwordService,
         IMapper mapper,
-        IGoogleOAuthService googleOAuthService)
+        IGoogleOAuthService googleOAuthService,
+        IMessages messages)
     {
         _userRepository = userRepository;
         _tokenService = tokenService;
         _passwordService = passwordService;
         _mapper = mapper;
         _googleOAuthService = googleOAuthService;
+        _messages = messages;
     }
 
     public async Task<(AuthenticationResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)> Handle(
@@ -47,7 +52,9 @@ public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackReq
             tokenResponse.AccessToken!,
             cancellationToken);
 
-        var user = await _userRepository.FindByExpressionAsync(new UserByEmailSpecification(userInfo.Email!));
+        var email = Email.Create(userInfo.Email!);
+        var specification = new FilterSpecification<Domain.User.User>(u => u.Email.Equals(email));
+        var user = await _userRepository.FindByExpressionAsync(specification);
 
         if (user == null)
         {
@@ -66,7 +73,7 @@ public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackReq
 
             if (await _userRepository.SaveChangesAsync() < 1)
             {
-                throw new ResultFailureException("There was an error creating the user");
+                throw new ResultFailureException(_messages.ErrorCreatingUser);
             }
         }
 

@@ -15,4 +15,9 @@
         </PackageReference>
     </ItemGroup>
 
+    <!-- AutoMapper 15+ requires a paid license; suppress this specific advisory until migration -->
+    <ItemGroup>
+        <NuGetAuditSuppress Include="https://github.com/advisories/GHSA-rvv3-g6hj-g44x" />
+    </ItemGroup>
+
 </Project>

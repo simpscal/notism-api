@@ -1,0 +1,71 @@
+name: Build and Push to ECR
+description: Configure AWS credentials, set up Buildx, login to ECR, build and push a Docker image tagged with both the given tag and "latest".
+
+inputs:
+  role-to-assume:
+    description: AWS IAM role ARN for OIDC authentication
+    required: true
+  aws-region:
+    description: AWS region
+    required: true
+  ecr-repository:
+    description: ECR repository name
+    required: true
+  image-tag:
+    description: Primary image tag (typically the commit SHA)
+    required: true
+  dotnet-env:
+    description: ASPNETCORE_ENVIRONMENT build arg value
+    required: true
+  dockerfile:
+    description: Path to the Dockerfile
+    required: false
+    default: Dockerfile
+  platform:
+    description: Target platform for the build
+    required: false
+    default: linux/arm64
+
+outputs:
+  ecr-registry:
+    description: ECR registry URL
+    value: ${{ steps.ecr-login.outputs.registry }}
+  image-uri:
+    description: Full image URI with the primary tag
+    value: ${{ steps.build.outputs.image-uri }}
+
+runs:
+  using: composite
+  steps:
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v5
+      with:
+        role-to-assume: ${{ inputs.role-to-assume }}
+        aws-region: ${{ inputs.aws-region }}
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v4
+
+    - name: Login to Amazon ECR
+      id: ecr-login
+      uses: aws-actions/amazon-ecr-login@v2
+
+    - name: Build and Push Docker image
+      uses: docker/build-push-action@v6
+      with:
+        context: .
+        file: ${{ inputs.dockerfile }}
+        platforms: ${{ inputs.platform }}
+        push: true
+        tags: |
+          ${{ steps.ecr-login.outputs.registry }}/${{ inputs.ecr-repository }}:${{ inputs.image-tag }}
+          ${{ steps.ecr-login.outputs.registry }}/${{ inputs.ecr-repository }}:latest
+        build-args: |
+          ASPNETCORE_ENVIRONMENT=${{ inputs.dotnet-env }}
+        cache-from: type=gha
+        cache-to: type=gha,mode=max
+
+    - name: Set image URI output
+      id: build
+      shell: bash
+      run: echo "image-uri=${{ steps.ecr-login.outputs.registry }}/${{ inputs.ecr-repository }}:${{ inputs.image-tag }}" >> "$GITHUB_OUTPUT"

@@ -1,0 +1,4 @@
+notism-api.duckdns.org {
+    reverse_proxy notism-api:5000
+}
+

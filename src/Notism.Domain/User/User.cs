@@ -64,5 +64,11 @@ public class User : AggregateRoot
         AddDomainEvent(new UserProfileUpdatedEvent(Id, Email, FirstName, LastName, Role, AvatarUrl));
     }
 
+    public void SetRole(UserRole role)
+    {
+        Role = role;
+        ClearDomainEvents();
+    }
+
     public bool IsAdmin() => Role == UserRole.Admin;
 }
