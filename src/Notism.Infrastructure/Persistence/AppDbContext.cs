@@ -9,6 +9,8 @@ using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
+using Notism.Domain.Payment;
+using Notism.Domain.Payment.Enums;
 using Notism.Domain.RefreshToken;
 using Notism.Domain.User;
 using Notism.Domain.User.Enums;
@@ -29,6 +31,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<DeliveryStatusHistory> DeliveryStatusHistories { get; set; }
+    public DbSet<Payment> Payments { get; set; }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -57,6 +60,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
         ConfigureOrder(modelBuilder);
         ConfigureOrderItem(modelBuilder);
         ConfigureDeliveryStatusHistory(modelBuilder);
+        ConfigurePayment(modelBuilder);
 
         base.OnModelCreating(modelBuilder);
     }
@@ -349,6 +353,13 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
             entity.Property(o => o.UpdatedAt)
                 .IsRequired();
 
+            entity.Property(o => o.PaymentStatus)
+                .HasConversion<int>()
+                .IsRequired()
+                .HasDefaultValue(PaymentStatus.Unpaid);
+
+            entity.Property(o => o.PaidAt);
+
             entity.HasIndex(o => o.UserId);
             entity.HasIndex(o => o.SlugId)
                 .IsUnique();
@@ -445,6 +456,38 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
 
             entity.HasIndex(dsh => dsh.OrderId);
             entity.HasIndex(dsh => new { dsh.OrderId, dsh.StatusChangedAt });
+        });
+    }
+
+    private static void ConfigurePayment(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Payment>(entity =>
+        {
+            entity.HasKey(p => p.Id);
+
+            entity.Property(p => p.StorerId)
+                .IsRequired();
+
+            entity.Property(p => p.BankCode)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(p => p.AccountNumber)
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(p => p.AccountHolderName)
+                .HasMaxLength(200)
+                .IsRequired();
+
+            entity.Property(p => p.CreatedAt)
+                .IsRequired();
+
+            entity.Property(p => p.UpdatedAt)
+                .IsRequired();
+
+            entity.HasIndex(p => p.StorerId)
+                .IsUnique();
         });
     }
 
