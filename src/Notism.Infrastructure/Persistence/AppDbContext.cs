@@ -354,7 +354,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
                 .IsRequired();
 
             entity.Property(o => o.PaymentStatus)
-                .HasConversion<int>()
+                .HasConversion(
+                    status => status.GetStringValue(),
+                    value => value.ToEnum<PaymentStatus>())
+                .HasMaxLength(50)
                 .IsRequired()
                 .HasDefaultValue(PaymentStatus.Unpaid);
 
