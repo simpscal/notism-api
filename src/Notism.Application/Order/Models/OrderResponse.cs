@@ -11,4 +11,7 @@ public class OrderResponse
     public DateTime UpdatedAt { get; set; }
     public List<OrderItemResponse> Items { get; set; } = new();
     public DeliveryStatusTimingResponse DeliveryStatusTiming { get; set; } = new();
+    public string PaymentStatus { get; set; } = string.Empty;
+    public DateTime? PaidAt { get; set; }
+    public PaymentQrResponse? PaymentQr { get; set; }
 }
