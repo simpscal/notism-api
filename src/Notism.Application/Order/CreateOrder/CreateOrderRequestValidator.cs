@@ -17,13 +17,7 @@ public class CreateOrderRequestValidator : AbstractValidator<CreateOrderRequest>
             .NotEmpty()
             .WithMessage("Payment method is required")
             .Must(method => method.ExistInEnum<PaymentMethod>())
-            .WithMessage("Payment method must be a valid payment method")
-            .Must(method =>
-            {
-                var paymentMethod = method.ToEnum<PaymentMethod>();
-                return paymentMethod == PaymentMethod.CashOnDelivery;
-            })
-            .WithMessage("Only cash on delivery payment is currently supported");
+            .WithMessage("Payment method must be a valid payment method");
 
         RuleFor(x => x.CartItemIds)
             .NotEmpty()

@@ -17,6 +17,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Notism.Shared", "src\Notism
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Notism.Worker", "src\Notism.Worker\Notism.Worker.csproj", "{953279E4-EFCC-48F5-B5A7-9080BED7A466}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Notism.Application.Tests", "tests\Notism.Application.Tests\Notism.Application.Tests.csproj", "{2D5ABE8E-797D-4FA9-BDE0-66FB3CFA7BD3}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -99,6 +103,18 @@ Global
 		{953279E4-EFCC-48F5-B5A7-9080BED7A466}.Release|x64.Build.0 = Release|Any CPU
 		{953279E4-EFCC-48F5-B5A7-9080BED7A466}.Release|x86.ActiveCfg = Release|Any CPU
 		{953279E4-EFCC-48F5-B5A7-9080BED7A466}.Release|x86.Build.0 = Release|Any CPU
+		{2D5ABE8E-797D-4FA9-BDE0-66FB3CFA7BD3}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D5ABE8E-797D-4FA9-BDE0-66FB3CFA7BD3}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D5ABE8E-797D-4FA9-BDE0-66FB3CFA7BD3}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{2D5ABE8E-797D-4FA9-BDE0-66FB3CFA7BD3}.Debug|x64.Build.0 = Debug|Any CPU
+		{2D5ABE8E-797D-4FA9-BDE0-66FB3CFA7BD3}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{2D5ABE8E-797D-4FA9-BDE0-66FB3CFA7BD3}.Debug|x86.Build.0 = Debug|Any CPU
+		{2D5ABE8E-797D-4FA9-BDE0-66FB3CFA7BD3}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D5ABE8E-797D-4FA9-BDE0-66FB3CFA7BD3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D5ABE8E-797D-4FA9-BDE0-66FB3CFA7BD3}.Release|x64.ActiveCfg = Release|Any CPU
+		{2D5ABE8E-797D-4FA9-BDE0-66FB3CFA7BD3}.Release|x64.Build.0 = Release|Any CPU
+		{2D5ABE8E-797D-4FA9-BDE0-66FB3CFA7BD3}.Release|x86.ActiveCfg = Release|Any CPU
+		{2D5ABE8E-797D-4FA9-BDE0-66FB3CFA7BD3}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -110,5 +126,6 @@ Global
 		{7D84EEE6-905F-4356-B927-60F2686406C9} = {E6C0A80B-5ADC-4138-A79D-C9C128EA163B}
 		{C5BC7948-018F-472A-ACEE-DB2B951BE530} = {E6C0A80B-5ADC-4138-A79D-C9C128EA163B}
 		{953279E4-EFCC-48F5-B5A7-9080BED7A466} = {E6C0A80B-5ADC-4138-A79D-C9C128EA163B}
+		{2D5ABE8E-797D-4FA9-BDE0-66FB3CFA7BD3} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal
