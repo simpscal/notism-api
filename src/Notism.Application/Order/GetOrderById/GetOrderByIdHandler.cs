@@ -56,25 +56,24 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
 
         _logger.LogInformation("Retrieved order {SlugId} for user {UserId} (Admin: {IsAdmin})", request.SlugId, request.UserId, isAdmin);
 
+        var paymentSpec = new FilterSpecification<Domain.Payment.Payment>(p => true);
+        var payment = await _paymentRepository.FindByExpressionAsync(paymentSpec);
+        var bankAccountConfigured = payment != null;
+
         PaymentQrResponse? paymentQr = null;
-        if (order.PaymentMethod == PaymentMethod.Banking && order.PaymentStatus == PaymentStatus.Unpaid)
+        if (bankAccountConfigured && order.PaymentMethod == PaymentMethod.Banking && order.PaymentStatus == PaymentStatus.Unpaid)
         {
-            var paymentSpec = new FilterSpecification<Domain.Payment.Payment>(p => true);
-            var payment = await _paymentRepository.FindByExpressionAsync(paymentSpec);
-            if (payment != null)
+            paymentQr = new PaymentQrResponse
             {
-                paymentQr = new PaymentQrResponse
-                {
-                    BankCode = payment.BankCode,
-                    AccountNumber = payment.AccountNumber,
-                    AccountHolderName = payment.AccountHolderName,
-                    Amount = order.TotalAmount,
-                    OrderReference = order.SlugId,
-                };
-            }
+                BankCode = payment!.BankCode,
+                AccountNumber = payment.AccountNumber,
+                AccountHolderName = payment.AccountHolderName,
+                Amount = order.TotalAmount,
+                OrderReference = order.SlugId,
+            };
         }
 
-        var baseResponse = OrderMapper.ToResponse(order, _storageService);
+        var baseResponse = OrderMapper.ToResponse(order, _storageService, bankAccountConfigured);
         return new GetOrderByIdResponse
         {
             Id = baseResponse.Id,
@@ -89,6 +88,7 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
             PaymentStatus = order.PaymentStatus.GetStringValue(),
             PaidAt = order.PaidAt,
             PaymentQr = paymentQr,
+            BankAccountConfigured = bankAccountConfigured,
         };
     }
 }
