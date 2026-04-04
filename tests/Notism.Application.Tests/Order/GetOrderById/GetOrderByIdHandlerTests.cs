@@ -87,7 +87,6 @@ public class GetOrderByIdHandlerTests
         var result = await _handler.Handle(request, CancellationToken.None);
 
         result.PaymentQr.Should().BeNull();
-        result.BankAccountConfigured.Should().BeFalse();
     }
 
     [Fact]
@@ -129,7 +128,6 @@ public class GetOrderByIdHandlerTests
         var result = await _handler.Handle(request, CancellationToken.None);
 
         result.PaymentQr.Should().BeNull();
-        result.BankAccountConfigured.Should().BeFalse();
     }
 
     [Fact]
@@ -186,47 +184,5 @@ public class GetOrderByIdHandlerTests
 
         result.PaymentQr!.OrderReference.Should().Be(order.SlugId);
         result.SlugId.Should().Be(order.SlugId);
-    }
-
-    [Fact]
-    public async Task Handle_WhenPaymentExists_ReturnsBankAccountConfiguredTrue()
-    {
-        var userId = Guid.NewGuid();
-        var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
-        var storerId = Guid.NewGuid();
-        var payment = Domain.Payment.Payment.Create(storerId, "Vietcombank", "123456789", "Nguyen Van A");
-
-        _orderRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
-            .Returns(order);
-
-        _paymentRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Payment.Payment>>())
-            .Returns(payment);
-
-        var request = new GetOrderByIdRequest { SlugId = order.SlugId, UserId = userId, Role = "user" };
-        var result = await _handler.Handle(request, CancellationToken.None);
-
-        result.BankAccountConfigured.Should().BeTrue();
-    }
-
-    [Fact]
-    public async Task Handle_WhenNoPaymentExists_ReturnsBankAccountConfiguredFalse()
-    {
-        var userId = Guid.NewGuid();
-        var order = Domain.Order.Order.Create(userId, PaymentMethod.CashOnDelivery, new List<Guid>());
-
-        _orderRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
-            .Returns(order);
-
-        _paymentRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Payment.Payment>>())
-            .Returns((Domain.Payment.Payment?)null);
-
-        var request = new GetOrderByIdRequest { SlugId = order.SlugId, UserId = userId, Role = "user" };
-        var result = await _handler.Handle(request, CancellationToken.None);
-
-        result.BankAccountConfigured.Should().BeFalse();
     }
 }

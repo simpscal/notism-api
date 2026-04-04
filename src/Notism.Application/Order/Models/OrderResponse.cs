@@ -14,5 +14,4 @@ public class OrderResponse
     public string PaymentStatus { get; set; } = string.Empty;
     public DateTime? PaidAt { get; set; }
     public PaymentQrResponse? PaymentQr { get; set; }
-    public bool BankAccountConfigured { get; set; }
 }

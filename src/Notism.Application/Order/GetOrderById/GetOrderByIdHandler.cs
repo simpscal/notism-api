@@ -73,7 +73,7 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
             };
         }
 
-        var baseResponse = OrderMapper.ToResponse(order, _storageService, bankAccountConfigured);
+        var baseResponse = OrderMapper.ToResponse(order, _storageService);
         return new GetOrderByIdResponse
         {
             Id = baseResponse.Id,
@@ -88,7 +88,6 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
             PaymentStatus = order.PaymentStatus.GetStringValue(),
             PaidAt = order.PaidAt,
             PaymentQr = paymentQr,
-            BankAccountConfigured = bankAccountConfigured,
         };
     }
 }

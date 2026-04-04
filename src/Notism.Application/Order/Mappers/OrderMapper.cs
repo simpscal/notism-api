@@ -11,8 +11,7 @@ public static class OrderMapper
 {
     public static OrderResponse ToResponse(
         Domain.Order.Order order,
-        IStorageService storageService,
-        bool bankAccountConfigured = false)
+        IStorageService storageService)
     {
         return new OrderResponse
         {
@@ -25,7 +24,6 @@ public static class OrderMapper
             UpdatedAt = order.UpdatedAt,
             Items = order.Items.Select(item => ToOrderItemResponse(item, storageService)).ToList(),
             DeliveryStatusTiming = CalculateDeliveryStatusTiming(order),
-            BankAccountConfigured = bankAccountConfigured,
         };
     }
 
