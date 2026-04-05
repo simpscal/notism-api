@@ -76,11 +76,8 @@ public static class PaymentEndpoints
         IOptions<SepaySettings> sepayOptions,
         CancellationToken cancellationToken)
     {
-        httpContext.Request.EnableBuffering();
-
-        using var reader = new StreamReader(httpContext.Request.Body, leaveOpen: true);
+        using var reader = new StreamReader(httpContext.Request.Body);
         var rawBody = await reader.ReadToEndAsync(cancellationToken);
-        httpContext.Request.Body.Position = 0;
 
         var incomingSignature = httpContext.Request.Headers["X-Sepay-Signature"].FirstOrDefault();
 
