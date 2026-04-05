@@ -1,6 +1,7 @@
 using System.Linq.Expressions;
 
 using Notism.Domain.Common.Specifications;
+using Notism.Domain.Payment.Enums;
 using Notism.Shared.Enums;
 using Notism.Shared.Extensions;
 
@@ -13,16 +14,19 @@ public class AdminOrdersForTableSpecification : Specification<DomainOrder>
     private readonly string? _keyword;
     private readonly string? _sortBy;
     private readonly bool _isDescending;
+    private readonly PaymentStatus? _paymentStatus;
 
     public AdminOrdersForTableSpecification(
         string? keyword = null,
         string? sortBy = null,
-        string? sortOrder = null)
+        string? sortOrder = null,
+        PaymentStatus? paymentStatus = null)
     {
         _keyword = keyword;
         _sortBy = sortBy;
         var sortOrderEnum = sortOrder?.FromCamelCase<SortOrder>() ?? SortOrder.Asc;
         _isDescending = sortOrderEnum == SortOrder.Desc;
+        _paymentStatus = paymentStatus;
 
         Include(o => o.User!);
         Include(o => o.Items);
@@ -30,19 +34,27 @@ public class AdminOrdersForTableSpecification : Specification<DomainOrder>
 
     public override Expression<Func<DomainOrder, bool>> ToExpression()
     {
-        if (string.IsNullOrWhiteSpace(_keyword))
+        if (string.IsNullOrWhiteSpace(_keyword) && _paymentStatus is null)
         {
             return order => true;
         }
 
+        if (_paymentStatus is not null && string.IsNullOrWhiteSpace(_keyword))
+        {
+            var ps = _paymentStatus.Value;
+            return order => order.PaymentStatus == ps;
+        }
+
         var keywordLower = _keyword!.ToLower();
+        var paymentStatusFilter = _paymentStatus;
 
         return order =>
-            order.SlugId.ToLower().Contains(keywordLower) ||
+            (paymentStatusFilter == null || order.PaymentStatus == paymentStatusFilter) &&
+            (order.SlugId.ToLower().Contains(keywordLower) ||
             (order.User != null && (
                 (order.User.FirstName != null && order.User.FirstName.ToLower().Contains(keywordLower)) ||
                 (order.User.LastName != null && order.User.LastName.ToLower().Contains(keywordLower)) ||
-                ((string)order.User.Email).ToLower().Contains(keywordLower)));
+                ((string)order.User.Email).ToLower().Contains(keywordLower))));
     }
 
     public override IQueryable<DomainOrder> ApplyOrdering(IQueryable<DomainOrder> queryable)
