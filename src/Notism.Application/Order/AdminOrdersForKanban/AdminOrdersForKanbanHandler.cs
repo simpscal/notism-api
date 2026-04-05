@@ -6,6 +6,7 @@ using Notism.Application.Order.Mappers;
 using Notism.Application.Order.Models;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
+using Notism.Domain.Payment.Enums;
 using Notism.Shared.Extensions;
 
 namespace Notism.Application.Order.AdminOrdersForKanban;
@@ -29,7 +30,14 @@ public class AdminOrdersForKanbanHandler : IRequestHandler<AdminOrdersForKanbanR
     {
         var deliveryStatus = request.Status.ToEnum<DeliveryStatus>();
 
-        var specification = new AdminOrdersForKanbanSpecification(deliveryStatus);
+        PaymentStatus? paymentStatus = null;
+        if (!string.IsNullOrWhiteSpace(request.PaymentStatus) &&
+            request.PaymentStatus.ExistInEnum<PaymentStatus>())
+        {
+            paymentStatus = request.PaymentStatus.ToEnum<PaymentStatus>();
+        }
+
+        var specification = new AdminOrdersForKanbanSpecification(deliveryStatus, paymentStatus);
         var pagedResult = await _orderRepository.FilterPagedByExpressionAsync(specification, request);
 
         var items = pagedResult.Items.Select(order => AdminOrderMapper.ToAdminOrderResponse(order, order.User)).ToList();

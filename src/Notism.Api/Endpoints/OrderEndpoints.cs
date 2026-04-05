@@ -75,11 +75,12 @@ public static class OrderEndpoints
     private static async Task<IResult> GetOrdersAsync(
         HttpContext httpContext,
         IMediator mediator,
+        string? paymentStatus,
         CancellationToken cancellationToken)
     {
         var userId = httpContext.User.GetUserId();
 
-        var request = new GetOrdersRequest { UserId = userId };
+        var request = new GetOrdersRequest { UserId = userId, PaymentStatus = paymentStatus };
         var result = await mediator.Send(request, cancellationToken);
 
         return Results.Ok(result);
