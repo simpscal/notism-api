@@ -7,6 +7,8 @@ using Notism.Application.Order.Mappers;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
+using Notism.Domain.Payment.Enums;
+using Notism.Shared.Extensions;
 
 namespace Notism.Application.Order.GetOrders;
 
@@ -35,6 +37,13 @@ public class GetOrdersHandler : IRequestHandler<GetOrdersRequest, GetOrdersRespo
             .Include("Items.Food.Images")
             .Include(o => o.StatusHistory);
         var orders = await _orderRepository.FilterByExpressionAsync(specification);
+
+        if (!string.IsNullOrWhiteSpace(request.PaymentStatus) &&
+            request.PaymentStatus.ExistInEnum<PaymentStatus>())
+        {
+            var paymentStatusFilter = request.PaymentStatus.ToEnum<PaymentStatus>();
+            orders = orders.Where(o => o.PaymentStatus == paymentStatusFilter).ToList();
+        }
 
         var orderResponses = orders
             .OrderByDescending(o => o.CreatedAt)

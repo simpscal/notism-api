@@ -24,6 +24,8 @@ public static class OrderMapper
             UpdatedAt = order.UpdatedAt,
             Items = order.Items.Select(item => ToOrderItemResponse(item, storageService)).ToList(),
             DeliveryStatusTiming = CalculateDeliveryStatusTiming(order),
+            PaymentStatus = order.PaymentStatus.GetStringValue(),
+            PaidAt = order.PaidAt,
         };
     }
 

@@ -9,6 +9,8 @@ public class AdminOrderResponse
     public string UserName { get; set; } = string.Empty;
     public decimal TotalAmount { get; set; }
     public string DeliveryStatus { get; set; } = string.Empty;
+    public string PaymentStatus { get; set; } = string.Empty;
+    public DateTime? PaidAt { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public int TotalItems { get; set; }
