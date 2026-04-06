@@ -1,6 +1,7 @@
 using Notism.Domain.Common;
 using Notism.Domain.Order.Enums;
 using Notism.Domain.Order.Events;
+using Notism.Domain.Payment.Enums;
 using Notism.Shared.Utilities;
 
 namespace Notism.Domain.Order;
@@ -13,6 +14,8 @@ public class Order : AggregateRoot
     public decimal TotalAmount { get; private set; }
     public PaymentMethod PaymentMethod { get; private set; }
     public DeliveryStatus DeliveryStatus { get; private set; }
+    public PaymentStatus PaymentStatus { get; private set; }
+    public DateTime? PaidAt { get; private set; }
 
     private readonly List<OrderItem> _items = new();
     public IReadOnlyCollection<OrderItem> Items => _items.AsReadOnly();
@@ -29,6 +32,7 @@ public class Order : AggregateRoot
         SlugId = SlugGenerator.Generate("ORD");
         PaymentMethod = paymentMethod;
         DeliveryStatus = DeliveryStatus.OrderPlaced;
+        PaymentStatus = PaymentStatus.Unpaid;
 
         _statusHistory.Add(DeliveryStatusHistory.Create(Id, DeliveryStatus.OrderPlaced));
 
@@ -87,6 +91,14 @@ public class Order : AggregateRoot
 
         ClearDomainEvents();
         AddDomainEvent(new DeliveryStatusUpdatedEvent(Id, UserId, DeliveryStatus.Cancelled));
+    }
+
+    public void MarkAsPaid(DateTime paidAt)
+    {
+        PaymentStatus = PaymentStatus.Paid;
+        PaidAt = paidAt;
+        UpdatedAt = DateTime.UtcNow;
+        AddDomainEvent(new OrderPaidEvent(Id, UserId, paidAt));
     }
 
     private void RecalculateTotal()

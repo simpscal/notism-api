@@ -5,8 +5,12 @@ using Microsoft.Extensions.Logging;
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Application.Order.Mappers;
+using Notism.Application.Order.Models;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Order;
+using Notism.Domain.Order.Enums;
+using Notism.Domain.Payment;
+using Notism.Domain.Payment.Enums;
 using Notism.Domain.User.Enums;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Extensions;
@@ -19,17 +23,20 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
     private readonly IStorageService _storageService;
     private readonly ILogger<GetOrderByIdHandler> _logger;
     private readonly IMessages _messages;
+    private readonly IPaymentRepository _paymentRepository;
 
     public GetOrderByIdHandler(
         IOrderRepository orderRepository,
         IStorageService storageService,
         ILogger<GetOrderByIdHandler> logger,
-        IMessages messages)
+        IMessages messages,
+        IPaymentRepository paymentRepository)
     {
         _orderRepository = orderRepository;
         _storageService = storageService;
         _logger = logger;
         _messages = messages;
+        _paymentRepository = paymentRepository;
     }
 
     public async Task<GetOrderByIdResponse> Handle(
@@ -49,6 +56,23 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
 
         _logger.LogInformation("Retrieved order {SlugId} for user {UserId} (Admin: {IsAdmin})", request.SlugId, request.UserId, isAdmin);
 
+        var paymentSpec = new FilterSpecification<Domain.Payment.Payment>(p => true);
+        var payment = await _paymentRepository.FindByExpressionAsync(paymentSpec);
+        var bankAccountConfigured = payment != null;
+
+        PaymentQrResponse? paymentQr = null;
+        if (bankAccountConfigured && order.PaymentMethod == PaymentMethod.Banking && order.PaymentStatus == PaymentStatus.Unpaid)
+        {
+            paymentQr = new PaymentQrResponse
+            {
+                BankCode = payment!.BankCode,
+                AccountNumber = payment.AccountNumber,
+                AccountHolderName = payment.AccountHolderName,
+                Amount = order.TotalAmount,
+                OrderReference = order.SlugId,
+            };
+        }
+
         var baseResponse = OrderMapper.ToResponse(order, _storageService);
         return new GetOrderByIdResponse
         {
@@ -61,6 +85,9 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
             UpdatedAt = baseResponse.UpdatedAt,
             Items = baseResponse.Items,
             DeliveryStatusTiming = baseResponse.DeliveryStatusTiming,
+            PaymentStatus = order.PaymentStatus.GetStringValue(),
+            PaidAt = order.PaidAt,
+            PaymentQr = paymentQr,
         };
     }
 }

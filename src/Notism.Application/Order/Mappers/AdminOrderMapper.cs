@@ -18,6 +18,8 @@ public static class AdminOrderMapper
             UserName = GetUserName(user),
             TotalAmount = order.TotalAmount,
             DeliveryStatus = order.DeliveryStatus.GetStringValue(),
+            PaymentStatus = order.PaymentStatus.GetStringValue(),
+            PaidAt = order.PaidAt,
             CreatedAt = order.CreatedAt,
             UpdatedAt = order.UpdatedAt,
             TotalItems = order.Items.Count,

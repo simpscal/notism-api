@@ -11,6 +11,7 @@ using Notism.Domain.Cart;
 using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Food;
 using Notism.Domain.Order;
+using Notism.Domain.Payment;
 using Notism.Domain.RefreshToken;
 using Notism.Domain.User;
 using Notism.Infrastructure.Persistence;
@@ -40,6 +41,7 @@ public static class DependencyInjection
         services.AddScoped<IFoodRepository, FoodRepository>();
         services.AddScoped<ICartItemRepository, CartItemRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
+        services.AddScoped<IPaymentRepository, PaymentRepository>();
 
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IPasswordService, PasswordService>();

@@ -6,6 +6,8 @@ using Notism.Application.Common.Interfaces;
 using Notism.Application.Order.Mappers;
 using Notism.Application.Order.Models;
 using Notism.Domain.Order;
+using Notism.Domain.Payment.Enums;
+using Notism.Shared.Extensions;
 
 namespace Notism.Application.Order.AdminOrdersForTable;
 
@@ -26,10 +28,18 @@ public class AdminOrdersForTableHandler : IRequestHandler<AdminOrdersForTableReq
         AdminOrdersForTableRequest request,
         CancellationToken cancellationToken)
     {
+        PaymentStatus? paymentStatus = null;
+        if (!string.IsNullOrWhiteSpace(request.PaymentStatus) &&
+            request.PaymentStatus.ExistInEnum<PaymentStatus>())
+        {
+            paymentStatus = request.PaymentStatus.ToEnum<PaymentStatus>();
+        }
+
         var specification = new AdminOrdersForTableSpecification(
             request.Keyword,
             request.SortBy,
-            request.SortOrder);
+            request.SortOrder,
+            paymentStatus);
 
         var pagedResult = await _orderRepository.FilterPagedByExpressionAsync(specification, request);
         var items = pagedResult.Items.Select(order => AdminOrderMapper.ToAdminOrderResponse(order, order.User)).ToList();
