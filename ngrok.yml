@@ -1,6 +1,4 @@
 version: "3"
-agent:
-  authtoken_from_env: true   # reads NGROK_AUTHTOKEN from environment
 
 tunnels:
   api:
