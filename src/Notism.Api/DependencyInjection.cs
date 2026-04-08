@@ -1,11 +1,13 @@
 using System.Text;
 
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.Extensions.Localization;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
 using Notism.Api.Constants;
 using Notism.Api.Services;
+using Notism.Application.Common.Services;
 using Notism.Shared.Configuration;
 
 namespace Notism.Api;
@@ -149,7 +151,7 @@ public static class DependencyInjection
 
     private static IServiceCollection AddLocalizationConfiguration(this IServiceCollection services)
     {
-        services.AddLocalization(opts => opts.ResourcesPath = "Resources");
+        services.AddLocalization();
 
         return services;
     }

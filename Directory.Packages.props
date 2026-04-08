@@ -46,6 +46,7 @@
     <!-- Environment -->
     <PackageVersion Include="DotNetEnv" Version="3.0.0" />
     <!-- Localization -->
+    <PackageVersion Include="Microsoft.Extensions.Localization" Version="8.0.0" />
     <PackageVersion Include="System.Resources.Extensions" Version="8.0.0" />
   </ItemGroup>
 </Project>
