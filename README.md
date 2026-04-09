@@ -61,6 +61,7 @@ Before you begin, ensure you have the following installed:
 - [PostgreSQL](https://www.postgresql.org/download/) (or Docker)
 - [Docker](https://www.docker.com/get-started) (optional, for containerized deployment)
 - [Git](https://git-scm.com/downloads)
+- [ngrok](https://ngrok.com/download) (optional, for exposing the local API via a public URL)
 
 ## Getting Started
 
@@ -112,6 +113,16 @@ docker-compose up --build
 This will start:
 - API service on port 5000
 - Nginx reverse proxy on port 3000
+
+### Local Tunneling with ngrok
+
+A `ngrok.yml` is included at the repo root to expose the local API over a public URL — useful for testing on physical devices, sharing with teammates, or integrating with webhooks.
+
+**Start the tunnel:**
+
+```bash
+./start-ngrok.sh
+```
 
 ### Running the Worker Service
 
