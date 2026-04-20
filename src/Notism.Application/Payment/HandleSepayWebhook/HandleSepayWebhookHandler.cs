@@ -7,8 +7,7 @@ using Microsoft.Extensions.Logging;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Order;
 using Notism.Domain.Payment.Enums;
-
-using static Notism.Domain.Order.OrderSlugConstants;
+using Notism.Shared.Constants;
 
 namespace Notism.Application.Payment.HandleSepayWebhook;
 
@@ -37,7 +36,7 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
         }
 
         var slugId = match.Value;
-        slugId = PrefixWithSeparator + slugId;
+        slugId = Slugs.OrderPrefixWithSeparator + slugId;
 
         var order = await _orderRepository.FindByExpressionAsync(
             new FilterSpecification<Domain.Order.Order>(o => o.SlugId == slugId));
