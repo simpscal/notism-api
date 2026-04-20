@@ -138,11 +138,11 @@ public class HandleSepayWebhookHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenDescriptionHasHyphenStrippedSlugId_NormalizesAndMarksOrderAsPaid()
+    public async Task Handle_WhenDescriptionContainsPrefixStrippedSlugBody_PrependsOrdAndMarksOrderAsPaid()
     {
         var userId = Guid.NewGuid();
         var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
-        var strippedSlugId = order.SlugId.Replace("-", string.Empty);
+        var slugBody = order.SlugId[4..]; // strips "ORD-"
         var transferredAt = new DateTime(2026, 4, 5, 10, 0, 0, DateTimeKind.Utc);
 
         _orderRepository
@@ -153,7 +153,7 @@ public class HandleSepayWebhookHandlerTests
         {
             TransactionId = "TXN-006",
             Amount = order.TotalAmount,
-            Description = $"Chuyen khoan {strippedSlugId} thanh toan",
+            Description = $"Chuyen khoan {slugBody} thanh toan",
             TransferredAt = transferredAt,
         };
 

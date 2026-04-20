@@ -8,11 +8,13 @@ using Notism.Domain.Common.Specifications;
 using Notism.Domain.Order;
 using Notism.Domain.Payment.Enums;
 
+using static Notism.Domain.Order.OrderSlugConstants;
+
 namespace Notism.Application.Payment.HandleSepayWebhook;
 
 public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookRequest>
 {
-    private static readonly Regex SlugIdPattern = new(@"ORD-?[A-Z0-9]+", RegexOptions.Compiled);
+    private static readonly Regex SlugIdPattern = new(@"\b[A-Z0-9]{8}\b", RegexOptions.Compiled);
 
     private readonly IOrderRepository _orderRepository;
     private readonly ILogger<HandleSepayWebhookHandler> _logger;
@@ -35,10 +37,7 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
         }
 
         var slugId = match.Value;
-        if (slugId.Length > 3 && slugId[3] != '-')
-        {
-            slugId = "ORD-" + slugId[3..];
-        }
+        slugId = PrefixWithSeparator + slugId;
 
         var order = await _orderRepository.FindByExpressionAsync(
             new FilterSpecification<Domain.Order.Order>(o => o.SlugId == slugId));
