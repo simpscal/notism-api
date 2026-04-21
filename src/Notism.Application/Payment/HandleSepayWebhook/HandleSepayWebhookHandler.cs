@@ -1,5 +1,3 @@
-using System.Text.RegularExpressions;
-
 using MediatR;
 
 using Microsoft.Extensions.Logging;
@@ -13,8 +11,6 @@ namespace Notism.Application.Payment.HandleSepayWebhook;
 
 public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookRequest>
 {
-    private static readonly Regex SlugIdPattern = new(@"\b[A-Z0-9]{8}\b", RegexOptions.Compiled);
-
     private readonly IOrderRepository _orderRepository;
     private readonly ILogger<HandleSepayWebhookHandler> _logger;
 
@@ -28,15 +24,15 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
 
     public async Task Handle(HandleSepayWebhookRequest request, CancellationToken cancellationToken)
     {
-        var match = SlugIdPattern.Match(request.Description);
-        if (!match.Success)
+        var rawSlug = request.Content.Split('-')[0].Trim();
+
+        if (string.IsNullOrEmpty(rawSlug))
         {
-            _logger.LogWarning("No SlugId found in webhook description");
+            _logger.LogWarning("No SlugId found in webhook content");
             return;
         }
 
-        var slugId = match.Value;
-        slugId = Slugs.OrderPrefixWithSeparator + slugId;
+        var slugId = Slugs.OrderPrefixWithSeparator + rawSlug;
 
         var order = await _orderRepository.FindByExpressionAsync(
             new FilterSpecification<Domain.Order.Order>(o => o.SlugId == slugId));

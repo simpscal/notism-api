@@ -8,6 +8,6 @@ public class HandleSepayWebhookRequestValidator : AbstractValidator<HandleSepayW
     {
         RuleFor(x => x.TransactionId).NotEmpty();
         RuleFor(x => x.Amount).GreaterThan(0);
-        RuleFor(x => x.Description).NotEmpty();
+        RuleFor(x => x.Content).NotEmpty();
     }
 }
