@@ -136,4 +136,30 @@ public class HandleSepayWebhookHandlerTests
         order.PaymentStatus.Should().Be(PaymentStatus.Unpaid);
         await _orderRepository.DidNotReceive().SaveChangesAsync();
     }
+
+    [Fact]
+    public async Task Handle_WhenDescriptionContainsPrefixStrippedSlugBody_PrependsOrdAndMarksOrderAsPaid()
+    {
+        var userId = Guid.NewGuid();
+        var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
+        var slugBody = order.SlugId[4..]; // strips "ORD-"
+        var transferredAt = new DateTime(2026, 4, 5, 10, 0, 0, DateTimeKind.Utc);
+
+        _orderRepository
+            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
+            .Returns(order);
+
+        var request = new HandleSepayWebhookRequest
+        {
+            TransactionId = "TXN-006",
+            Amount = order.TotalAmount,
+            Description = $"Chuyen khoan {slugBody} thanh toan",
+            TransferredAt = transferredAt,
+        };
+
+        await _handler.Handle(request, CancellationToken.None);
+
+        order.PaymentStatus.Should().Be(PaymentStatus.Paid);
+        await _orderRepository.Received(1).SaveChangesAsync();
+    }
 }
