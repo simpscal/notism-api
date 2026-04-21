@@ -90,7 +90,7 @@ public static class PaymentEndpoints
 
         var request = new HandleSepayWebhookRequest
         {
-            TransactionId = payload.TransactionId,
+            TransactionId = payload.TransactionId.ToString(CultureInfo.InvariantCulture),
             Amount = payload.Amount,
             Content = payload.Content,
             TransferredAt = transferredAt,
@@ -133,8 +133,7 @@ public record SaveBankAccountPayload
 public record SepayWebhookPayload
 {
     [JsonPropertyName("id")]
-    [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
-    public string TransactionId { get; init; } = string.Empty;
+    public long TransactionId { get; init; }
 
     [JsonPropertyName("transferAmount")]
     public decimal Amount { get; init; }
