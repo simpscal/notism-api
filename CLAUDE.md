@@ -83,6 +83,19 @@ Notism.Worker         → Background service
 
 Local dev uses `.env.development` (loaded by DotNetEnv in `Program.cs`). Production uses CI/CD-injected environment variables. Key config sections: `JwtSettings`, `AWS` (S3 buckets), `Email` (MailerSend), `ClientApp`, `GoogleOAuth`.
 
+## Documentation
+
+Detailed reference docs live in `docs/`:
+
+| Document | Path |
+|---|---|
+| Architecture rules & folder structure | `docs/rules/architecture.md` |
+| Best practices (handlers, repos, specs) | `docs/rules/best-practices.md` |
+| Image resizing flow | `docs/flows/image-resizing.md` |
+| Secure authentication cookies flow | `docs/flows/secure-authentication-cookies.md` |
+| AWS infrastructure architecture | `docs/infra/aws-architecture.md` |
+| Terraform configuration | `docs/infra/terraform-configuration.md` |
+
 ### Code Quality
 
 - **Warnings as errors** is enabled — all StyleCop/analyzer warnings must be resolved.
