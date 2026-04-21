@@ -96,7 +96,7 @@ public static class PaymentEndpoints
             TransferredAt = transferredAt,
         };
 
-        await mediator.Send(request, cancellationToken);
+        await mediator.Send(request, CancellationToken.None);
 
         return Results.Ok();
     }
