@@ -86,7 +86,8 @@ public static class PaymentEndpoints
         var transferredAt = DateTime.ParseExact(
             payload.TransactionDate,
             "yyyy-MM-dd HH:mm:ss",
-            CultureInfo.InvariantCulture);
+            CultureInfo.InvariantCulture,
+            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
 
         var request = new HandleSepayWebhookRequest
         {
