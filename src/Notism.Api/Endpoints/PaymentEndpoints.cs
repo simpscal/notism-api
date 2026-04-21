@@ -83,11 +83,11 @@ public static class PaymentEndpoints
             return Results.Ok();
         }
 
-        var transferredAt = DateTime.ParseExact(
+        var localTime = DateTime.ParseExact(
             payload.TransactionDate,
             "yyyy-MM-dd HH:mm:ss",
-            CultureInfo.InvariantCulture,
-            DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal);
+            CultureInfo.InvariantCulture);
+        var transferredAt = DateTime.SpecifyKind(localTime.AddHours(-7), DateTimeKind.Utc);
 
         var request = new HandleSepayWebhookRequest
         {
