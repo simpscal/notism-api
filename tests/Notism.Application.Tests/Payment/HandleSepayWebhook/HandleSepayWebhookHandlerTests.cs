@@ -26,21 +26,23 @@ public class HandleSepayWebhookHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenDescriptionContainsSlugIdAndAmountMatches_MarksOrderAsPaid()
+    public async Task Handle_WhenContentContainsSlugIdAsFirstSegmentAndAmountMatches_MarksOrderAsPaid()
     {
         var userId = Guid.NewGuid();
         var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
+        var slugBody = order.SlugId[4..]; // strips "ORD-"
         var transferredAt = new DateTime(2026, 4, 5, 10, 0, 0, DateTimeKind.Utc);
 
         _orderRepository
             .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
             .Returns(order);
 
+        // SePay content format: "<SlugBody>-<date>-<time> <rest>"
         var request = new HandleSepayWebhookRequest
         {
-            TransactionId = "TXN-001",
+            TransactionId = "52408910",
             Amount = order.TotalAmount,
-            Description = $"Chuyen khoan {order.SlugId} thanh toan",
+            Content = $"{slugBody}-210426-15:08:27 6111ASCB02QIZ3BI CKN 179827",
             TransferredAt = transferredAt,
         };
 
@@ -52,13 +54,13 @@ public class HandleSepayWebhookHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenDescriptionHasNoSlugId_ReturnsWithoutSavingAndDoesNotCallRepository()
+    public async Task Handle_WhenContentIsEmptyOrHasNoSegments_ReturnsWithoutSavingAndDoesNotCallRepository()
     {
         var request = new HandleSepayWebhookRequest
         {
-            TransactionId = "TXN-002",
+            TransactionId = "52408911",
             Amount = 100_000,
-            Description = "Chuyen khoan tien hang thang",
+            Content = string.Empty,
             TransferredAt = DateTime.UtcNow,
         };
 
@@ -77,9 +79,9 @@ public class HandleSepayWebhookHandlerTests
 
         var request = new HandleSepayWebhookRequest
         {
-            TransactionId = "TXN-003",
+            TransactionId = "52408912",
             Amount = 50_000,
-            Description = "Payment ORD-MISSING123 ref",
+            Content = "MISSING123-210426-15:08:27 extra data",
             TransferredAt = DateTime.UtcNow,
         };
 
@@ -94,6 +96,7 @@ public class HandleSepayWebhookHandlerTests
         var userId = Guid.NewGuid();
         var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
         order.MarkAsPaid(DateTime.UtcNow.AddMinutes(-5));
+        var slugBody = order.SlugId[4..]; // strips "ORD-"
 
         _orderRepository
             .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
@@ -101,9 +104,9 @@ public class HandleSepayWebhookHandlerTests
 
         var request = new HandleSepayWebhookRequest
         {
-            TransactionId = "TXN-004",
+            TransactionId = "52408913",
             Amount = order.TotalAmount,
-            Description = $"Duplicate webhook {order.SlugId}",
+            Content = $"{slugBody}-210426-15:08:27 duplicate webhook",
             TransferredAt = DateTime.UtcNow,
         };
 
@@ -118,6 +121,7 @@ public class HandleSepayWebhookHandlerTests
     {
         var userId = Guid.NewGuid();
         var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
+        var slugBody = order.SlugId[4..]; // strips "ORD-"
 
         _orderRepository
             .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
@@ -125,9 +129,9 @@ public class HandleSepayWebhookHandlerTests
 
         var request = new HandleSepayWebhookRequest
         {
-            TransactionId = "TXN-005",
+            TransactionId = "52408914",
             Amount = order.TotalAmount + 1,
-            Description = $"Payment {order.SlugId}",
+            Content = $"{slugBody}-210426-15:08:27 amount mismatch",
             TransferredAt = DateTime.UtcNow,
         };
 
@@ -138,28 +142,32 @@ public class HandleSepayWebhookHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenDescriptionContainsPrefixStrippedSlugBody_PrependsOrdAndMarksOrderAsPaid()
+    public async Task Handle_WhenPreviousPaymentFailedAndNewTransferSucceeds_MarksOrderAsPaid()
     {
         var userId = Guid.NewGuid();
         var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
         var slugBody = order.SlugId[4..]; // strips "ORD-"
-        var transferredAt = new DateTime(2026, 4, 5, 10, 0, 0, DateTimeKind.Utc);
+        var transferredAt = new DateTime(2026, 4, 21, 15, 8, 28, DateTimeKind.Utc);
 
         _orderRepository
             .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
             .Returns(order);
 
+        // Simulate a prior failed attempt: order is still Unpaid
+        order.PaymentStatus.Should().Be(PaymentStatus.Unpaid);
+
         var request = new HandleSepayWebhookRequest
         {
-            TransactionId = "TXN-006",
+            TransactionId = "52408910",
             Amount = order.TotalAmount,
-            Description = $"Chuyen khoan {slugBody} thanh toan",
+            Content = $"{slugBody}-210421-15:08:28 6111ASCB02QIZ3BI",
             TransferredAt = transferredAt,
         };
 
         await _handler.Handle(request, CancellationToken.None);
 
         order.PaymentStatus.Should().Be(PaymentStatus.Paid);
+        order.PaidAt.Should().Be(transferredAt);
         await _orderRepository.Received(1).SaveChangesAsync();
     }
 }

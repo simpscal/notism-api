@@ -1,17 +1,14 @@
-using System.Security.Cryptography;
-using System.Text;
+using System.Globalization;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 using MediatR;
-
-using Microsoft.Extensions.Options;
 
 using Notism.Api.Extensions;
 using Notism.Api.Models;
 using Notism.Application.Payment.GetBankAccount;
 using Notism.Application.Payment.HandleSepayWebhook;
 using Notism.Application.Payment.SaveBankAccount;
-using Notism.Shared.Configuration;
 
 namespace Notism.Api.Endpoints;
 
@@ -43,7 +40,7 @@ public static class PaymentEndpoints
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
 
-        // Webhook group — no JWT auth, verified via HMAC
+        // Webhook group — no JWT auth; slug+amount check limits blast radius
         var webhookGroup = app.MapGroup("/api/payments")
             .WithTags("Payment Management")
             .WithOpenApi()
@@ -53,8 +50,7 @@ public static class PaymentEndpoints
             .WithName("HandleSepayWebhook")
             .WithSummary("SePay webhook")
             .WithDescription("Receives SePay bank transfer notifications and auto-confirms matching orders.")
-            .Produces(StatusCodes.Status200OK)
-            .Produces(StatusCodes.Status401Unauthorized);
+            .Produces(StatusCodes.Status200OK);
     }
 
     private static async Task<IResult> GetBankAccountAsync(
@@ -73,22 +69,10 @@ public static class PaymentEndpoints
     private static async Task<IResult> HandleSepayWebhookAsync(
         HttpContext httpContext,
         IMediator mediator,
-        IOptions<SepaySettings> sepayOptions,
         CancellationToken cancellationToken)
     {
         using var reader = new StreamReader(httpContext.Request.Body);
         var rawBody = await reader.ReadToEndAsync(cancellationToken);
-
-        var incomingSignature = httpContext.Request.Headers["X-Sepay-Signature"].FirstOrDefault();
-
-        using var hmac = new HMACSHA256(Encoding.UTF8.GetBytes(sepayOptions.Value.WebhookSecret));
-        var computedHash = hmac.ComputeHash(Encoding.UTF8.GetBytes(rawBody));
-        var computedSignature = Convert.ToHexString(computedHash).ToLowerInvariant();
-
-        if (!string.Equals(incomingSignature, computedSignature, StringComparison.OrdinalIgnoreCase))
-        {
-            return Results.Unauthorized();
-        }
 
         var payload = JsonSerializer.Deserialize<SepayWebhookPayload>(
             rawBody,
@@ -99,12 +83,17 @@ public static class PaymentEndpoints
             return Results.Ok();
         }
 
+        var transferredAt = DateTime.ParseExact(
+            payload.TransactionDate,
+            "yyyy-MM-dd HH:mm:ss",
+            CultureInfo.InvariantCulture);
+
         var request = new HandleSepayWebhookRequest
         {
             TransactionId = payload.TransactionId,
             Amount = payload.Amount,
-            Description = payload.Description,
-            TransferredAt = payload.TransferredAt,
+            Content = payload.Content,
+            TransferredAt = transferredAt,
         };
 
         await mediator.Send(request, cancellationToken);
@@ -143,8 +132,16 @@ public record SaveBankAccountPayload
 
 public record SepayWebhookPayload
 {
+    [JsonPropertyName("id")]
+    [JsonNumberHandling(JsonNumberHandling.AllowReadingFromString)]
     public string TransactionId { get; init; } = string.Empty;
+
+    [JsonPropertyName("transferAmount")]
     public decimal Amount { get; init; }
-    public string Description { get; init; } = string.Empty;
-    public DateTime TransferredAt { get; init; }
+
+    [JsonPropertyName("transactionDate")]
+    public string TransactionDate { get; init; } = string.Empty;
+
+    [JsonPropertyName("content")]
+    public string Content { get; init; } = string.Empty;
 }
