@@ -1,104 +1,122 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+## Technologies
+
+| Category | Technology |
+|----------|-------------|
+| Runtime | .NET 9.0 |
+| Database | PostgreSQL via EF Core 8 (Npgsql) |
+| CQRS | MediatR 12 |
+| Validation | FluentValidation 11 |
+| Mapping | AutoMapper 13 |
+| Auth | JWT Bearer tokens |
+| Testing | xUnit, NSubstitute, FluentAssertions |
 
 ## Commands
 
-### Build & Run
 ```bash
-dotnet build Notism.sln -c Release
-dotnet run --project src/Notism.Api
-dotnet run --project src/Notism.Worker
+dotnet build Notism.sln
+dotnet test Notism.sln
+./format-code.sh --verify  # check only
+./format-code.sh           # fix issues
 ```
 
-### Testing
-```bash
-dotnet test                                  # All tests
-dotnet test tests/Notism.Domain.Tests        # Domain tests only
-dotnet test tests/Notism.Application.Tests   # Application tests only
-dotnet test --filter "FullyQualifiedName~Login"  # Single test class
-```
+## EF Core Migrations
 
-### Code Formatting
-```bash
-./format-code.sh             # Fix all issues
-./format-code.sh --verify    # Check only (no changes)
-dotnet format Notism.sln whitespace
-dotnet format Notism.sln style
-dotnet format Notism.sln analyzers
-```
+Run from `src/Notism.Infrastructure/`:
 
-### Database Migrations
 ```bash
-# From repo root
-dotnet ef migrations add <MigrationName> \
-  --project src/Notism.Infrastructure \
-  --startup-project src/Notism.Api
+dotnet ef migrations add <Name> \
+  --project Notism.Infrastructure.csproj \
+  --startup-project ../Notism.Api/Notism.Api.csproj
 
 dotnet ef database update \
-  --project src/Notism.Infrastructure \
-  --startup-project src/Notism.Api
+  --project Notism.Infrastructure.csproj \
+  --startup-project ../Notism.Api/Notism.Api.csproj
 ```
 
-### Docker
-```bash
-docker-compose up --build    # Full stack (Caddy + PostgreSQL + API)
+## Folder Structure
+
+```
+src/
+  Notism.Api/              # Minimal APIs, middleware, JWT auth
+  Notism.Application/       # MediatR handlers (CQRS), FluentValidation
+  Notism.Domain/           # Aggregates, entities, domain events
+  Notism.Infrastructure/    # EF Core, repositories, external services
+  Notism.Shared/            # Result pattern, constants, extensions
+  Notism.Worker/            # Background services (token cleanup)
+tests/
+  Notism.Api.Tests/         # API integration tests
+  Notism.Application.Tests/  # Application unit tests
+terraform/                   # AWS infrastructure (EC2, RDS, S3, CloudFront)
+docs/                       # Architecture and feature documentation
 ```
 
 ## Architecture
 
-Clean Architecture (Onion) with DDD and CQRS:
+Clean Architecture (Onion) + CQRS via MediatR
+
+| Layer | Responsibility |
+|-------|----------------|
+| Domain | Entities, aggregates, domain events |
+| Application | MediatR handlers, FluentValidation, AutoMapper |
+| Infrastructure | EF Core persistence, repository implementations |
+| Api | Minimal APIs, middleware, JWT authentication |
+
+## CQRS Naming
+
+Feature folder: `src/Notism.Application/{Feature}/{Operation}/`
+
+| File | Pattern |
+|------|---------|
+| Request | `{Operation}Request.cs` |
+| Response | `{Operation}Response.cs` |
+| Handler | `{Operation}Handler.cs` |
+| Validator | `{Operation}RequestValidator.cs` |
+
+Validators and AutoMapper profiles auto-register — no manual DI registration needed.
+
+## Error Handling
+
+| Exception | HTTP |
+|-----------|------|
+| `ResultFailureException` | 400 |
+| `NotFoundException` | 404 |
+| `UnauthorizedException` | 401 |
+| `ForbiddenException` | 403 |
+| `InvalidRefreshTokenException` | 401 |
+
+Never return null/bool for failures — throw. `ValidationBehavior` throws `ResultFailureException` automatically.
+
+## Test Naming
+
+Method pattern: `Handle_When{Condition}_{ExpectedOutcome}`
+File location: `tests/Notism.Application.Tests/{Feature}/{Operation}/{Operation}HandlerTests.cs`
+
+## Document Navigation
+
+| Topic | Location |
+|-------|----------|
+| Architecture | `docs/architecture.md` |
+| Best practices | `docs/best-practices.md` |
+| Infrastructure | `docs/infra` |
+
+## Infrastructure (Terraform)
 
 ```
-Notism.Api            → HTTP layer: Minimal APIs, middleware, auth
-Notism.Application    → CQRS: MediatR handlers, FluentValidation, AutoMapper
-Notism.Domain         → DDD: Aggregates, Value Objects, Domain Events, repository interfaces
-Notism.Infrastructure → EF Core (PostgreSQL), AWS S3, MailerSend, JWT/password services
-Notism.Shared         → Cross-cutting: Result<T>, Pagination, ResultFailureException
-Notism.Worker         → Background service
+terraform/
+  main.tf, variables.tf, outputs.tf
 ```
 
-**Dependency rule**: each layer only depends inward. Infrastructure and API depend on Application, Application depends on Domain, Domain depends on Shared only.
+Deploy: `terraform apply -var="key_name=notism-api"`
 
-### Key Patterns
+Resources: VPC, EC2 (t4g.micro), RDS PostgreSQL (optional), ECR, S3, CloudFront
 
-**CQRS via MediatR**: Each feature has its own folder with `XRequest`, `XRequestValidator`, `XHandler`, and `XResponse`. The handler flow is: `Request → Validator (pipeline behavior) → Handler → Domain ops → Repository → Response`.
+## CI/CD
 
-**Result Pattern**: Handlers return `Result<T>`. Business violations throw `ResultFailureException`, which `ResultFailureMiddleware` converts to HTTP 400.
+| Workflow | Target | Trigger |
+|----------|---------|---------|
+| `deploy.yml` | AWS EC2 (Docker Compose) | Push to main/dev |
+| `deploy-worker.yml` | AWS ECS | Push to main/dev when Worker/Domain/Infrastructure/Shared change |
 
-**Aggregates**: `User` (with `PasswordResetToken` entity, `Email`/`Password` value objects) and `RefreshToken`. Other aggregates (Order, Food, Cart) exist in the domain but are not fully documented in `docs/`.
-
-**Specifications**: Query logic is encapsulated in `*Specification` classes, co-located in the Application feature folder (not in Domain).
-
-**Repository per aggregate**: Interfaces defined in Domain (`IUserRepository`, `IRefreshTokenRepository`), implemented in Infrastructure.
-
-### Adding a New Feature
-
-1. **Domain**: Add business methods to aggregate root, new value objects/events as needed, repository interface if new aggregate.
-2. **Application**: Create feature folder `FeatureName/ActionName/` with Request, Validator, Handler, Response. Add to `MappingProfile` if AutoMapper is needed.
-3. **Infrastructure**: Implement repository, add EF entity configuration, run migration.
-4. **API**: Add endpoint in `Endpoints/XEndpoints.cs` — only HTTP translation, delegate to `ISender.Send()`.
-
-### Configuration
-
-Local dev uses `.env.development` (loaded by DotNetEnv in `Program.cs`). Production uses CI/CD-injected environment variables. Key config sections: `JwtSettings`, `AWS` (S3 buckets), `Email` (MailerSend), `ClientApp`, `GoogleOAuth`.
-
-## Documentation
-
-Detailed reference docs live in `docs/`:
-
-| Document | Path |
-|---|---|
-| Architecture rules & folder structure | `docs/rules/architecture.md` |
-| Best practices (handlers, repos, specs) | `docs/rules/best-practices.md` |
-| Image resizing flow | `docs/flows/image-resizing.md` |
-| Secure authentication cookies flow | `docs/flows/secure-authentication-cookies.md` |
-| AWS infrastructure architecture | `docs/infra/aws-architecture.md` |
-| Terraform configuration | `docs/infra/terraform-configuration.md` |
-
-### Code Quality
-
-- **Warnings as errors** is enabled — all StyleCop/analyzer warnings must be resolved.
-- **Centralized package versions** in `Directory.Packages.props` — do not specify versions in individual `.csproj` files.
-- `.editorconfig` enforces CRLF line endings and 4-space indentation.
-- Tests use xUnit + FluentAssertions + NSubstitute.
+Branch → environment: `main` = prod, `dev` = dev
