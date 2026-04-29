@@ -1,31 +1,22 @@
 using FluentAssertions;
 
-using Microsoft.AspNetCore.SignalR;
-
-using Notism.Api.Hubs;
+using Notism.Application.Common.Interfaces;
+using Notism.Application.Payment.EventHandlers;
 using Notism.Domain.Order.Events;
 
 using NSubstitute;
 
-namespace Notism.Api.Tests.Payment.OrderPaidNotificationHandler;
+namespace Notism.Application.Tests.Payment.EventHandlers;
 
-public class OrderPaidNotificationHandlerTests
+public class OrderPaidHandlerTests
 {
-    private readonly IHubContext<PaymentHub> _hubContext;
-    private readonly IHubClients _hubClients;
-    private readonly IClientProxy _clientProxy;
-    private readonly Hubs.OrderPaidNotificationHandler _handler;
+    private readonly INotificationService _notificationService;
+    private readonly OrderPaidHandler _handler;
 
-    public OrderPaidNotificationHandlerTests()
+    public OrderPaidHandlerTests()
     {
-        _hubContext = Substitute.For<IHubContext<PaymentHub>>();
-        _hubClients = Substitute.For<IHubClients>();
-        _clientProxy = Substitute.For<IClientProxy>();
-
-        _hubContext.Clients.Returns(_hubClients);
-        _hubClients.Group(Arg.Any<string>()).Returns(_clientProxy);
-
-        _handler = new Hubs.OrderPaidNotificationHandler(_hubContext);
+        _notificationService = Substitute.For<INotificationService>();
+        _handler = new OrderPaidHandler(_notificationService);
     }
 
     [Fact]
@@ -38,11 +29,8 @@ public class OrderPaidNotificationHandlerTests
 
         await _handler.Handle(notification, CancellationToken.None);
 
-        _hubClients.Received(1).Group(userId.ToString());
-        await _clientProxy.Received(1).SendCoreAsync(
-            "ReceivePaymentNotification",
-            Arg.Is<object[]>(args => args.Length == 1),
-            Arg.Any<CancellationToken>());
+        await _notificationService.Received(1).NotifyPaymentSuccessAsync(
+            orderId, userId, paidAt, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -56,8 +44,10 @@ public class OrderPaidNotificationHandlerTests
 
         await _handler.Handle(notification, CancellationToken.None);
 
-        _hubClients.Received(1).Group(userId.ToString());
-        _hubClients.DidNotReceive().Group(otherUserId.ToString());
+        await _notificationService.Received(1).NotifyPaymentSuccessAsync(
+            orderId, userId, paidAt, Arg.Any<CancellationToken>());
+        await _notificationService.DidNotReceive().NotifyPaymentSuccessAsync(
+            Arg.Any<Guid>(), otherUserId, Arg.Any<DateTime>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
