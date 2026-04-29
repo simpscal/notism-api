@@ -58,6 +58,8 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
                 slugId,
                 order.TotalAmount,
                 request.Amount);
+            order.MarkAsFailed();
+            await _orderRepository.SaveChangesAsync();
             return;
         }
 
