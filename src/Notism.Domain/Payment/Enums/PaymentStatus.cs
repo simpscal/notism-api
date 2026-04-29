@@ -9,4 +9,7 @@ public enum PaymentStatus
 
     [StringValue("paid")]
     Paid = 1,
+
+    [StringValue("failed")]
+    Failed = 2,
 }

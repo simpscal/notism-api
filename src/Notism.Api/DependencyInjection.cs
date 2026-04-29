@@ -9,6 +9,7 @@ using Microsoft.OpenApi.Models;
 
 using Notism.Api.Constants;
 using Notism.Api.Services;
+using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Shared.Configuration;
 
@@ -32,6 +33,7 @@ public static class DependencyInjection
         services.AddProblemDetails();
 
         services.AddScoped<ICookieService, CookieService>();
+        services.AddScoped<INotificationService, SignalRNotificationService>();
 
         services.AddMediatR(options =>
         {
