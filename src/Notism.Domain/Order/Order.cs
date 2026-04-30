@@ -102,6 +102,13 @@ public class Order : AggregateRoot
         AddDomainEvent(new OrderPaidEvent(Id, UserId, paidAt));
     }
 
+    public void MarkAsFailed()
+    {
+        PaymentStatus = PaymentStatus.Failed;
+        UpdatedAt = DateTime.UtcNow;
+        AddDomainEvent(new OrderPaymentFailedEvent(Id, UserId));
+    }
+
     private void RecalculateTotal()
     {
         TotalAmount = _items.Sum(item => item.TotalPrice);

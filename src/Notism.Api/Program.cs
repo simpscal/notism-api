@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.HttpOverrides;
 
 using Notism.Api;
 using Notism.Api.Endpoints;
+using Notism.Api.Hubs;
 using Notism.Api.Middlewares;
 using Notism.Application;
 using Notism.Infrastructure;
@@ -65,6 +66,8 @@ var app = builder.Build();
     app.MapCartEndpoints();
     app.MapOrderEndpoints();
     app.MapPaymentEndpoints();
+
+    app.MapHub<PaymentHub>("/hubs/payment");
 
     app.Run();
 }

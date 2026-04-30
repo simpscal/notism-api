@@ -1,5 +1,7 @@
 using System.Text;
 
+using MediatR;
+
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Localization;
 using Microsoft.IdentityModel.Tokens;
@@ -7,6 +9,7 @@ using Microsoft.OpenApi.Models;
 
 using Notism.Api.Constants;
 using Notism.Api.Services;
+using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Shared.Configuration;
 
@@ -18,6 +21,7 @@ public static class DependencyInjection
     {
         services.AddEndpointsApiExplorer();
         services.AddAuthorization();
+        services.AddSignalR();
 
         services.AddConfigurationOptions(configuration);
         services.AddSwaggerConfiguration();
@@ -29,6 +33,12 @@ public static class DependencyInjection
         services.AddProblemDetails();
 
         services.AddScoped<ICookieService, CookieService>();
+        services.AddScoped<INotificationService, SignalRNotificationService>();
+
+        services.AddMediatR(options =>
+        {
+            options.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
+        });
 
         return services;
     }
@@ -143,6 +153,21 @@ public static class DependencyInjection
                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(
                         configuration["JwtSettings:Secret"] ??
                         throw new Exception("Empty JWTSettings Secret"))),
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnMessageReceived = context =>
+                    {
+                        var accessToken = context.Request.Query["access_token"];
+                        var path = context.HttpContext.Request.Path;
+                        if (!string.IsNullOrEmpty(accessToken) && path.StartsWithSegments("/hubs"))
+                        {
+                            context.Token = accessToken;
+                        }
+
+                        return Task.CompletedTask;
+                    },
                 };
             });
 

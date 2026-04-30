@@ -117,7 +117,7 @@ public class HandleSepayWebhookHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenAmountDoesNotMatchOrderTotal_DoesNotMarkAsPaidAndDoesNotSave()
+    public async Task Handle_WhenAmountDoesNotMatchOrderTotal_MarksOrderAsFailedAndSaves()
     {
         var userId = Guid.NewGuid();
         var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
@@ -137,8 +137,8 @@ public class HandleSepayWebhookHandlerTests
 
         await _handler.Handle(request, CancellationToken.None);
 
-        order.PaymentStatus.Should().Be(PaymentStatus.Unpaid);
-        await _orderRepository.DidNotReceive().SaveChangesAsync();
+        order.PaymentStatus.Should().Be(PaymentStatus.Failed);
+        await _orderRepository.Received(1).SaveChangesAsync();
     }
 
     [Fact]
@@ -153,8 +153,9 @@ public class HandleSepayWebhookHandlerTests
             .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
             .Returns(order);
 
-        // Simulate a prior failed attempt: order is still Unpaid
-        order.PaymentStatus.Should().Be(PaymentStatus.Unpaid);
+        // Simulate a prior failed attempt
+        order.MarkAsFailed();
+        order.PaymentStatus.Should().Be(PaymentStatus.Failed);
 
         var request = new HandleSepayWebhookRequest
         {
