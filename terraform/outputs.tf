@@ -17,8 +17,8 @@ output "ec2_instance_id" {
 }
 
 output "ec2_public_ip" {
-  description = "Public IP of the API (Elastic IP)"
-  value       = aws_eip.api.public_ip
+  description = "Public IP of the API (Elastic IP). 'EIP_RELEASED' when not allocated."
+  value       = "EIP_RELEASED"
 }
 
 # ------------------------------------------------------------
@@ -59,8 +59,8 @@ output "connection_string_hint" {
 # ------------------------------------------------------------
 
 output "api_url" {
-  description = "API base URL (HTTP)"
-  value       = "http://${aws_eip.api.public_ip}:5000"
+  description = "API base URL (HTTP). 'EIP_RELEASED' when EIP not allocated."
+  value       = "http://EIP_RELEASED:5000"
 }
 
 # ------------------------------------------------------------
