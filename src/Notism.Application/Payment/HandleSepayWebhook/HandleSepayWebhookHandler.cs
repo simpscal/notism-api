@@ -34,7 +34,7 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
 
     public async Task Handle(HandleSepayWebhookRequest request, CancellationToken cancellationToken)
     {
-        var token = request.Content.Trim().Split(' ')[0];
+        var token = request.Content.Trim().Split('-')[0];
 
         if (!Guid.TryParseExact(token, "N", out var checkoutId))
         {
