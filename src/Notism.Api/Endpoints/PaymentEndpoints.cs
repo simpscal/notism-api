@@ -6,6 +6,7 @@ using MediatR;
 
 using Notism.Api.Extensions;
 using Notism.Api.Models;
+using Notism.Application.Payment.CreateBankingCheckout;
 using Notism.Application.Payment.GetBankAccount;
 using Notism.Application.Payment.HandleSepayWebhook;
 using Notism.Application.Payment.SaveBankAccount;
@@ -40,7 +41,15 @@ public static class PaymentEndpoints
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
 
-        // Webhook group — no JWT auth; slug+amount check limits blast radius
+        group.MapPost("/banking/checkout", CreateBankingCheckoutAsync)
+            .WithName("CreateBankingCheckout")
+            .WithSummary("Create banking checkout session")
+            .WithDescription("Creates a BankingCheckout session for bank transfer payment. Returns a checkoutId used as the transfer reference.")
+            .Produces<CreateBankingCheckoutResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized);
+
+        // Webhook group — no JWT auth; checkoutId+amount check limits blast radius
         var webhookGroup = app.MapGroup("/api/payments")
             .WithTags("Payment Management")
             .WithOpenApi()
@@ -51,6 +60,26 @@ public static class PaymentEndpoints
             .WithSummary("SePay webhook")
             .WithDescription("Receives SePay bank transfer notifications and auto-confirms matching orders.")
             .Produces(StatusCodes.Status200OK);
+    }
+
+    private static async Task<IResult> CreateBankingCheckoutAsync(
+        HttpContext httpContext,
+        IMediator mediator,
+        CreateBankingCheckoutPayload payload,
+        CancellationToken cancellationToken)
+    {
+        var userId = httpContext.User.GetUserId();
+
+        var request = new CreateBankingCheckoutRequest
+        {
+            UserId = userId,
+            CartItemIds = payload.CartItemIds,
+            TotalAmount = payload.TotalAmount,
+        };
+
+        var result = await mediator.Send(request, cancellationToken);
+
+        return Results.Ok(result);
     }
 
     private static async Task<IResult> GetBankAccountAsync(
@@ -122,6 +151,12 @@ public static class PaymentEndpoints
 
         return Results.Ok();
     }
+}
+
+public record CreateBankingCheckoutPayload
+{
+    public List<Guid> CartItemIds { get; set; } = new();
+    public decimal TotalAmount { get; set; }
 }
 
 public record SaveBankAccountPayload
