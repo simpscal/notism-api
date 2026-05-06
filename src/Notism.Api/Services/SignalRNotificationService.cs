@@ -15,7 +15,7 @@ public class SignalRNotificationService : INotificationService
     public Task NotifyPaymentSuccessAsync(Guid orderId, Guid userId, DateTime paidAt, string slugId, CancellationToken cancellationToken)
         => _hubContext.Clients.Group(userId.ToString()).SendAsync(
             "ReceivePaymentNotification",
-            new { type = "payment-success", orderId, slugId, message = "Payment confirmed. You can now place your order.", timestamp = paidAt },
+            new { type = "payment-success", orderId, slugId, message = "Payment confirmed. You can now view your order.", timestamp = paidAt },
             cancellationToken);
 
     public Task NotifyPaymentFailureAsync(Guid orderId, Guid userId, CancellationToken cancellationToken)
