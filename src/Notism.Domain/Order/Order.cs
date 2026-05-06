@@ -99,7 +99,7 @@ public class Order : AggregateRoot
         PaymentStatus = PaymentStatus.Paid;
         PaidAt = paidAt;
         UpdatedAt = DateTime.UtcNow;
-        AddDomainEvent(new OrderPaidEvent(Id, UserId, paidAt));
+        AddDomainEvent(new OrderPaidEvent(Id, UserId, paidAt, SlugId));
     }
 
     public void MarkAsFailed()

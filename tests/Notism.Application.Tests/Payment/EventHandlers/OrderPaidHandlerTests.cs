@@ -25,12 +25,13 @@ public class OrderPaidHandlerTests
         var userId = Guid.NewGuid();
         var orderId = Guid.NewGuid();
         var paidAt = new DateTime(2026, 4, 27, 10, 0, 0, DateTimeKind.Utc);
-        var notification = new OrderPaidEvent(orderId, userId, paidAt);
+        var slugId = "ORD-TEST001";
+        var notification = new OrderPaidEvent(orderId, userId, paidAt, slugId);
 
         await _handler.Handle(notification, CancellationToken.None);
 
         await _notificationService.Received(1).NotifyPaymentSuccessAsync(
-            orderId, userId, paidAt, Arg.Any<CancellationToken>());
+            orderId, userId, paidAt, slugId, Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -40,14 +41,15 @@ public class OrderPaidHandlerTests
         var otherUserId = Guid.NewGuid();
         var orderId = Guid.NewGuid();
         var paidAt = DateTime.UtcNow;
-        var notification = new OrderPaidEvent(orderId, userId, paidAt);
+        var slugId = "ORD-TEST002";
+        var notification = new OrderPaidEvent(orderId, userId, paidAt, slugId);
 
         await _handler.Handle(notification, CancellationToken.None);
 
         await _notificationService.Received(1).NotifyPaymentSuccessAsync(
-            orderId, userId, paidAt, Arg.Any<CancellationToken>());
+            orderId, userId, paidAt, slugId, Arg.Any<CancellationToken>());
         await _notificationService.DidNotReceive().NotifyPaymentSuccessAsync(
-            Arg.Any<Guid>(), otherUserId, Arg.Any<DateTime>(), Arg.Any<CancellationToken>());
+            Arg.Any<Guid>(), otherUserId, Arg.Any<DateTime>(), Arg.Any<string>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
@@ -55,7 +57,8 @@ public class OrderPaidHandlerTests
     {
         var userId = Guid.NewGuid();
         var orderId = Guid.NewGuid();
-        var notification = new OrderPaidEvent(orderId, userId, DateTime.UtcNow);
+        var slugId = "ORD-TEST003";
+        var notification = new OrderPaidEvent(orderId, userId, DateTime.UtcNow, slugId);
 
         var act = async () => await _handler.Handle(notification, CancellationToken.None);
 
