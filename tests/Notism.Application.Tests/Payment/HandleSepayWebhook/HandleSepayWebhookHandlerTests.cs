@@ -1,12 +1,16 @@
 using FluentAssertions;
 
+using MediatR;
+
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Interfaces;
+using Notism.Application.Order.CreateOrder;
 using Notism.Application.Payment.HandleSepayWebhook;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
-using Notism.Domain.Payment.Enums;
+using Notism.Domain.Payment;
 
 using NSubstitute;
 
@@ -14,161 +18,168 @@ namespace Notism.Application.Tests.Payment.HandleSepayWebhook;
 
 public class HandleSepayWebhookHandlerTests
 {
+    private readonly IBankingCheckoutRepository _bankingCheckoutRepository;
     private readonly IOrderRepository _orderRepository;
+    private readonly ISender _sender;
+    private readonly INotificationService _notificationService;
     private readonly ILogger<HandleSepayWebhookHandler> _logger;
     private readonly HandleSepayWebhookHandler _handler;
 
     public HandleSepayWebhookHandlerTests()
     {
+        _bankingCheckoutRepository = Substitute.For<IBankingCheckoutRepository>();
         _orderRepository = Substitute.For<IOrderRepository>();
+        _sender = Substitute.For<ISender>();
+        _notificationService = Substitute.For<INotificationService>();
         _logger = Substitute.For<ILogger<HandleSepayWebhookHandler>>();
-        _handler = new HandleSepayWebhookHandler(_orderRepository, _logger);
+
+        _handler = new HandleSepayWebhookHandler(
+            _bankingCheckoutRepository,
+            _orderRepository,
+            _sender,
+            _notificationService,
+            _logger);
     }
 
     [Fact]
-    public async Task Handle_WhenContentContainsSlugIdAsFirstSegmentAndAmountMatches_MarksOrderAsPaid()
+    public async Task Handle_WhenCheckoutIdParsesAndAmountMatchesAndOrderIsCreated_MarksOrderAsPaidAndMarksCheckoutAsUsed()
     {
         var userId = Guid.NewGuid();
-        var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
-        var slugBody = order.SlugId[4..]; // strips "ORD-"
+        var checkoutId = Guid.NewGuid();
+        var cartItemIds = new List<Guid> { Guid.NewGuid() };
+        var totalAmount = 150_000m;
         var transferredAt = new DateTime(2026, 4, 5, 10, 0, 0, DateTimeKind.Utc);
 
+        var checkout = BankingCheckout.Create(userId, cartItemIds, totalAmount);
+        checkout.Id = checkoutId;
+
+        var orderId = Guid.NewGuid();
+        var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, cartItemIds);
+
+        _bankingCheckoutRepository
+            .FindByExpressionAsync(Arg.Any<FilterSpecification<BankingCheckout>>())
+            .Returns(checkout);
+
+        _sender
+            .Send(Arg.Any<CreateOrderRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new CreateOrderResponse { OrderId = orderId });
+
         _orderRepository
             .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
             .Returns(order);
 
-        // SePay content format: "<SlugBody>-<date>-<time> <rest>"
+        var hex32 = checkoutId.ToString("N");
         var request = new HandleSepayWebhookRequest
         {
-            TransactionId = "52408910",
-            Amount = order.TotalAmount,
-            Content = $"{slugBody}-210426-15:08:27 6111ASCB02QIZ3BI CKN 179827",
+            TransactionId = "99001",
+            Amount = totalAmount,
+            Content = hex32 + " some extra content",
             TransferredAt = transferredAt,
         };
 
         await _handler.Handle(request, CancellationToken.None);
 
-        order.PaymentStatus.Should().Be(PaymentStatus.Paid);
+        order.PaymentStatus.Should().Be(Domain.Payment.Enums.PaymentStatus.Paid);
         order.PaidAt.Should().Be(transferredAt);
+        checkout.IsUsed.Should().BeTrue();
         await _orderRepository.Received(1).SaveChangesAsync();
+        await _bankingCheckoutRepository.Received(1).SaveChangesAsync();
     }
 
     [Fact]
-    public async Task Handle_WhenContentIsEmptyOrHasNoSegments_ReturnsWithoutSavingAndDoesNotCallRepository()
+    public async Task Handle_WhenContentDoesNotContainValidGuid_ReturnsWithoutLookingUpCheckout()
     {
         var request = new HandleSepayWebhookRequest
         {
-            TransactionId = "52408911",
-            Amount = 100_000,
-            Content = string.Empty,
+            TransactionId = "99002",
+            Amount = 100_000m,
+            Content = "TOOSHORT-invalid-content",
             TransferredAt = DateTime.UtcNow,
         };
 
         await _handler.Handle(request, CancellationToken.None);
 
-        await _orderRepository.DidNotReceive().FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>());
-        await _orderRepository.DidNotReceive().SaveChangesAsync();
+        await _bankingCheckoutRepository.DidNotReceive().FindByExpressionAsync(Arg.Any<FilterSpecification<BankingCheckout>>());
+        await _bankingCheckoutRepository.DidNotReceive().SaveChangesAsync();
     }
 
     [Fact]
-    public async Task Handle_WhenOrderNotFound_ReturnsWithoutSaving()
+    public async Task Handle_WhenCheckoutNotFound_ReturnsWithoutCreatingOrder()
     {
-        _orderRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
-            .Returns((Domain.Order.Order?)null);
+        var checkoutId = Guid.NewGuid();
+
+        _bankingCheckoutRepository
+            .FindByExpressionAsync(Arg.Any<FilterSpecification<BankingCheckout>>())
+            .Returns((BankingCheckout?)null);
 
         var request = new HandleSepayWebhookRequest
         {
-            TransactionId = "52408912",
-            Amount = 50_000,
-            Content = "MISSING123-210426-15:08:27 extra data",
+            TransactionId = "99003",
+            Amount = 50_000m,
+            Content = checkoutId.ToString("N") + " extra",
             TransferredAt = DateTime.UtcNow,
         };
 
         await _handler.Handle(request, CancellationToken.None);
 
-        await _orderRepository.DidNotReceive().SaveChangesAsync();
+        await _sender.DidNotReceive().Send(Arg.Any<CreateOrderRequest>(), Arg.Any<CancellationToken>());
+        await _bankingCheckoutRepository.DidNotReceive().SaveChangesAsync();
     }
 
     [Fact]
-    public async Task Handle_WhenOrderAlreadyPaid_ReturnsWithoutSavingAgain()
+    public async Task Handle_WhenCheckoutAlreadyUsed_ReturnsWithoutCreatingOrder()
     {
         var userId = Guid.NewGuid();
-        var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
-        order.MarkAsPaid(DateTime.UtcNow.AddMinutes(-5));
-        var slugBody = order.SlugId[4..]; // strips "ORD-"
+        var checkoutId = Guid.NewGuid();
+        var checkout = BankingCheckout.Create(userId, new List<Guid>(), 100_000m);
+        checkout.Id = checkoutId;
+        checkout.MarkAsUsed();
 
-        _orderRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
-            .Returns(order);
+        _bankingCheckoutRepository
+            .FindByExpressionAsync(Arg.Any<FilterSpecification<BankingCheckout>>())
+            .Returns(checkout);
 
         var request = new HandleSepayWebhookRequest
         {
-            TransactionId = "52408913",
-            Amount = order.TotalAmount,
-            Content = $"{slugBody}-210426-15:08:27 duplicate webhook",
+            TransactionId = "99004",
+            Amount = 100_000m,
+            Content = checkoutId.ToString("N") + " duplicate",
             TransferredAt = DateTime.UtcNow,
         };
 
         await _handler.Handle(request, CancellationToken.None);
 
-        await _orderRepository.DidNotReceive().SaveChangesAsync();
-        order.PaidAt.Should().NotBe(request.TransferredAt);
+        await _sender.DidNotReceive().Send(Arg.Any<CreateOrderRequest>(), Arg.Any<CancellationToken>());
+        await _bankingCheckoutRepository.DidNotReceive().SaveChangesAsync();
     }
 
     [Fact]
-    public async Task Handle_WhenAmountDoesNotMatchOrderTotal_MarksOrderAsFailedAndSaves()
+    public async Task Handle_WhenAmountDoesNotMatchCheckoutTotal_SendsFailureNotificationAndDoesNotCreateOrder()
     {
         var userId = Guid.NewGuid();
-        var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
-        var slugBody = order.SlugId[4..]; // strips "ORD-"
+        var checkoutId = Guid.NewGuid();
+        var checkout = BankingCheckout.Create(userId, new List<Guid> { Guid.NewGuid() }, 150_000m);
+        checkout.Id = checkoutId;
 
-        _orderRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
-            .Returns(order);
+        _bankingCheckoutRepository
+            .FindByExpressionAsync(Arg.Any<FilterSpecification<BankingCheckout>>())
+            .Returns(checkout);
 
         var request = new HandleSepayWebhookRequest
         {
-            TransactionId = "52408914",
-            Amount = order.TotalAmount + 1,
-            Content = $"{slugBody}-210426-15:08:27 amount mismatch",
+            TransactionId = "99005",
+            Amount = 100_000m,
+            Content = checkoutId.ToString("N") + " mismatch",
             TransferredAt = DateTime.UtcNow,
         };
 
         await _handler.Handle(request, CancellationToken.None);
 
-        order.PaymentStatus.Should().Be(PaymentStatus.Failed);
-        await _orderRepository.Received(1).SaveChangesAsync();
-    }
-
-    [Fact]
-    public async Task Handle_WhenPreviousPaymentFailedAndNewTransferSucceeds_MarksOrderAsPaid()
-    {
-        var userId = Guid.NewGuid();
-        var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
-        var slugBody = order.SlugId[4..]; // strips "ORD-"
-        var transferredAt = new DateTime(2026, 4, 21, 15, 8, 28, DateTimeKind.Utc);
-
-        _orderRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
-            .Returns(order);
-
-        // Simulate a prior failed attempt
-        order.MarkAsFailed();
-        order.PaymentStatus.Should().Be(PaymentStatus.Failed);
-
-        var request = new HandleSepayWebhookRequest
-        {
-            TransactionId = "52408910",
-            Amount = order.TotalAmount,
-            Content = $"{slugBody}-210421-15:08:28 6111ASCB02QIZ3BI",
-            TransferredAt = transferredAt,
-        };
-
-        await _handler.Handle(request, CancellationToken.None);
-
-        order.PaymentStatus.Should().Be(PaymentStatus.Paid);
-        order.PaidAt.Should().Be(transferredAt);
-        await _orderRepository.Received(1).SaveChangesAsync();
+        await _notificationService.Received(1).NotifyPaymentFailureAsync(
+            Guid.Empty,
+            userId,
+            Arg.Any<CancellationToken>());
+        await _sender.DidNotReceive().Send(Arg.Any<CreateOrderRequest>(), Arg.Any<CancellationToken>());
+        await _bankingCheckoutRepository.DidNotReceive().SaveChangesAsync();
     }
 }
