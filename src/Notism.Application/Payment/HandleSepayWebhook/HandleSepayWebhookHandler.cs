@@ -34,9 +34,9 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
 
     public async Task Handle(HandleSepayWebhookRequest request, CancellationToken cancellationToken)
     {
-        var trimmed = request.Content.Trim();
+        var token = request.Content.Trim().Split(' ')[0];
 
-        if (trimmed.Length < 32 || !Guid.TryParseExact(trimmed[..32], "N", out var checkoutId))
+        if (!Guid.TryParseExact(token, "N", out var checkoutId))
         {
             _logger.LogWarning("No valid checkoutId found in webhook content: {Content}", request.Content);
             return;
