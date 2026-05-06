@@ -45,11 +45,16 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
         var checkout = await _bankingCheckoutRepository.FindByExpressionAsync(
             new FilterSpecification<BankingCheckout>(c => c.Id == checkoutId));
 
-        if (checkout is null || checkout.IsUsed)
+        if (checkout is null)
         {
-            _logger.LogInformation(
-                "BankingCheckout {CheckoutId} not found or already used — ignoring webhook",
-                checkoutId);
+            _logger.LogWarning("BankingCheckout {CheckoutId} not found — ignoring webhook", checkoutId);
+            return;
+        }
+
+        if (checkout.IsUsed)
+        {
+            _logger.LogInformation("BankingCheckout {CheckoutId} already used — ignoring webhook", checkoutId);
+            await _notificationService.NotifyPaymentFailureAsync(Guid.Empty, checkout.UserId, cancellationToken);
             return;
         }
 
