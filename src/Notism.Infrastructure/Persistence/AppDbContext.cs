@@ -1,6 +1,9 @@
+using System.Text.Json;
+
 using MediatR;
 
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 using Notism.Domain.Cart;
 using Notism.Domain.Common;
@@ -32,6 +35,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<DeliveryStatusHistory> DeliveryStatusHistories { get; set; }
     public DbSet<Payment> Payments { get; set; }
+    public DbSet<BankingCheckout> BankingCheckouts { get; set; }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
@@ -61,6 +65,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
         ConfigureOrderItem(modelBuilder);
         ConfigureDeliveryStatusHistory(modelBuilder);
         ConfigurePayment(modelBuilder);
+        ConfigureBankingCheckout(modelBuilder);
 
         base.OnModelCreating(modelBuilder);
     }
@@ -491,6 +496,44 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
 
             entity.HasIndex(p => p.StorerId)
                 .IsUnique();
+        });
+    }
+
+    private static void ConfigureBankingCheckout(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<BankingCheckout>(entity =>
+        {
+            entity.HasKey(bc => bc.Id);
+
+            entity.Property(bc => bc.UserId)
+                .IsRequired();
+
+            entity.Property(bc => bc.CartItemIds)
+                .HasColumnType("jsonb")
+                .HasConversion(
+                    ids => JsonSerializer.Serialize(ids, (JsonSerializerOptions?)null),
+                    json => JsonSerializer.Deserialize<List<Guid>>(json, (JsonSerializerOptions?)null)!,
+                    new ValueComparer<List<Guid>>(
+                        (a, b) => a != null && b != null && a.SequenceEqual(b),
+                        c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                        c => c.ToList()))
+                .IsRequired();
+
+            entity.Property(bc => bc.TotalAmount)
+                .HasPrecision(18, 2)
+                .IsRequired();
+
+            entity.Property(bc => bc.IsUsed)
+                .IsRequired();
+
+            entity.Property(bc => bc.CreatedAt)
+                .IsRequired();
+
+            entity.Property(bc => bc.UpdatedAt)
+                .IsRequired();
+
+            entity.HasIndex(bc => bc.UserId);
+            entity.HasIndex(bc => bc.IsUsed);
         });
     }
 

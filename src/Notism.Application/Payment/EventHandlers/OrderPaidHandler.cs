@@ -14,5 +14,5 @@ public class OrderPaidHandler : INotificationHandler<OrderPaidEvent>
 
     public Task Handle(OrderPaidEvent notification, CancellationToken cancellationToken)
         => _notificationService.NotifyPaymentSuccessAsync(
-            notification.OrderId, notification.UserId, notification.PaidAt, cancellationToken);
+            notification.OrderId, notification.UserId, notification.PaidAt, notification.SlugId, cancellationToken);
 }
