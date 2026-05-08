@@ -10,15 +10,15 @@ namespace Notism.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("UPDATE \"Orders\" SET \"PaymentStatus\" = 'unpaid' WHERE \"PaymentStatus\" = '0'");
-            migrationBuilder.Sql("UPDATE \"Orders\" SET \"PaymentStatus\" = 'paid' WHERE \"PaymentStatus\" = '1'");
+            migrationBuilder.Sql("UPDATE \"Orders\" SET \"PaymentStatus\" = 'unpaid' WHERE \"PaymentStatus\" = '0';");
+            migrationBuilder.Sql("UPDATE \"Orders\" SET \"PaymentStatus\" = 'paid' WHERE \"PaymentStatus\" = '1';");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("UPDATE \"Orders\" SET \"PaymentStatus\" = '0' WHERE \"PaymentStatus\" = 'unpaid'");
-            migrationBuilder.Sql("UPDATE \"Orders\" SET \"PaymentStatus\" = '1' WHERE \"PaymentStatus\" = 'paid'");
+            migrationBuilder.Sql("UPDATE \"Orders\" SET \"PaymentStatus\" = '0' WHERE \"PaymentStatus\" = 'unpaid';");
+            migrationBuilder.Sql("UPDATE \"Orders\" SET \"PaymentStatus\" = '1' WHERE \"PaymentStatus\" = 'paid';");
         }
     }
 }

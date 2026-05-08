@@ -1,6 +1,6 @@
 # Notism AWS infrastructure architecture
 
-This document describes the AWS architecture used to run the Notism API. The API and PostgreSQL both run as Docker containers on a single EC2 instance, managed by Docker Compose. All AWS resources use the **notism** prefix and are provisioned via Terraform (`terraform/`).
+This document describes the AWS architecture used to run the Notism API. The API runs as a Docker container on a single EC2 instance managed by Docker Compose. PostgreSQL is hosted on Supabase. All AWS resources use the **notism** prefix and are provisioned via Terraform (`terraform/`).
 
 ---
 
@@ -14,9 +14,9 @@ flowchart TB
   end
 
   IGW[notism-igw]
+  EIP[notism-api-eip]
   ECR[ECR - notism-api]
-
-  EIP[notism-api-eip Elastic IP]
+  Supabase[(Supabase PostgreSQL)]
 
   subgraph cdn [CloudFront]
     CFDev[Dev - d249ejghs1e659.cloudfront.net]
@@ -32,13 +32,13 @@ flowchart TB
 
   subgraph vpc [notism-vpc]
     subgraph publicSubnet [notism-public-subnet]
-      EC2[notism-ec2 - t4g.micro]
-      subgraph compose [Docker Compose]
-        API[notism-api - port 5000]
-        PG[notism-db - PostgreSQL 16]
-        API -->|"Host=db:5432"| PG
+      subgraph EC2 [notism-ec2 · t4g.micro]
+        subgraph containers [caddy · api]
+          Caddy[Caddy - TLS :80 :443]
+          API[notism-api - :5000]
+          Caddy -->|reverse proxy| API
+        end
       end
-      PG --> Vol[(notism-pgdata volume)]
     end
   end
 
@@ -53,6 +53,7 @@ flowchart TB
   EC2 -->|S3 API| S3Private
   EC2 -->|S3 API| S3Public
   EC2 -->|pull image| ECR
+  EC2 -->|"SSL :5432"| Supabase
   CI[GitHub Actions] -->|push image| ECR
 ```
 
@@ -65,14 +66,11 @@ flowchart TB
 | **Network** | VPC | notism-vpc | Isolated network (10.0.0.0/16). |
 | | Internet Gateway | notism-igw | Connects VPC to the internet; used by the public subnet. |
 | | Public subnet | notism-public-subnet | Hosts EC2; has route to IGW (0.0.0.0/0). AZ: us-east-1a. |
-| | Private subnet A | notism-private-subnet-a | Available for future RDS. AZ: us-east-1a. |
-| | Private subnet B | notism-private-subnet-b | Available for future RDS (2nd AZ). AZ: us-east-1b. |
-| | Public route table | notism-public-rt | 0.0.0.0/0 -> IGW; associated with public subnet. |
-| | Private route table | notism-private-rt | No IGW route; associated with both private subnets. |
-| **Compute** | EC2 | notism-api (Name tag) | Runs Docker Compose with API + Postgres; t4g.micro, Amazon Linux 2023, Docker + Compose plugin. |
+| | Public route table | notism-public-rt | 0.0.0.0/0 -> IGW; ::/0 -> IGW (IPv6); associated with public subnet. |
+| **Compute** | EC2 | notism-api (Name tag) | Runs Docker Compose with the API container; t4g.micro, Amazon Linux 2023. |
 | | Elastic IP | notism-api-eip | Stable public IP for the API. |
-| **Database** | PostgreSQL (Docker) | notism-db container | PostgreSQL 16 Alpine running as a Docker Compose service on EC2. Data persisted to `notism-pgdata` Docker volume. |
-| **Security** | EC2 security group | notism-ec2-sg | Inbound: 22, 80, 443, 5000. Outbound: all. |
+| **Database** | PostgreSQL (Supabase) | db.vqwfgdsazmalixzmvfok.supabase.co | Managed PostgreSQL 17 hosted on Supabase. Connection string stored in `CONNECTION_STRING` GitHub secret. |
+| **Security** | EC2 security group | notism-ec2-sg | Inbound: 22, 80, 443. Outbound: all. |
 | **IAM** | Instance profile | notism-ec2-profile | Attached to EC2; allows S3 and ECR pull. |
 | | Role | notism-ec2-role | Assumed by EC2; no long-lived keys in app config. |
 | **Container registry** | ECR repository | notism-api | Stores Docker image for the API; CI pushes, EC2 pulls. |
@@ -89,30 +87,29 @@ flowchart TB
 
 ## Docker Compose deployment
 
-The API and PostgreSQL run as sibling containers managed by Docker Compose on the EC2 instance.
+The API runs as a single container managed by Docker Compose on the EC2 instance. PostgreSQL is external (Supabase) — no database container on EC2.
 
 ### File layout on EC2
 
 ```
 /opt/notism/
-  docker-compose.yml   # service definitions (db + api)
-  .env                 # compose-level variables (API_IMAGE, DB_PASSWORD)
-  .env.api             # API app config (connection string, JWT, Resend, etc.)
+  docker-compose.yml   # service definition (api only)
+  .env                 # compose-level variables (API_IMAGE)
+  .env.api             # API app config (connection string, JWT, etc.)
 ```
 
 ### Services
 
 | Service | Image | Container name | Purpose |
 |---------|-------|---------------|---------|
-| `db` | `postgres:16-alpine` | `notism-db` | PostgreSQL database. Data stored in `notism-pgdata` Docker volume. |
-| `api` | ECR image (variable `${API_IMAGE}`) | `notism-api` | .NET 9 API. Reads config from `.env.api`. Connects to Postgres via Docker Compose DNS hostname `db`. |
+| `api` | ECR image (variable `${API_IMAGE}`) | `notism-api` | .NET 9 API. Reads config from `.env.api`. Connects to Supabase via `CONNECTION_STRING`. |
 
 ### Connection string
 
-The API connects to PostgreSQL using the Compose service name as the host:
+The API connects to Supabase PostgreSQL using SSL:
 
 ```
-Host=db;Database=notism_db;Username=notismadmin;Password=<DB_PASSWORD>;Port=5432
+Host=db.vqwfgdsazmalixzmvfok.supabase.co;Database=postgres;Username=postgres;Password=<from CONNECTION_STRING secret>;Port=5432;SSL Mode=Require;Trust Server Certificate=true
 ```
 
 ### Useful commands (on the EC2)
@@ -122,10 +119,9 @@ cd /opt/notism
 
 sudo docker compose ps              # container status
 sudo docker compose logs -f api     # follow API logs
-sudo docker compose logs -f db      # follow Postgres logs
-sudo docker compose restart api     # restart just the API
-sudo docker compose down             # stop everything
-sudo docker compose up -d            # start everything
+sudo docker compose restart api     # restart the API
+sudo docker compose down            # stop everything
+sudo docker compose up -d           # start everything
 ```
 
 ---
@@ -155,15 +151,17 @@ flowchart LR
 | Name | Type | Purpose |
 |------|------|---------|
 | `AWS_ROLE_TO_ASSUME` | Secret | IAM role ARN for OIDC authentication. |
-| `CONNECTION_STRING` | Secret | Npgsql connection string (`Host=db;...`). |
-| `DB_PASSWORD` | Secret | PostgreSQL password for the Docker Compose `db` service. |
+| `CONNECTION_STRING` | Secret | Npgsql connection string for Supabase PostgreSQL. |
 | `JWT_SECRET` | Secret | JWT signing key. |
-| `RESEND_API_KEY` | Secret | Resend email API key. |
+| `MAILERSEND_API_KEY` | Secret | MailerSend email API key. |
 | `EC2_HOST` | Secret | EC2 public IP (Elastic IP). |
 | `EC2_USER` | Secret | SSH user (typically `ec2-user`). |
 | `EC2_SSH_PRIVATE_KEY` | Secret | PEM private key for SSH access. |
 | `ECR_REPOSITORY` | Secret | ECR repository name (`notism-api`). |
-| `CLIENT_APP_URL` | Variable | Frontend URL for CORS and email links. |
+| `AWS_ACCESS_KEY` | Secret | AWS access key for S3 operations from the API. |
+| `AWS_SECRET_KEY` | Secret | AWS secret key for S3 operations from the API. |
+| `GOOGLE_OAUTH_CLIENT_ID` | Secret | Google OAuth client ID. |
+| `GOOGLE_OAUTH_CLIENT_SECRET` | Secret | Google OAuth client secret. |
 | `AWS_REGION` | Variable | AWS region (`us-east-1`). |
 
 ---
@@ -172,20 +170,16 @@ flowchart LR
 
 ### VPC and CIDR
 
-- One VPC (10.0.0.0/16).
-- Public subnet: 10.0.1.0/24.
-- Private subnet A: 10.0.2.0/24 (us-east-1a).
-- Private subnet B: 10.0.3.0/24 (us-east-1b).
+- One VPC (10.0.0.0/16) with an IPv6 CIDR block (`2600:1f18:61e2:3000::/56`) assigned.
+- Public subnet: 10.0.1.0/24 (IPv6: `2600:1f18:61e2:3000::/64`).
 
-### Public vs private subnets
+### Public subnet
 
-- **Public subnet** has a route 0.0.0.0/0 to the Internet Gateway. EC2 gets a public IP (Elastic IP) and can be reached from the internet.
-- **Private subnets** have no internet route. They are currently unused but reserved for future RDS if needed.
+The public subnet has routes `0.0.0.0/0` and `::/0` to the Internet Gateway. EC2 gets a public IPv4 (Elastic IP) and an IPv6 address. IPv6 is required for direct connections to Supabase, which exposes its database endpoint on IPv6 only.
 
 ### Route tables
 
-- **notism-public-rt**: default route 0.0.0.0/0 -> notism-igw; associated with notism-public-subnet.
-- **notism-private-rt**: no internet route; associated with notism-private-subnet-a and notism-private-subnet-b.
+- **notism-public-rt**: IPv4 `0.0.0.0/0` and IPv6 `::/0` → notism-igw; associated with notism-public-subnet.
 
 ---
 
@@ -193,8 +187,7 @@ flowchart LR
 
 ### Security groups
 
-- **notism-ec2-sg**: Allows SSH (22), HTTP (80), HTTPS (443), and API (5000) from 0.0.0.0/0. In production, restrict SSH to known IPs.
-- **notism-rds-sg** (conditional): Only created when `use_rds = true`. Allows PostgreSQL (5432) from notism-ec2-sg only.
+- **notism-ec2-sg**: Allows SSH (22), HTTP (80), and HTTPS (443) from `0.0.0.0/0`. In production, restrict SSH to known IPs.
 
 ### IAM
 
@@ -203,41 +196,42 @@ flowchart LR
 
 ### Secrets
 
-- Database password is passed to the Postgres container via the `DB_PASSWORD` GitHub secret, written to `.env` on EC2.
-- App secrets (JWT, Resend, connection string) are written to `.env.api` on EC2 at deploy time. They never appear in the repo or Docker image.
+- Database connection string is stored in the `CONNECTION_STRING` GitHub secret and written to `.env.api` on EC2 at deploy time.
+- All app secrets (JWT, MailerSend, OAuth) are written to `.env.api` at deploy time. They never appear in the repo or Docker image.
 
 ---
 
 ## Data flow
 
-1. **User -> API**: Internet -> IGW -> notism-public-subnet -> EC2 (port 5000) -> notism-api container.
+1. **User -> API**: Internet -> IGW -> notism-public-subnet -> EC2 (port 80/443 via Caddy) -> notism-api container.
 2. **User -> Frontend**: Internet -> CloudFront -> S3 (notism-web or notism-web-prod via OAC).
-3. **API -> PostgreSQL**: notism-api container -> Docker Compose network -> notism-db container (port 5432). Traffic stays within the EC2 instance.
-4. **API -> S3**: EC2 -> IGW -> internet -> S3 (private-notism-storage / public-notism-storage via instance profile credentials).
+3. **API -> PostgreSQL**: notism-api container -> IGW -> Supabase (port 5432, SSL, IPv6).
+4. **API -> S3**: EC2 -> IGW -> S3 (private-notism-storage / public-notism-storage via instance profile credentials).
 5. **EC2 -> ECR**: EC2 pulls the API Docker image from ECR (using instance profile).
 6. **CI -> ECR**: GitHub Actions builds the image and pushes to the notism-api ECR repository.
 
 ---
 
-## RDS opt-in (switching back to managed database)
+## Database migrations
 
-The Terraform code supports an optional managed RDS instance via the `use_rds` variable. Currently `use_rds = false` (PostgreSQL runs on EC2).
+EF Core migrations are applied with `dotnet ef database update` against the Supabase connection string. An idempotent SQL script can be generated for manual runs:
 
-### To switch back to RDS
+```bash
+cd src/Notism.Infrastructure
+dotnet ef migrations script \
+  --project Notism.Infrastructure.csproj \
+  --startup-project ../Notism.Api/Notism.Api.csproj \
+  --idempotent \
+  --output /tmp/migrations.sql
+```
 
-1. Set `use_rds = true` and provide `db_password` in terraform variables.
-2. Run `terraform apply` to create the RDS instance, DB subnet group, and RDS security group.
-3. Migrate data from EC2 Postgres to the new RDS instance.
-4. Update the `CONNECTION_STRING` GitHub secret to point to the RDS hostname.
-5. The `db` service in Docker Compose can be removed or left in place (API won't connect to it).
+Apply via `psql` (requires a host with IPv6 internet access if connecting to the Supabase direct endpoint):
 
-### Conditional Terraform resources (when `use_rds = true`)
-
-| Resource | Name |
-|----------|------|
-| `aws_db_instance.main` | notism-db (PostgreSQL 16, db.t4g.micro) |
-| `aws_db_subnet_group.main` | notism-db-subnet (spans both private subnets) |
-| `aws_security_group.rds` | notism-rds-sg (port 5432 from EC2 SG) |
+```bash
+PGPASSWORD='<password>' psql \
+  'host=db.vqwfgdsazmalixzmvfok.supabase.co port=5432 dbname=postgres user=postgres sslmode=require' \
+  -f /tmp/migrations.sql
+```
 
 ---
 
@@ -246,9 +240,7 @@ The Terraform code supports an optional managed RDS instance via the `use_rds` v
 | Need | Change |
 |------|--------|
 | More API capacity | Add an ALB, register more EC2 instances, same AMI and IAM profile. |
-| Managed database | Set `use_rds = true` in Terraform; migrate data from EC2 Postgres to RDS. |
-| Larger database | If using RDS: resize instance class. If on EC2: increase EBS volume. |
-| DB high availability | Switch to RDS with Multi-AZ (private subnets already span 2 AZs). |
+| Database scaling | Upgrade Supabase plan or switch to a dedicated Supabase project. |
 | HTTPS / ALB | Put an ALB in front of EC2, attach ACM certificate. |
 | Custom domain for frontend | Add an ACM certificate and CNAME alias to the CloudFront distributions. |
 
@@ -256,5 +248,5 @@ The Terraform code supports an optional managed RDS instance via the `use_rds` v
 
 ## Related docs
 
-- [terraform-configuration.md](terraform-configuration.md) -- Terraform configuration reference.
-- [../rules/architecture.md](../rules/architecture.md) -- Application architecture.
+- [terraform-configuration.md](terraform-configuration.md) — Terraform configuration reference.
+- [../rules/architecture.md](../rules/architecture.md) — Application architecture.
