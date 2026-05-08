@@ -10,13 +10,13 @@ namespace Notism.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("UPDATE \"Orders\" SET \"PaymentMethod\" = 'cashOnDelivery' WHERE \"PaymentMethod\" = 'banking' AND \"PaymentStatus\" = 'unpaid'");
+            migrationBuilder.Sql("UPDATE \"Orders\" SET \"PaymentMethod\" = 'cashOnDelivery' WHERE \"PaymentMethod\" = 'banking' AND \"PaymentStatus\" = 'unpaid';");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.Sql("UPDATE \"Orders\" SET \"PaymentMethod\" = 'banking' WHERE \"PaymentMethod\" = 'cashOnDelivery' AND \"PaymentStatus\" = 'unpaid'");
+            migrationBuilder.Sql("UPDATE \"Orders\" SET \"PaymentMethod\" = 'banking' WHERE \"PaymentMethod\" = 'cashOnDelivery' AND \"PaymentStatus\" = 'unpaid';");
         }
     }
 }
