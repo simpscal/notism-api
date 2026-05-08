@@ -14,6 +14,7 @@ flowchart TB
   end
 
   IGW[notism-igw]
+  EIP[notism-api-eip]
   ECR[ECR - notism-api]
   Supabase[(Supabase PostgreSQL)]
 
@@ -32,8 +33,10 @@ flowchart TB
   subgraph vpc [notism-vpc]
     subgraph publicSubnet [notism-public-subnet]
       EC2[notism-ec2 - t4g.micro]
-      subgraph compose [Docker Compose]
-        API[notism-api - port 5000]
+      subgraph containers [caddy · api]
+        Caddy[Caddy - TLS :80 :443]
+        API[notism-api - :5000]
+        Caddy -->|reverse proxy| API
       end
     end
   end
@@ -44,7 +47,8 @@ flowchart TB
   CFProd -->|OAC| S3WebProd
 
   User -->|HTTP/HTTPS| IGW
-  IGW --> EC2
+  IGW --> EIP
+  EIP -.->|associated| EC2
   EC2 -->|S3 API| S3Private
   EC2 -->|S3 API| S3Public
   EC2 -->|pull image| ECR
