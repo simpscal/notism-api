@@ -32,11 +32,12 @@ flowchart TB
 
   subgraph vpc [notism-vpc]
     subgraph publicSubnet [notism-public-subnet]
-      EC2[notism-ec2 - t4g.micro]
-      subgraph containers [caddy · api]
-        Caddy[Caddy - TLS :80 :443]
-        API[notism-api - :5000]
-        Caddy -->|reverse proxy| API
+      subgraph EC2 [notism-ec2 · t4g.micro]
+        subgraph containers [caddy · api]
+          Caddy[Caddy - TLS :80 :443]
+          API[notism-api - :5000]
+          Caddy -->|reverse proxy| API
+        end
       end
     end
   end
