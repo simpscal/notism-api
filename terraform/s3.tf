@@ -10,10 +10,6 @@ resource "aws_s3_bucket" "public_storage" {
   bucket = "public-notism-storage"
 }
 
-resource "aws_s3_bucket" "web" {
-  bucket = "notism-web"
-}
-
 resource "aws_s3_bucket" "web_prod" {
   bucket = "notism-web-prod"
 }
@@ -35,17 +31,6 @@ resource "aws_s3_bucket_server_side_encryption_configuration" "private_storage" 
 
 resource "aws_s3_bucket_server_side_encryption_configuration" "public_storage" {
   bucket = aws_s3_bucket.public_storage.id
-
-  rule {
-    apply_server_side_encryption_by_default {
-      sse_algorithm = "AES256"
-    }
-    bucket_key_enabled = true
-  }
-}
-
-resource "aws_s3_bucket_server_side_encryption_configuration" "web" {
-  bucket = aws_s3_bucket.web.id
 
   rule {
     apply_server_side_encryption_by_default {
@@ -86,14 +71,6 @@ resource "aws_s3_bucket_ownership_controls" "public_storage" {
   }
 }
 
-resource "aws_s3_bucket_ownership_controls" "web" {
-  bucket = aws_s3_bucket.web.id
-
-  rule {
-    object_ownership = "BucketOwnerEnforced"
-  }
-}
-
 resource "aws_s3_bucket_ownership_controls" "web_prod" {
   bucket = aws_s3_bucket.web_prod.id
 
@@ -124,15 +101,6 @@ resource "aws_s3_bucket_public_access_block" "public_storage" {
   restrict_public_buckets = false
 }
 
-resource "aws_s3_bucket_public_access_block" "web" {
-  bucket = aws_s3_bucket.web.id
-
-  block_public_acls       = true
-  ignore_public_acls      = true
-  block_public_policy     = true
-  restrict_public_buckets = true
-}
-
 resource "aws_s3_bucket_public_access_block" "web_prod" {
   bucket = aws_s3_bucket.web_prod.id
 
@@ -154,9 +122,7 @@ resource "aws_s3_bucket_cors_configuration" "private_storage" {
     allowed_methods = ["PUT", "GET", "DELETE", "HEAD"]
     allowed_origins = [
       "http://localhost:4200",
-      "https://${aws_cloudfront_distribution.web.domain_name}",
       "https://${aws_cloudfront_distribution.web_prod.domain_name}",
-      "http://${aws_cloudfront_distribution.web.domain_name}",
       "http://${aws_cloudfront_distribution.web_prod.domain_name}",
     ]
     expose_headers  = ["ETag", "x-amz-server-side-encryption", "x-amz-request-id", "x-amz-id-2"]
@@ -200,9 +166,7 @@ resource "aws_s3_bucket_policy" "private_storage" {
           StringLike = {
             "aws:Referer" = [
               "http://localhost:4200/*",
-              "https://${aws_cloudfront_distribution.web.domain_name}/*",
               "https://${aws_cloudfront_distribution.web_prod.domain_name}/*",
-              "http://${aws_cloudfront_distribution.web.domain_name}/*",
               "http://${aws_cloudfront_distribution.web_prod.domain_name}/*",
             ]
           }
@@ -224,31 +188,6 @@ resource "aws_s3_bucket_policy" "public_storage" {
         Principal = "*"
         Action    = "s3:GetObject"
         Resource  = "${aws_s3_bucket.public_storage.arn}/*"
-      }
-    ]
-  })
-}
-
-resource "aws_s3_bucket_policy" "web" {
-  bucket = aws_s3_bucket.web.id
-
-  policy = jsonencode({
-    Version = "2008-10-17"
-    Id      = "PolicyForCloudFrontPrivateContent"
-    Statement = [
-      {
-        Sid    = "AllowCloudFrontServicePrincipal"
-        Effect = "Allow"
-        Principal = {
-          Service = "cloudfront.amazonaws.com"
-        }
-        Action   = "s3:GetObject"
-        Resource = "${aws_s3_bucket.web.arn}/*"
-        Condition = {
-          ArnLike = {
-            "AWS:SourceArn" = "arn:aws:cloudfront::249550149516:distribution/E1GJTPGEDUM3ZO"
-          }
-        }
       }
     ]
   })
