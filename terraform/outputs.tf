@@ -63,11 +63,6 @@ output "s3_public_storage_arn" {
   value       = aws_s3_bucket.public_storage.arn
 }
 
-output "s3_web_arn" {
-  description = "ARN of the dev frontend S3 bucket"
-  value       = aws_s3_bucket.web.arn
-}
-
 output "s3_web_prod_arn" {
   description = "ARN of the prod frontend S3 bucket"
   value       = aws_s3_bucket.web_prod.arn
@@ -76,16 +71,6 @@ output "s3_web_prod_arn" {
 # ------------------------------------------------------------
 # CloudFront
 # ------------------------------------------------------------
-
-output "cloudfront_web_domain_name" {
-  description = "CloudFront domain name for dev frontend"
-  value       = aws_cloudfront_distribution.web.domain_name
-}
-
-output "cloudfront_web_distribution_id" {
-  description = "CloudFront distribution ID for dev frontend"
-  value       = aws_cloudfront_distribution.web.id
-}
 
 output "cloudfront_web_prod_domain_name" {
   description = "CloudFront domain name for prod frontend"
