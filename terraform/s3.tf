@@ -11,7 +11,8 @@ resource "aws_s3_bucket" "public_storage" {
 }
 
 resource "aws_s3_bucket" "web" {
-  bucket = "notism-web"
+  bucket        = "notism-web"
+  force_destroy = true
 }
 
 resource "aws_s3_bucket" "web_prod" {
