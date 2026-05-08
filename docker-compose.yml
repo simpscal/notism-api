@@ -12,17 +12,6 @@ services:
     depends_on:
       - api
 
-  db:
-    image: postgres:16-alpine
-    container_name: notism-db
-    volumes:
-      - pgdata:/var/lib/postgresql/data
-    environment:
-      POSTGRES_USER: notismadmin
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
-      POSTGRES_DB: notism_db
-    restart: unless-stopped
-
   api:
     image: ${API_IMAGE}
     container_name: notism-api
@@ -33,7 +22,5 @@ services:
     restart: unless-stopped
 
 volumes:
-  pgdata:
-    name: notism-pgdata
   caddy_data:
   caddy_config:

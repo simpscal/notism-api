@@ -81,7 +81,6 @@ jobs:
           AWS_REGION: ${{ vars.AWS_REGION }}
           AWS_ACCESS_KEY: ${{ secrets.AWS_ACCESS_KEY }}
           AWS_SECRET_KEY: ${{ secrets.AWS_SECRET_KEY }}
-          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
           ECR_REGISTRY: ${{ needs.build-and-push.outputs.ecr-registry }}
           ECR_REPOSITORY: ${{ secrets.ECR_REPOSITORY }}
           GOOGLE_OAUTH_CLIENT_ID: ${{ secrets.GOOGLE_OAUTH_CLIENT_ID }}
@@ -104,10 +103,7 @@ jobs:
             printf 'GoogleOAuth__ClientSecret=%s\n' "$GOOGLE_OAUTH_CLIENT_SECRET"
           } > .deploy/.env.api
 
-          {
-            printf 'API_IMAGE=%s/%s:%s\n' "$ECR_REGISTRY" "$ECR_REPOSITORY" "$IMAGE_TAG"
-            printf 'DB_PASSWORD=%s\n' "$DB_PASSWORD"
-          } > .deploy/.env
+          printf 'API_IMAGE=%s/%s:%s\n' "$ECR_REGISTRY" "$ECR_REPOSITORY" "$IMAGE_TAG" > .deploy/.env
 
           echo "Deploy files prepared."
 

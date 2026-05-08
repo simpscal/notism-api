@@ -22,20 +22,6 @@ output "ec2_public_ip" {
 }
 
 # ------------------------------------------------------------
-# RDS (only when use_rds = true)
-# ------------------------------------------------------------
-
-output "rds_endpoint" {
-  description = "RDS PostgreSQL endpoint"
-  value       = var.use_rds ? aws_db_instance.main[0].endpoint : null
-}
-
-output "rds_address" {
-  description = "RDS hostname (for connection string)"
-  value       = var.use_rds ? aws_db_instance.main[0].address : null
-}
-
-# ------------------------------------------------------------
 # ECR
 # ------------------------------------------------------------
 
@@ -49,8 +35,8 @@ output "ecr_repository_url" {
 # ------------------------------------------------------------
 
 output "connection_string_hint" {
-  description = "Hint for building the PostgreSQL connection string (password is sensitive)"
-  value       = var.use_rds ? "Host=${aws_db_instance.main[0].address};Database=notism_db;Username=notismadmin;Password=<from var.db_password>;Port=5432" : "Host=notism-db;Database=notism_db;Username=notismadmin;Password=<from DB_PASSWORD secret>;Port=5432"
+  description = "Hint for building the PostgreSQL connection string (Supabase — set via CONNECTION_STRING GitHub Secret)"
+  value       = "Host=<supabase-host>;Database=postgres;Username=postgres;Password=<from CONNECTION_STRING secret>;Port=5432;SSL Mode=Require;Trust Server Certificate=true"
   sensitive   = true
 }
 
