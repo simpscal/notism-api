@@ -210,7 +210,7 @@ resource "aws_s3_bucket_policy" "web_prod" {
         Resource = "${aws_s3_bucket.web_prod.arn}/*"
         Condition = {
           ArnLike = {
-            "AWS:SourceArn" = "arn:aws:cloudfront::249550149516:distribution/E3B3TRUPIAA1TW"
+            "AWS:SourceArn" = aws_cloudfront_distribution.web_prod.arn
           }
         }
       }
