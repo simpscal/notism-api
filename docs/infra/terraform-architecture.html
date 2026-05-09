@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>Notism Terraform Architecture</title>
+    <style>
+        :root {
+            --bg: #0d1117;
+            --panel: #161b22;
+            --border: #30363d;
+            --text: #c9d1d9;
+            --muted: #8b949e;
+            --accent: #58a6ff;
+            --warn: #d29922;
+            --danger: #f85149;
+            --ok: #3fb950;
+            --code-bg: #1f2428;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            margin: 0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            padding: 40px 24px;
+        }
+
+        h1 {
+            font-size: 2.2em;
+            border-bottom: 2px solid var(--border);
+            padding-bottom: 12px;
+            margin-bottom: 8px;
+        }
+
+        h2 {
+            font-size: 1.5em;
+            margin-top: 48px;
+            color: var(--accent);
+            border-bottom: 1px solid var(--border);
+            padding-bottom: 6px;
+        }
+
+        h3 {
+            font-size: 1.15em;
+            margin-top: 28px;
+            color: #e6edf3;
+        }
+
+        h3 code {
+            font-size: 0.9em;
+        }
+
+        .subtitle {
+            color: var(--muted);
+            margin-bottom: 32px;
+        }
+
+        code {
+            background: var(--code-bg);
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-family: "SF Mono", Menlo, Consolas, monospace;
+            font-size: 0.9em;
+            color: #e6edf3;
+        }
+
+        pre {
+            background: var(--code-bg);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px;
+            overflow-x: auto;
+            font-family: "SF Mono", Menlo, Consolas, monospace;
+            font-size: 0.85em;
+            line-height: 1.5;
+        }
+
+        pre code {
+            background: transparent;
+            padding: 0;
+        }
+
+        .diagram {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 20px;
+            font-family: "SF Mono", Menlo, Consolas, monospace;
+            font-size: 0.85em;
+            white-space: pre;
+            overflow-x: auto;
+            color: #e6edf3;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+            font-size: 0.92em;
+        }
+
+        th,
+        td {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid var(--border);
+            vertical-align: top;
+        }
+
+        th {
+            background: var(--panel);
+            color: var(--accent);
+            font-weight: 600;
+        }
+
+        tr:hover td {
+            background: rgba(88, 166, 255, 0.05);
+        }
+
+        .callout {
+            border-left: 4px solid;
+            background: var(--panel);
+            padding: 12px 16px;
+            margin: 16px 0;
+            border-radius: 0 6px 6px 0;
+        }
+
+        .callout.warn {
+            border-color: var(--warn);
+        }
+
+        .callout.danger {
+            border-color: var(--danger);
+        }
+
+        .callout.info {
+            border-color: var(--accent);
+        }
+
+        .callout strong {
+            color: #e6edf3;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin-left: 6px;
+        }
+
+        .badge.global {
+            background: #1f6feb;
+            color: white;
+        }
+
+        .badge.regional {
+            background: #6e7681;
+            color: white;
+        }
+
+        .badge.danger {
+            background: var(--danger);
+            color: white;
+        }
+
+        .badge.warn {
+            background: var(--warn);
+            color: black;
+        }
+
+        .badge.ok {
+            background: var(--ok);
+            color: black;
+        }
+
+        .file-list {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 12px 16px;
+            columns: 3;
+            column-gap: 24px;
+        }
+
+        .file-list li {
+            font-family: "SF Mono", monospace;
+            font-size: 0.88em;
+        }
+
+        ul {
+            padding-left: 20px;
+        }
+
+        li {
+            margin: 4px 0;
+        }
+
+        .meta {
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            color: var(--muted);
+            font-size: 0.9em;
+            margin-top: 8px;
+        }
+
+        .meta span strong {
+            color: var(--text);
+        }
+
+        hr {
+            border: 0;
+            border-top: 1px solid var(--border);
+            margin: 32px 0;
+        }
+
+        .toc {
+            background: var(--panel);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 16px 24px;
+            margin: 24px 0;
+        }
+
+        .toc a {
+            color: var(--accent);
+            text-decoration: none;
+        }
+
+        .toc a:hover {
+            text-decoration: underline;
+        }
+
+        .toc ul {
+            columns: 2;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+
+        <h1>Notism Terraform Architecture</h1>
+        <p class="subtitle">Walkthrough of the infrastructure-as-code in <code>notism-api/terraform/</code></p>
+        <div class="meta">
+            <span><strong>AWS Account:</strong> 249550149516</span>
+            <span><strong>Region:</strong> us-east-1</span>
+            <span><strong>Provider:</strong> hashicorp/aws ~&gt; 5.0</span>
+            <span><strong>Terraform:</strong> &gt;= 1.0</span>
+            <span><strong>Files:</strong> 12 .tf, 664 lines</span>
+        </div>
+
+        <div class="toc">
+            <strong>Contents</strong>
+            <ul>
+                <li><a href="#diagram">Architecture Diagram</a></li>
+                <li><a href="#files">File-by-File</a></li>
+                <li><a href="#versions">versions.tf</a></li>
+                <li><a href="#provider">provider.tf</a></li>
+                <li><a href="#variables">variables.tf</a></li>
+                <li><a href="#vpc">vpc.tf</a></li>
+                <li><a href="#sg">security_groups.tf</a></li>
+                <li><a href="#ec2">ec2.tf</a></li>
+                <li><a href="#eip">eip.tf</a></li>
+                <li><a href="#ecr">ecr.tf</a></li>
+                <li><a href="#iam">iam.tf</a></li>
+                <li><a href="#s3">s3.tf</a></li>
+                <li><a href="#cf">cloudfront.tf</a></li>
+                <li><a href="#outputs">outputs.tf</a></li>
+                <li><a href="#choices">Design Choices</a></li>
+                <li><a href="#gaps">Gaps &amp; Risks</a></li>
+            </ul>
+        </div>
+
+        <h2 id="diagram">Architecture Diagram</h2>
+        <div class="diagram"> Internet
+            │
+            ┌──────────────┴──────────────┐
+            │ │
+            ▼ ▼
+            ┌─────────────────┐ ┌──────────────────────┐
+            │ CloudFront │ │ Elastic IP │
+            │ E3B3TRUPIAA1TW │ │ 52.44.254.154 │
+            │ (PriceClass_100)│ └──────────┬───────────┘
+            └────────┬────────┘ │
+            │ OAC sigv4 │ tcp 22/80/443
+            ▼ ▼
+            ┌─────────────────┐ ┌──────────────────────┐
+            │ S3: web_prod │ │ EC2: notism-api │
+            │ (locked, OAC) │ │ t4g.micro arm64 │
+            └─────────────────┘ │ AL2023, 16GB gp3 │
+            │ Docker + compose │
+            │ │
+            │ IAM role: │
+            │ - S3 RW (storage) │
+            │ - ECR ReadOnly │
+            └──┬─────────────┬─────┘
+            │ │
+            ┌──────────┘ └──────────┐
+            ▼ ▼
+            ┌─────────────────────┐ ┌──────────────────┐
+            │ ECR: notism-api │ │ Supabase │
+            │ (Docker image) │ │ PostgreSQL │
+            └─────────────────────┘ │ (external) │
+            └──────────────────┘
+
+            ┌─────────────────────┐ ┌─────────────────────┐
+            │ S3: private-storage │ │ S3: public-storage │
+            │ (referer-gated) │ │ (public read) │
+            └─────────────────────┘ └─────────────────────┘
+
+            VPC 10.0.0.0/16
+            └── public subnet 10.0.1.0/24 (AZ us-east-1a)
+            └── IGW → 0.0.0.0/0
+        </div>
+
+        <h2 id="files">File-by-File</h2>
+        <ul class="file-list">
+            <li>versions.tf</li>
+            <li>provider.tf</li>
+            <li>variables.tf</li>
+            <li>vpc.tf</li>
+            <li>security_groups.tf</li>
+            <li>ec2.tf</li>
+            <li>eip.tf</li>
+            <li>ecr.tf</li>
+            <li>iam.tf</li>
+            <li>s3.tf</li>
+            <li>cloudfront.tf</li>
+            <li>outputs.tf</li>
+        </ul>
+
+        <h3 id="versions"><code>versions.tf</code> <span class="badge regional">10 lines</span></h3>
+        <p>Pin Terraform <code>&gt;= 1.0</code> and AWS provider <code>~&gt; 5.0</code>. Ensures reproducible plans
+            across machines and CI.</p>
+        <pre><code>terraform {
+  required_version = "&gt;= 1.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~&gt; 5.0"
+    }
+  }
+}</code></pre>
+
+        <h3 id="provider"><code>provider.tf</code> <span class="badge regional">11 lines</span></h3>
+        <p>AWS provider configured from <code>var.aws_region</code>. <strong>Default tags</strong> applied to every
+            taggable resource: <code>Project=notism</code>, <code>Environment=prod</code>,
+            <code>ManagedBy=terraform</code>. Cuts boilerplate; cost-allocation reports work out of the box.</p>
+
+        <h3 id="variables"><code>variables.tf</code> <span class="badge regional">29 lines</span></h3>
+        <table>
+            <tr>
+                <th>Variable</th>
+                <th>Default</th>
+                <th>Purpose</th>
+            </tr>
+            <tr>
+                <td><code>aws_region</code></td>
+                <td><code>us-east-1</code></td>
+                <td>Primary deploy region</td>
+            </tr>
+            <tr>
+                <td><code>vpc_cidr</code></td>
+                <td><code>10.0.0.0/16</code></td>
+                <td>Top-level VPC range</td>
+            </tr>
+            <tr>
+                <td><code>public_subnet_cidr</code></td>
+                <td><code>10.0.1.0/24</code></td>
+                <td>EC2 public subnet</td>
+            </tr>
+            <tr>
+                <td><code>key_name</code></td>
+                <td><code>null</code></td>
+                <td>EC2 SSH keypair name</td>
+            </tr>
+            <tr>
+                <td><code>environment</code></td>
+                <td><code>prod</code></td>
+                <td>Tag value</td>
+            </tr>
+        </table>
+
+        <h3 id="vpc"><code>vpc.tf</code> <span class="badge regional">57 lines</span></h3>
+        <p>Builds a minimal public-only network:</p>
+        <ul>
+            <li><code>aws_vpc.main</code> — DNS hostnames + DNS support enabled</li>
+            <li><code>aws_internet_gateway.main</code> — outbound/inbound internet</li>
+            <li><code>aws_subnet.public</code> — single public subnet in first AZ,
+                <code>map_public_ip_on_launch = true</code></li>
+            <li><code>aws_route_table.public</code> — default route <code>0.0.0.0/0 → IGW</code></li>
+            <li><code>aws_route_table_association.public</code> — binds RT to subnet</li>
+        </ul>
+        <div class="callout warn">
+            <strong>Tradeoff:</strong> No private subnet, no NAT gateway. Saves ~$32/month but EC2 lives directly on the
+            public internet. Acceptable for a single API box; not for tiered architectures.
+        </div>
+
+        <h3 id="sg"><code>security_groups.tf</code> <span class="badge regional">40 lines</span></h3>
+        <p>Single SG <code>notism-ec2-sg</code>:</p>
+        <table>
+            <tr>
+                <th>Direction</th>
+                <th>Port</th>
+                <th>Source/Dest</th>
+                <th>Purpose</th>
+            </tr>
+            <tr>
+                <td>ingress</td>
+                <td>22</td>
+                <td><code>0.0.0.0/0</code></td>
+                <td>SSH</td>
+            </tr>
+            <tr>
+                <td>ingress</td>
+                <td>80</td>
+                <td><code>0.0.0.0/0</code></td>
+                <td>HTTP</td>
+            </tr>
+            <tr>
+                <td>ingress</td>
+                <td>443</td>
+                <td><code>0.0.0.0/0</code></td>
+                <td>HTTPS</td>
+            </tr>
+            <tr>
+                <td>egress</td>
+                <td>all</td>
+                <td><code>0.0.0.0/0</code></td>
+                <td>outbound</td>
+            </tr>
+        </table>
+        <div class="callout danger">
+            <strong>Risk:</strong> SSH open to the world. Should be restricted to your IP, a bastion, or replaced with
+            SSM Session Manager.
+        </div>
+
+        <h3 id="ec2"><code>ec2.tf</code> <span class="badge regional">56 lines</span></h3>
+        <ul>
+            <li><strong>AMI:</strong> latest Amazon Linux 2023 ARM64 (kernel 6.1) via <code>data "aws_ami"</code></li>
+            <li><strong>Type:</strong> <code>t4g.micro</code> (Graviton ARM, free-tier eligible)</li>
+            <li><strong>Storage:</strong> 16 GB gp3 root volume</li>
+            <li><strong>IAM:</strong> instance profile attached → app uses role credentials, no static keys</li>
+            <li><strong>user_data:</strong> bootstrap script — installs docker + compose plugin (aarch64)</li>
+        </ul>
+        <pre><code>#!/bin/bash
+set -e
+yum update -y
+yum install -y docker
+systemctl enable docker
+systemctl start docker
+
+mkdir -p /usr/local/lib/docker/cli-plugins
+curl -SL https://github.com/docker/compose/releases/latest/download/docker-compose-linux-aarch64 \
+  -o /usr/local/lib/docker/cli-plugins/docker-compose
+chmod +x /usr/local/lib/docker/cli-plugins/docker-compose</code></pre>
+        <div class="callout warn">
+            <strong>Drift trap:</strong> <code>user_data</code> only runs on first boot. Editing it later will not
+            re-run unless you set <code>user_data_replace_on_change = true</code> (which destroys + recreates the
+            instance) or manually <code>cloud-init clean</code> + reboot.
+        </div>
+
+        <h3 id="eip"><code>eip.tf</code> <span class="badge regional">12 lines</span></h3>
+        <p>Allocates an Elastic IP (<code>52.44.254.154</code>) and associates it with the API instance. Stable public
+            IP across stop/start cycles, otherwise IP would change.</p>
+
+        <h3 id="ecr"><code>ecr.tf</code> <span class="badge regional">12 lines</span></h3>
+        <p>Single private ECR repo <code>notism-api</code>:</p>
+        <ul>
+            <li><code>image_tag_mutability = "MUTABLE"</code> — tags can be overwritten (e.g. <code>:latest</code>)</li>
+            <li><code>scan_on_push = true</code> — basic CVE scan on every push</li>
+        </ul>
+        <p>CI builds the .NET image, pushes here. EC2 pulls via ECR ReadOnly policy.</p>
+
+        <h3 id="iam"><code>iam.tf</code> <span class="badge regional">59 lines</span></h3>
+        <table>
+            <tr>
+                <th>Resource</th>
+                <th>Purpose</th>
+            </tr>
+            <tr>
+                <td><code>aws_iam_role.ec2</code></td>
+                <td>Trust policy: assumed by <code>ec2.amazonaws.com</code></td>
+            </tr>
+            <tr>
+                <td><code>aws_iam_role_policy.ec2_s3</code></td>
+                <td>Inline: <code>s3:Get/Put/Delete/List</code> on private + public storage buckets</td>
+            </tr>
+            <tr>
+                <td><code>aws_iam_role_policy_attachment.ec2_ecr</code></td>
+                <td>Managed: <code>AmazonEC2ContainerRegistryReadOnly</code></td>
+            </tr>
+            <tr>
+                <td><code>aws_iam_instance_profile.ec2</code></td>
+                <td>Wraps the role for EC2 attach</td>
+            </tr>
+        </table>
+        <p>Result: app on EC2 calls AWS APIs using role credentials — no keys on disk.</p>
+
+        <h3 id="s3"><code>s3.tf</code> <span class="badge regional">219 lines</span></h3>
+        <p>Three buckets, all <code>BucketOwnerEnforced</code> (no ACLs), all AES256 + bucket key.</p>
+        <table>
+            <tr>
+                <th>Bucket</th>
+                <th>Purpose</th>
+                <th>Public Access Block</th>
+                <th>Policy / Access</th>
+            </tr>
+            <tr>
+                <td><code>private-notism-storage</code></td>
+                <td>User uploads (auth-gated)</td>
+                <td>open</td>
+                <td>Allow all <code>s3:Get/Put/Delete</code> if <code>aws:Referer</code> matches localhost or CloudFront
+                    domain</td>
+            </tr>
+            <tr>
+                <td><code>public-notism-storage</code></td>
+                <td>Public assets</td>
+                <td>open</td>
+                <td>Public <code>s3:GetObject</code> for everyone</td>
+            </tr>
+            <tr>
+                <td><code>notism-web-prod</code></td>
+                <td>SPA static hosting</td>
+                <td>locked (all 4 blocks <code>true</code>)</td>
+                <td>Only CloudFront via OAC <code>SourceArn</code> match</td>
+            </tr>
+        </table>
+        <p>CORS configured on the two storage buckets for <code>localhost:4200</code> + CloudFront origins.</p>
+        <div class="callout danger">
+            <strong>Weak gating:</strong> <code>aws:Referer</code> is a client-supplied header — trivially forged with
+            <code>curl -H</code>. Acceptable as a soft "don't deep-link from random sites" filter, NOT as
+            authentication. Move to presigned URLs for real authz.
+        </div>
+
+        <h3 id="cf"><code>cloudfront.tf</code> <span class="badge global">76 lines</span> <span
+                class="badge global">global</span></h3>
+        <ul>
+            <li><strong>OAC</strong> (Origin Access Control) — modern replacement for legacy OAI; signs requests to S3
+                with SigV4</li>
+            <li><strong>Origin:</strong> <code>notism-web-prod</code> bucket regional domain</li>
+            <li><strong>Cache policy:</strong> <code>Managed-CachingOptimized</code> (AWS-managed)</li>
+            <li><strong>SPA fallback:</strong> <code>403 → 200 /index.html</code> (so React Router paths work on
+                refresh)</li>
+            <li><strong>Price class:</strong> <code>PriceClass_100</code> — US/EU edges only, cheaper</li>
+            <li><strong>HTTPS:</strong> <code>redirect-to-https</code>, default <code>*.cloudfront.net</code> cert (no
+                custom domain)</li>
+        </ul>
+
+        <h3 id="outputs"><code>outputs.tf</code> <span class="badge regional">83 lines</span></h3>
+        <p>Exposed for downstream automation (CI/CD, scripts, deploy targets):</p>
+        <ul>
+            <li><code>vpc_id</code>, <code>ec2_instance_id</code>, <code>ec2_public_ip</code></li>
+            <li><code>ecr_repository_url</code> — for <code>docker push</code> in CI</li>
+            <li><code>api_url</code> = <code>http://&lt;eip&gt;:5000</code></li>
+            <li><code>s3_*_arn</code> for the three buckets</li>
+            <li><code>cloudfront_web_prod_domain_name</code>, <code>cloudfront_web_prod_distribution_id</code></li>
+            <li><code>connection_string_hint</code> (sensitive) — Supabase format reminder</li>
+        </ul>
+
+        <h2 id="choices">Notable Design Choices</h2>
+        <table>
+            <tr>
+                <th>Choice</th>
+                <th>Why</th>
+                <th>Tradeoff</th>
+            </tr>
+            <tr>
+                <td>Single EC2 + Docker</td>
+                <td>Cheap, simple, ~free-tier</td>
+                <td>No HA, manual deploys, single point of failure</td>
+            </tr>
+            <tr>
+                <td>Supabase Postgres (not RDS)</td>
+                <td>Free tier, managed backups</td>
+                <td>External dependency, network latency, vendor lock</td>
+            </tr>
+            <tr>
+                <td>ARM Graviton (<code>t4g</code>)</td>
+                <td>~20% cheaper than x86, free tier</td>
+                <td>CI must build arm64 images</td>
+            </tr>
+            <tr>
+                <td>ECR + Docker (not Beanstalk/ECS)</td>
+                <td>Direct control, no abstraction tax</td>
+                <td>No auto-scale or auto-replace on health-fail</td>
+            </tr>
+            <tr>
+                <td>CloudFront default cert</td>
+                <td>Free, zero config</td>
+                <td>Can't use custom domain without ACM cert in us-east-1</td>
+            </tr>
+            <tr>
+                <td>API on <code>:5000</code> HTTP</td>
+                <td>No TLS termination cost on EC2</td>
+                <td>Cleartext over public internet — needs reverse proxy or ALB</td>
+            </tr>
+            <tr>
+                <td>Public-only VPC (no NAT)</td>
+                <td>Saves ~$32/month NAT gateway</td>
+                <td>EC2 directly exposed; less defense in depth</td>
+            </tr>
+        </table>
+
+        <h2 id="gaps">Gaps Worth Filing</h2>
+        <div class="callout danger">
+            <strong>SSH wide open</strong> — security group allows <code>22/0.0.0.0/0</code>. Restrict to known IPs or
+            migrate to SSM Session Manager (no inbound port at all).
+        </div>
+        <div class="callout warn">
+            <strong>No <code>user_data_replace_on_change</code></strong> — editing the bootstrap script in
+            <code>ec2.tf</code> won't actually re-run on the running instance (already hit this; docker had to be
+            installed manually).
+        </div>
+        <div class="callout warn">
+            <strong>API <code>:5000</code> over plain HTTP</strong> — passwords/tokens in cleartext. Add Caddy or nginx
+            + Let's Encrypt locally, or front with an ALB + ACM cert.
+        </div>
+        <div class="callout warn">
+            <strong>No remote state backend</strong> — <code>terraform.tfstate</code> is local. Move to S3 + DynamoDB
+            lock so multiple operators / CI can apply safely.
+        </div>
+        <div class="callout info">
+            <strong>Referer-gated S3</strong> — fine for soft hotlink prevention, but don't treat it as auth. For real
+            per-user access, switch to presigned URLs minted by the API.
+        </div>
+        <div class="callout info">
+            <strong>No alerting / observability</strong> — no CloudWatch alarms, no log shipping. At minimum: CloudWatch
+            agent for system metrics + alarms on CPU / disk.
+        </div>
+
+        <hr>
+        <p style="color: var(--muted); font-size: 0.85em; text-align: center;">
+            Generated from <code>notism-api/terraform/</code> · 12 files, 664 lines · AWS account 249550149516
+        </p>
+
+    </div>
+</body>
+
+</html>

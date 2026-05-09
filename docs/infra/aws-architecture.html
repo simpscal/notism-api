@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Notism AWS Infrastructure Architecture</title>
+<style>
+  :root {
+    --bg: #0d1117;
+    --panel: #161b22;
+    --border: #30363d;
+    --text: #c9d1d9;
+    --muted: #8b949e;
+    --accent: #58a6ff;
+    --warn: #d29922;
+    --danger: #f85149;
+    --ok: #3fb950;
+    --code-bg: #1f2428;
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    margin: 0;
+    line-height: 1.6;
+  }
+  .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
+  h1 {
+    font-size: 2.2em;
+    border-bottom: 2px solid var(--border);
+    padding-bottom: 12px;
+    margin-bottom: 8px;
+  }
+  h2 {
+    font-size: 1.5em;
+    margin-top: 48px;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 6px;
+  }
+  h3 {
+    font-size: 1.15em;
+    margin-top: 28px;
+    color: #e6edf3;
+  }
+  h4 { color: #e6edf3; margin-top: 20px; }
+  .subtitle { color: var(--muted); margin-bottom: 32px; }
+  code {
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.9em;
+    color: #e6edf3;
+  }
+  pre {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px;
+    overflow-x: auto;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.85em;
+    line-height: 1.5;
+  }
+  pre code { background: transparent; padding: 0; }
+  .diagram {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 20px;
+    font-family: "SF Mono", Menlo, Consolas, monospace;
+    font-size: 0.82em;
+    white-space: pre;
+    overflow-x: auto;
+    color: #e6edf3;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+    font-size: 0.92em;
+  }
+  th, td {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: top;
+  }
+  th {
+    background: var(--panel);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  tr:hover td { background: rgba(88, 166, 255, 0.05); }
+  .callout {
+    border-left: 4px solid;
+    background: var(--panel);
+    padding: 12px 16px;
+    margin: 16px 0;
+    border-radius: 0 6px 6px 0;
+  }
+  .callout.warn { border-color: var(--warn); }
+  .callout.danger { border-color: var(--danger); }
+  .callout.info { border-color: var(--accent); }
+  .callout strong { color: #e6edf3; }
+  ul { padding-left: 20px; }
+  li { margin: 4px 0; }
+  ol { padding-left: 20px; }
+  ol li { margin: 6px 0; }
+  .meta {
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+    color: var(--muted);
+    font-size: 0.9em;
+    margin-top: 8px;
+  }
+  .meta span strong { color: var(--text); }
+  hr { border: 0; border-top: 1px solid var(--border); margin: 32px 0; }
+  .toc {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 16px 24px;
+    margin: 24px 0;
+  }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc ul { columns: 2; }
+  a { color: var(--accent); }
+  a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Notism AWS Infrastructure Architecture</h1>
+<p class="subtitle">
+  AWS architecture used to run the Notism API. The API runs as a Docker container on a single EC2 instance managed by Docker Compose. PostgreSQL is hosted on Supabase. All AWS resources use the <strong>notism</strong> prefix and are provisioned via Terraform (<code>terraform/</code>).
+</p>
+<div class="meta">
+  <span><strong>AWS Account:</strong> 249550149516</span>
+  <span><strong>Region:</strong> us-east-1</span>
+  <span><strong>AZ:</strong> us-east-1a</span>
+  <span><strong>API Host:</strong> EC2 t4g.micro (AL2023 arm64)</span>
+  <span><strong>Database:</strong> Supabase PostgreSQL 17</span>
+</div>
+
+<div class="toc">
+  <strong>Contents</strong>
+  <ul>
+    <li><a href="#diagram">High-level diagram</a></li>
+    <li><a href="#components">Components</a></li>
+    <li><a href="#docker">Docker Compose deployment</a></li>
+    <li><a href="#cicd">CI/CD pipeline</a></li>
+    <li><a href="#network">Network design</a></li>
+    <li><a href="#security">Security</a></li>
+    <li><a href="#dataflow">Data flow</a></li>
+    <li><a href="#migrations">Database migrations</a></li>
+    <li><a href="#scaling">Scalability and future changes</a></li>
+    <li><a href="#related">Related docs</a></li>
+  </ul>
+</div>
+
+<h2 id="diagram">High-level diagram</h2>
+<div class="diagram">                                  Internet
+                    ┌────────────────────┴────────────────────┐
+                    │                                         │
+                Web User                                  API Client
+                    │                                         │
+                    ▼                                         ▼
+        ┌──────────────────────┐                    ┌──────────────────┐
+        │     CloudFront       │                    │   notism-igw     │
+        │  ┌────────────────┐  │                    │ Internet Gateway │
+        │  │ Prod (CFProd)  │  │                    └────────┬─────────┘
+        │  │ d2rtuiaa37...  │  │                             │
+        │  └───────┬────────┘  │                             ▼
+        └──────────┼───────────┘                    ┌──────────────────┐
+                   │ OAC                            │  notism-api-eip  │
+                   ▼                                │   Elastic IP     │
+        ┌────────────────────┐                      └────────┬─────────┘
+        │ notism-web-prod    │                               │
+        └────────────────────┘                               ▼
+                                         ┌─────────────────────────────────────┐
+                                         │       notism-vpc 10.0.0.0/16        │
+                                         │  ┌───────────────────────────────┐  │
+                                         │  │ notism-public-subnet          │  │
+                                         │  │ 10.0.1.0/24                   │  │
+                                         │  │  ┌─────────────────────────┐  │  │
+                                         │  │  │ notism-api EC2          │  │  │
+                                         │  │  │ t4g.micro arm64         │  │  │
+                                         │  │  │ ┌─────────────────────┐ │  │  │
+                                         │  │  │ │ Caddy   :80 / :443  │ │  │  │
+                                         │  │  │ │   ↓ reverse proxy   │ │  │  │
+                                         │  │  │ │ api     :5000       │ │  │  │
+                                         │  │  │ └─────────────────────┘ │  │  │
+                                         │  │  └────────────┬────────────┘  │  │
+                                         │  └───────────────┼───────────────┘  │
+                                         └──────────────────┼──────────────────┘
+                                                            │
+                       ┌──────────────────┬─────────────────┼─────────────────┐
+                       │ S3 API           │ S3 API          │ pull image      │ SSL :5432
+                       ▼                  ▼                 ▼                 ▼
+            ┌────────────────────┐ ┌──────────────────┐ ┌───────────┐ ┌────────────────┐
+            │ private-notism-    │ │ public-notism-   │ │ ECR:      │ │ Supabase       │
+            │ storage            │ │ storage          │ │ notism-api│ │ PostgreSQL     │
+            └────────────────────┘ └──────────────────┘ └─────▲─────┘ └────────────────┘
+                                                              │ push
+                                                       ┌──────┴───────┐
+                                                       │ GitHub       │
+                                                       │ Actions CI   │
+                                                       └──────────────┘
+</div>
+
+<h2 id="components">Components</h2>
+<table>
+  <tr><th>Layer</th><th>Component</th><th>Name / ID</th><th>Purpose</th></tr>
+  <tr><td rowspan="4"><strong>Network</strong></td><td>VPC</td><td><code>notism-vpc</code></td><td>Isolated network (10.0.0.0/16).</td></tr>
+  <tr><td>Internet Gateway</td><td><code>notism-igw</code></td><td>Connects VPC to the internet; used by the public subnet.</td></tr>
+  <tr><td>Public subnet</td><td><code>notism-public-subnet</code></td><td>Hosts EC2; route to IGW (0.0.0.0/0). AZ: us-east-1a.</td></tr>
+  <tr><td>Public route table</td><td><code>notism-public-rt</code></td><td>0.0.0.0/0 → IGW; ::/0 → IGW (IPv6); associated with public subnet.</td></tr>
+  <tr><td rowspan="2"><strong>Compute</strong></td><td>EC2</td><td><code>notism-api</code> (Name tag)</td><td>Runs Docker Compose with the API container; t4g.micro, Amazon Linux 2023.</td></tr>
+  <tr><td>Elastic IP</td><td><code>notism-api-eip</code></td><td>Stable public IP for the API.</td></tr>
+  <tr><td><strong>Database</strong></td><td>PostgreSQL (Supabase)</td><td><code>db.vqwfgdsazmalixzmvfok.supabase.co</code></td><td>Managed PostgreSQL 17 hosted on Supabase. Connection string stored in <code>CONNECTION_STRING</code> GitHub secret.</td></tr>
+  <tr><td><strong>Security</strong></td><td>EC2 security group</td><td><code>notism-ec2-sg</code></td><td>Inbound: 22, 80, 443. Outbound: all.</td></tr>
+  <tr><td rowspan="2"><strong>IAM</strong></td><td>Instance profile</td><td><code>notism-ec2-profile</code></td><td>Attached to EC2; allows S3 and ECR pull.</td></tr>
+  <tr><td>Role</td><td><code>notism-ec2-role</code></td><td>Assumed by EC2; no long-lived keys in app config.</td></tr>
+  <tr><td><strong>Container registry</strong></td><td>ECR repository</td><td><code>notism-api</code></td><td>Stores Docker image for the API; CI pushes, EC2 pulls.</td></tr>
+  <tr><td rowspan="3"><strong>Storage</strong></td><td>S3 bucket</td><td><code>private-notism-storage</code></td><td>Private file storage for the API (CORS, referer-based policy).</td></tr>
+  <tr><td>S3 bucket</td><td><code>public-notism-storage</code></td><td>Public file storage (public-read policy).</td></tr>
+  <tr><td>S3 bucket</td><td><code>notism-web-prod</code></td><td>Prod frontend static hosting (served via CloudFront).</td></tr>
+  <tr><td rowspan="2"><strong>CDN</strong></td><td>CloudFront distribution</td><td><code>E3B3TRUPIAA1TW</code></td><td>Prod frontend CDN (origin: notism-web-prod, OAC).</td></tr>
+  <tr><td>Origin Access Control</td><td><code>oac-notism-web-prod</code></td><td>Allows CloudFront to read from notism-web-prod bucket.</td></tr>
+</table>
+
+<h2 id="docker">Docker Compose deployment</h2>
+<p>The API runs as a single container managed by Docker Compose on the EC2 instance. PostgreSQL is external (Supabase) — no database container on EC2.</p>
+
+<h3>File layout on EC2</h3>
+<pre><code>/opt/notism/
+  docker-compose.yml   # service definition (api only)
+  .env                 # compose-level variables (API_IMAGE)
+  .env.api             # API app config (connection string, JWT, etc.)</code></pre>
+
+<h3>Services</h3>
+<table>
+  <tr><th>Service</th><th>Image</th><th>Container name</th><th>Purpose</th></tr>
+  <tr>
+    <td><code>api</code></td>
+    <td>ECR image (variable <code>${API_IMAGE}</code>)</td>
+    <td><code>notism-api</code></td>
+    <td>.NET 9 API. Reads config from <code>.env.api</code>. Connects to Supabase via <code>CONNECTION_STRING</code>.</td>
+  </tr>
+</table>
+
+<h3>Connection string</h3>
+<p>The API connects to Supabase PostgreSQL using SSL:</p>
+<pre><code>Host=db.vqwfgdsazmalixzmvfok.supabase.co;Database=postgres;Username=postgres;Password=&lt;from CONNECTION_STRING secret&gt;;Port=5432;SSL Mode=Require;Trust Server Certificate=true</code></pre>
+
+<h3>Useful commands (on the EC2)</h3>
+<pre><code>cd /opt/notism
+
+sudo docker compose ps              # container status
+sudo docker compose logs -f api     # follow API logs
+sudo docker compose restart api     # restart the API
+sudo docker compose down            # stop everything
+sudo docker compose up -d           # start everything</code></pre>
+
+<h2 id="cicd">CI/CD pipeline</h2>
+<p>Deployment is triggered by pushes to <code>main</code> or <code>dev</code> via <code>.github/workflows/deploy.yml</code>.</p>
+
+<div class="diagram">  git push ──▶ Determine env ──▶ Build + push ECR ──▶ Deploy to EC2
+                                                          │
+                                                          ▼
+                       ┌──────────────────────────────────────────────┐
+                       │ 1. Prepare .env + .env.api                   │
+                       │ 2. SCP files to EC2                          │
+                       │ 3. docker login to ECR                       │
+                       │ 4. docker compose up -d                      │
+                       │ 5. docker image prune                        │
+                       └──────────────────────────────────────────────┘
+</div>
+
+<h3>GitHub secrets and variables</h3>
+<table>
+  <tr><th>Name</th><th>Type</th><th>Purpose</th></tr>
+  <tr><td><code>AWS_ROLE_TO_ASSUME</code></td><td>Secret</td><td>IAM role ARN for OIDC authentication.</td></tr>
+  <tr><td><code>CONNECTION_STRING</code></td><td>Secret</td><td>Npgsql connection string for Supabase PostgreSQL.</td></tr>
+  <tr><td><code>JWT_SECRET</code></td><td>Secret</td><td>JWT signing key.</td></tr>
+  <tr><td><code>MAILERSEND_API_KEY</code></td><td>Secret</td><td>MailerSend email API key.</td></tr>
+  <tr><td><code>EC2_HOST</code></td><td>Secret</td><td>EC2 public IP (Elastic IP).</td></tr>
+  <tr><td><code>EC2_USER</code></td><td>Secret</td><td>SSH user (typically <code>ec2-user</code>).</td></tr>
+  <tr><td><code>EC2_SSH_PRIVATE_KEY</code></td><td>Secret</td><td>PEM private key for SSH access.</td></tr>
+  <tr><td><code>ECR_REPOSITORY</code></td><td>Secret</td><td>ECR repository name (<code>notism-api</code>).</td></tr>
+  <tr><td><code>AWS_ACCESS_KEY</code></td><td>Secret</td><td>AWS access key for S3 operations from the API.</td></tr>
+  <tr><td><code>AWS_SECRET_KEY</code></td><td>Secret</td><td>AWS secret key for S3 operations from the API.</td></tr>
+  <tr><td><code>GOOGLE_OAUTH_CLIENT_ID</code></td><td>Secret</td><td>Google OAuth client ID.</td></tr>
+  <tr><td><code>GOOGLE_OAUTH_CLIENT_SECRET</code></td><td>Secret</td><td>Google OAuth client secret.</td></tr>
+  <tr><td><code>AWS_REGION</code></td><td>Variable</td><td>AWS region (<code>us-east-1</code>).</td></tr>
+</table>
+
+<h2 id="network">Network design</h2>
+
+<h3>VPC and CIDR</h3>
+<ul>
+  <li>One VPC (10.0.0.0/16) with an IPv6 CIDR block (<code>2600:1f18:61e2:3000::/56</code>) assigned.</li>
+  <li>Public subnet: 10.0.1.0/24 (IPv6: <code>2600:1f18:61e2:3000::/64</code>).</li>
+</ul>
+
+<h3>Public subnet</h3>
+<p>The public subnet has routes <code>0.0.0.0/0</code> and <code>::/0</code> to the Internet Gateway. EC2 gets a public IPv4 (Elastic IP) and an IPv6 address. <strong>IPv6 is required for direct connections to Supabase</strong>, which exposes its database endpoint on IPv6 only.</p>
+
+<h3>Route tables</h3>
+<ul>
+  <li><strong>notism-public-rt:</strong> IPv4 <code>0.0.0.0/0</code> and IPv6 <code>::/0</code> → notism-igw; associated with notism-public-subnet.</li>
+</ul>
+
+<h2 id="security">Security</h2>
+
+<h3>Security groups</h3>
+<div class="callout danger">
+  <strong>notism-ec2-sg:</strong> Allows SSH (22), HTTP (80), and HTTPS (443) from <code>0.0.0.0/0</code>. In production, restrict SSH to known IPs.
+</div>
+
+<h3>IAM</h3>
+<ul>
+  <li>EC2 uses the <strong>notism-ec2-profile</strong> instance profile (role <strong>notism-ec2-role</strong>).</li>
+  <li>The role has Amazon S3 full access and Amazon ECR read-only access so the app can use S3 buckets and pull images without storing access keys.</li>
+</ul>
+
+<h3>Secrets</h3>
+<ul>
+  <li>Database connection string is stored in the <code>CONNECTION_STRING</code> GitHub secret and written to <code>.env.api</code> on EC2 at deploy time.</li>
+  <li>All app secrets (JWT, MailerSend, OAuth) are written to <code>.env.api</code> at deploy time. They never appear in the repo or Docker image.</li>
+</ul>
+
+<h2 id="dataflow">Data flow</h2>
+<ol>
+  <li><strong>User → API:</strong> Internet → IGW → notism-public-subnet → EC2 (port 80/443 via Caddy) → notism-api container.</li>
+  <li><strong>User → Frontend:</strong> Internet → CloudFront → S3 (notism-web-prod via OAC).</li>
+  <li><strong>API → PostgreSQL:</strong> notism-api container → IGW → Supabase (port 5432, SSL, IPv6).</li>
+  <li><strong>API → S3:</strong> EC2 → IGW → S3 (private-notism-storage / public-notism-storage via instance profile credentials).</li>
+  <li><strong>EC2 → ECR:</strong> EC2 pulls the API Docker image from ECR (using instance profile).</li>
+  <li><strong>CI → ECR:</strong> GitHub Actions builds the image and pushes to the notism-api ECR repository.</li>
+</ol>
+
+<h2 id="migrations">Database migrations</h2>
+<p>EF Core migrations are applied with <code>dotnet ef database update</code> against the Supabase connection string. An idempotent SQL script can be generated for manual runs:</p>
+<pre><code>cd src/Notism.Infrastructure
+dotnet ef migrations script \
+  --project Notism.Infrastructure.csproj \
+  --startup-project ../Notism.Api/Notism.Api.csproj \
+  --idempotent \
+  --output /tmp/migrations.sql</code></pre>
+
+<p>Apply via <code>psql</code> (requires a host with IPv6 internet access if connecting to the Supabase direct endpoint):</p>
+<pre><code>PGPASSWORD='&lt;password&gt;' psql \
+  'host=db.vqwfgdsazmalixzmvfok.supabase.co port=5432 dbname=postgres user=postgres sslmode=require' \
+  -f /tmp/migrations.sql</code></pre>
+
+<h2 id="scaling">Scalability and future changes</h2>
+<table>
+  <tr><th>Need</th><th>Change</th></tr>
+  <tr><td>More API capacity</td><td>Add an ALB, register more EC2 instances, same AMI and IAM profile.</td></tr>
+  <tr><td>Database scaling</td><td>Upgrade Supabase plan or switch to a dedicated Supabase project.</td></tr>
+  <tr><td>HTTPS / ALB</td><td>Put an ALB in front of EC2, attach ACM certificate.</td></tr>
+  <tr><td>Custom domain for frontend</td><td>Add an ACM certificate and CNAME alias to the CloudFront distributions.</td></tr>
+</table>
+
+<h2 id="related">Related docs</h2>
+<ul>
+  <li><a href="terraform-architecture.html">terraform-architecture.html</a> — Terraform configuration reference.</li>
+  <li><a href="../rules/architecture.md">../rules/architecture.md</a> — Application architecture.</li>
+</ul>
+
+<hr>
+<p style="color: var(--muted); font-size: 0.85em; text-align: center;">
+  Notism AWS infrastructure · Account 249550149516 · us-east-1
+</p>
+
+</div>
+</body>
+</html>
