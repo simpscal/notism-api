@@ -15,7 +15,7 @@ locals {
 # ------------------------------------------------------------------------------
 
 resource "aws_cloudfront_origin_access_control" "web_prod" {
-  name                              = "oac-notism-web-prod.s3.us-east-1.amazonaws.com-mhulcbx9s1m"
+  name                              = "oac-notism-web-prod.s3.${var.aws_region}.amazonaws.com-mhulcbx9s1m"
   description                       = "Created by CloudFront"
   origin_access_control_origin_type = "s3"
   signing_behavior                  = "always"
@@ -31,7 +31,7 @@ resource "aws_cloudfront_distribution" "web_prod" {
   is_ipv6_enabled     = true
   http_version        = "http2"
   default_root_object = "index.html"
-  price_class         = "PriceClass_100"
+  price_class         = "PriceClass_All"
   staging             = false
 
   origin {
