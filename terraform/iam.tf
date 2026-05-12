@@ -42,6 +42,11 @@ resource "aws_iam_role_policy" "lambda_image_resizing_s3" {
           "${aws_s3_bucket.public_storage.arn}/*",
           "${aws_s3_bucket.private_storage.arn}/*",
         ]
+      },
+      {
+        Effect   = "Allow"
+        Action   = "lambda:InvokeFunction"
+        Resource = aws_lambda_function.food_detail_resizing.arn
       }
     ]
   })
