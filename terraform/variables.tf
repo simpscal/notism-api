@@ -27,9 +27,3 @@ variable "environment" {
   type        = string
   default     = "prod"
 }
-
-variable "lambda_sharp_layer_arn" {
-  description = "ARN (including version) of the sharp Lambda layer used by all image-resizing functions. Must be in the same region as the Lambda functions."
-  type        = string
-  default     = "arn:aws:lambda:ap-northeast-1:249550149516:layer:sharp:1"
-}

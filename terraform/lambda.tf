@@ -20,6 +20,10 @@
 
 data "aws_caller_identity" "current" {}
 
+locals {
+  sharp_layer_arn = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:layer:sharp:1"
+}
+
 resource "aws_lambda_function" "food_resizing" {
   function_name = "notism-food-resizing"
   role          = aws_iam_role.lambda_image_resizing.arn
@@ -32,7 +36,7 @@ resource "aws_lambda_function" "food_resizing" {
   # Code is deployed by CI/CD; Terraform manages configuration only.
   filename = "./lambda-packages/notism-food-resizing.zip"
 
-  layers = [var.lambda_sharp_layer_arn]
+  layers = [local.sharp_layer_arn]
 
   environment {
     variables = {
@@ -64,7 +68,7 @@ resource "aws_lambda_function" "food_detail_resizing" {
 
   filename = "./lambda-packages/notism-food-detail-resizing.zip"
 
-  layers = [var.lambda_sharp_layer_arn]
+  layers = [local.sharp_layer_arn]
 
   environment {
     variables = {
@@ -96,7 +100,7 @@ resource "aws_lambda_function" "avatar_resizing" {
 
   filename = "./lambda-packages/notism-avatar-resizing.zip"
 
-  layers = [var.lambda_sharp_layer_arn]
+  layers = [local.sharp_layer_arn]
 
   environment {
     variables = {
