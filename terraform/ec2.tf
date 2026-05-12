@@ -53,4 +53,12 @@ resource "aws_instance" "api" {
   tags = {
     Name = "notism-api"
   }
+
+  # Prevent AMI version bumps from triggering an instance replacement.
+  # The data source uses most_recent = true so a newly published AMI would
+  # otherwise force a destroy-then-create on every plan.  AMI updates are
+  # applied intentionally by removing this block and running a targeted apply.
+  lifecycle {
+    ignore_changes = [ami]
+  }
 }

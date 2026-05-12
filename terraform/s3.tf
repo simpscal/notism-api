@@ -143,6 +143,35 @@ resource "aws_s3_bucket_cors_configuration" "public_storage" {
 }
 
 # ------------------------------------------------------------------------------
+# S3 Event Notifications
+#
+# private-notism-storage triggers the image-resizing pipeline:
+#   - ObjectCreated under avatars/  → notism-avatar-resizing
+#   - ObjectCreated under food/     → notism-food-resizing
+# ------------------------------------------------------------------------------
+
+resource "aws_s3_bucket_notification" "private_storage" {
+  bucket = aws_s3_bucket.private_storage.id
+
+  lambda_function {
+    lambda_function_arn = aws_lambda_function.avatar_resizing.arn
+    events              = ["s3:ObjectCreated:*"]
+    filter_prefix       = "avatars/"
+  }
+
+  lambda_function {
+    lambda_function_arn = aws_lambda_function.food_resizing.arn
+    events              = ["s3:ObjectCreated:*"]
+    filter_prefix       = "food/"
+  }
+
+  depends_on = [
+    aws_lambda_permission.s3_invoke_food_resizing,
+    aws_lambda_permission.s3_invoke_avatar_resizing,
+  ]
+}
+
+# ------------------------------------------------------------------------------
 # Bucket Policies
 # ------------------------------------------------------------------------------
 
