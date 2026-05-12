@@ -31,11 +31,5 @@ variable "environment" {
 variable "lambda_sharp_layer_arn" {
   description = "ARN (including version) of the sharp Lambda layer used by all image-resizing functions. Must be in the same region as the Lambda functions."
   type        = string
-  default     = "arn:aws:lambda:us-east-1:249550149516:layer:sharp:1"
-}
-
-variable "enable_s3_lambda_notifications" {
-  description = "Set to true only after the Lambda functions have been migrated to var.aws_region. S3 event notifications require the target Lambda to reside in the same region as the bucket; leaving this false defers the apply until the migration is complete."
-  type        = bool
-  default     = false
+  default     = "arn:aws:lambda:ap-northeast-1:249550149516:layer:sharp:1"
 }

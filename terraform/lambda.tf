@@ -1,14 +1,12 @@
 # ------------------------------------------------------------------------------
 # Lambda — Image / File Processing
 #
-# These functions were originally created manually in us-east-1 and are managed
-# here via the aws.us_east_1 provider alias until a follow-on migration moves
-# them (and the sharp layer) to var.aws_region (ap-northeast-1).
+# These functions are deployed in ap-northeast-1 (default provider) alongside
+# the S3 buckets they process.  Deploying in the same region eliminates the
+# S3 connection failures that occurred when the functions lived in us-east-1.
 #
 # The REGION environment variable tells the Node.js AWS SDK which region to use
-# when initialising S3 clients, correcting the runtime connection failures that
-# occurred because Lambda's implicit AWS_REGION (us-east-1) differed from the
-# bucket region (ap-northeast-1).
+# when initialising S3 clients.
 #
 # Code packages are deployed by CI/CD and are excluded from Terraform management
 # via ignore_changes.  Terraform only owns configuration (env vars, IAM role,
@@ -23,8 +21,6 @@
 data "aws_caller_identity" "current" {}
 
 resource "aws_lambda_function" "food_resizing" {
-  provider = aws.us_east_1
-
   function_name = "notism-food-resizing"
   role          = aws_iam_role.lambda_image_resizing.arn
   handler       = "index.handler"
@@ -34,8 +30,7 @@ resource "aws_lambda_function" "food_resizing" {
   architectures = ["arm64"]
 
   # Code is deployed by CI/CD; Terraform manages configuration only.
-  s3_bucket = "placeholder-managed-by-cicd"
-  s3_key    = "placeholder"
+  filename = "./lambda-packages/notism-food-resizing.zip"
 
   layers = [var.lambda_sharp_layer_arn]
 
@@ -50,7 +45,7 @@ resource "aws_lambda_function" "food_resizing" {
   }
 
   lifecycle {
-    ignore_changes = [s3_bucket, s3_key, layers, runtime]
+    ignore_changes = [filename, source_code_hash, layers, runtime]
   }
 
   tags = {
@@ -59,8 +54,6 @@ resource "aws_lambda_function" "food_resizing" {
 }
 
 resource "aws_lambda_function" "food_detail_resizing" {
-  provider = aws.us_east_1
-
   function_name = "notism-food-detail-resizing"
   role          = aws_iam_role.lambda_image_resizing.arn
   handler       = "index.handler"
@@ -69,8 +62,7 @@ resource "aws_lambda_function" "food_detail_resizing" {
   memory_size   = 256
   architectures = ["arm64"]
 
-  s3_bucket = "placeholder-managed-by-cicd"
-  s3_key    = "placeholder"
+  filename = "./lambda-packages/notism-food-detail-resizing.zip"
 
   layers = [var.lambda_sharp_layer_arn]
 
@@ -85,7 +77,7 @@ resource "aws_lambda_function" "food_detail_resizing" {
   }
 
   lifecycle {
-    ignore_changes = [s3_bucket, s3_key, layers, runtime]
+    ignore_changes = [filename, source_code_hash, layers, runtime]
   }
 
   tags = {
@@ -94,8 +86,6 @@ resource "aws_lambda_function" "food_detail_resizing" {
 }
 
 resource "aws_lambda_function" "avatar_resizing" {
-  provider = aws.us_east_1
-
   function_name = "notism-avatar-resizing"
   role          = aws_iam_role.lambda_image_resizing.arn
   handler       = "index.handler"
@@ -104,8 +94,7 @@ resource "aws_lambda_function" "avatar_resizing" {
   memory_size   = 128
   architectures = ["arm64"]
 
-  s3_bucket = "placeholder-managed-by-cicd"
-  s3_key    = "placeholder"
+  filename = "./lambda-packages/notism-avatar-resizing.zip"
 
   layers = [var.lambda_sharp_layer_arn]
 
@@ -119,7 +108,7 @@ resource "aws_lambda_function" "avatar_resizing" {
   }
 
   lifecycle {
-    ignore_changes = [s3_bucket, s3_key, layers, runtime]
+    ignore_changes = [filename, source_code_hash, layers, runtime]
   }
 
   tags = {
@@ -132,8 +121,6 @@ resource "aws_lambda_function" "avatar_resizing" {
 # ------------------------------------------------------------------------------
 
 resource "aws_lambda_permission" "s3_invoke_food_resizing" {
-  provider = aws.us_east_1
-
   statement_id   = "AllowS3InvokeFood"
   action         = "lambda:InvokeFunction"
   function_name  = aws_lambda_function.food_resizing.function_name
@@ -143,8 +130,6 @@ resource "aws_lambda_permission" "s3_invoke_food_resizing" {
 }
 
 resource "aws_lambda_permission" "s3_invoke_avatar_resizing" {
-  provider = aws.us_east_1
-
   statement_id   = "AllowS3InvokeAvatar"
   action         = "lambda:InvokeFunction"
   function_name  = aws_lambda_function.avatar_resizing.function_name
