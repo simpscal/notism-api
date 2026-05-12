@@ -143,6 +143,43 @@ resource "aws_s3_bucket_cors_configuration" "public_storage" {
 }
 
 # ------------------------------------------------------------------------------
+# S3 Event Notifications
+#
+# private-notism-storage triggers the image-resizing pipeline:
+#   - ObjectCreated under avatars/  → notism-avatar-resizing
+#   - ObjectCreated under food/     → notism-food-resizing
+#
+# NOTE: S3 event notifications require the target Lambda to reside in the same
+# AWS region as the bucket.  The Lambda functions currently live in us-east-1
+# while this bucket is in ap-northeast-1.  This resource is gated behind
+# var.enable_s3_lambda_notifications (default: false) and must remain disabled
+# until the Lambda migration follow-on story is complete.  Flip the variable to
+# true in terraform.tfvars after the migration to activate the notifications.
+# ------------------------------------------------------------------------------
+
+resource "aws_s3_bucket_notification" "private_storage" {
+  count  = var.enable_s3_lambda_notifications ? 1 : 0
+  bucket = aws_s3_bucket.private_storage.id
+
+  lambda_function {
+    lambda_function_arn = aws_lambda_function.avatar_resizing.arn
+    events              = ["s3:ObjectCreated:*"]
+    filter_prefix       = "avatars/"
+  }
+
+  lambda_function {
+    lambda_function_arn = aws_lambda_function.food_resizing.arn
+    events              = ["s3:ObjectCreated:*"]
+    filter_prefix       = "food/"
+  }
+
+  depends_on = [
+    aws_lambda_permission.s3_invoke_food_resizing,
+    aws_lambda_permission.s3_invoke_avatar_resizing,
+  ]
+}
+
+# ------------------------------------------------------------------------------
 # Bucket Policies
 # ------------------------------------------------------------------------------
 
