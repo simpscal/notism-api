@@ -30,13 +30,13 @@ Client → API → Presigned URL → Private S3 Bucket → S3 Event → Lambda �
 
 There are three resizing functions, each triggered by S3 `ObjectCreated` on the private bucket with different prefixes. All three use the same IAM execution role: **notism-image-resizing-role**.
 
-| Function | S3 prefix | Dimensions | Destination folder (public bucket) |
-|----------|-----------|------------|-------------------------------------|
-| **notism-avatar-resizing** | `avatar/` | 200×200 | `avatar/` (same key) |
-| **notism-food-resizing** | `food/` | 400×400 | `food/` (same key) |
-| **notism-food-detail-resizing** | `food/` | 800×800 | `food-detail/` (path under `food/` becomes path under `food-detail/`) |
+| Function | Trigger | Dimensions | Destination folder (public bucket) |
+|----------|---------|------------|-------------------------------------|
+| **notism-avatar-resizing** | S3 `avatars/` | 200×200 | `avatars/` (same key) |
+| **notism-food-resizing** | S3 `food/` | 400×400 | `food/` (same key) |
+| **notism-food-detail-resizing** | Lambda→Lambda (invoked by food-resizing) | 800×800 | `food-detail/` |
 
-Food and food-detail share the same upload path: clients upload only to the **food** folder; both Lambdas are triggered and produce the 400×400 (food) and 800×800 (food-detail) variants in the public bucket.
+Clients upload only to the **food** folder. S3 triggers `food-resizing`, which resizes to 400×400, then invokes `food-detail-resizing` directly (Lambda→Lambda) to produce the 800×800 variant. `food-detail-resizing` is not triggered by S3.
 
 #### Trigger
 - **Event Source**: S3 ObjectCreated event on private bucket
@@ -99,7 +99,7 @@ sequenceDiagram
 
 - **Step 1–3**: Presigned URL is time-limited. The API returns a `fileKey` without the folder prefix so the client stores only that value (e.g. `{guid}/{fileName}`) in the database.
 - **Step 4–5**: Upload is direct from client to S3; the API is not in the path for the binary upload.
-- **Step 6–11**: S3 invokes Lambda asynchronously by prefix (`avatar/`, `food/`). For `food/`, both the 400×400 (food) and 800×800 (food-detail) Lambdas can be triggered; each uploads to the public bucket with the appropriate key.
+- **Step 6–11**: S3 invokes Lambda asynchronously by prefix (`avatars/`, `food/`). For `food/`, S3 triggers only `food-resizing` (400×400); `food-resizing` then invokes `food-detail-resizing` (800×800) directly via Lambda→Lambda. Each uploads to the public bucket with the appropriate key.
 
 ### Retrieve public URL sequence
 

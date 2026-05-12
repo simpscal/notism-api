@@ -141,8 +141,8 @@
 </p>
 <div class="meta">
   <span><strong>AWS Account:</strong> 249550149516</span>
-  <span><strong>Region:</strong> us-east-1</span>
-  <span><strong>AZ:</strong> us-east-1a</span>
+  <span><strong>Region:</strong> ap-northeast-1</span>
+  <span><strong>AZ:</strong> ap-northeast-1a</span>
   <span><strong>API Host:</strong> EC2 t4g.micro (AL2023 arm64)</span>
   <span><strong>Database:</strong> Supabase PostgreSQL 17</span>
 </div>
@@ -218,7 +218,7 @@
   <tr><th>Layer</th><th>Component</th><th>Name / ID</th><th>Purpose</th></tr>
   <tr><td rowspan="4"><strong>Network</strong></td><td>VPC</td><td><code>notism-vpc</code></td><td>Isolated network (10.0.0.0/16).</td></tr>
   <tr><td>Internet Gateway</td><td><code>notism-igw</code></td><td>Connects VPC to the internet; used by the public subnet.</td></tr>
-  <tr><td>Public subnet</td><td><code>notism-public-subnet</code></td><td>Hosts EC2; route to IGW (0.0.0.0/0). AZ: us-east-1a.</td></tr>
+  <tr><td>Public subnet</td><td><code>notism-public-subnet</code></td><td>Hosts EC2; route to IGW (0.0.0.0/0). AZ: ap-northeast-1a.</td></tr>
   <tr><td>Public route table</td><td><code>notism-public-rt</code></td><td>0.0.0.0/0 → IGW; ::/0 → IGW (IPv6); associated with public subnet.</td></tr>
   <tr><td rowspan="2"><strong>Compute</strong></td><td>EC2</td><td><code>notism-api</code> (Name tag)</td><td>Runs Docker Compose with the API container; t4g.micro, Amazon Linux 2023.</td></tr>
   <tr><td>Elastic IP</td><td><code>notism-api-eip</code></td><td>Stable public IP for the API.</td></tr>
@@ -297,7 +297,7 @@ sudo docker compose up -d           # start everything</code></pre>
   <tr><td><code>AWS_SECRET_KEY</code></td><td>Secret</td><td>AWS secret key for S3 operations from the API.</td></tr>
   <tr><td><code>GOOGLE_OAUTH_CLIENT_ID</code></td><td>Secret</td><td>Google OAuth client ID.</td></tr>
   <tr><td><code>GOOGLE_OAUTH_CLIENT_SECRET</code></td><td>Secret</td><td>Google OAuth client secret.</td></tr>
-  <tr><td><code>AWS_REGION</code></td><td>Variable</td><td>AWS region (<code>us-east-1</code>).</td></tr>
+  <tr><td><code>AWS_REGION</code></td><td>Variable</td><td>AWS region (<code>ap-northeast-1</code>).</td></tr>
 </table>
 
 <h2 id="network">Network design</h2>
@@ -376,7 +376,7 @@ dotnet ef migrations script \
 
 <hr>
 <p style="color: var(--muted); font-size: 0.85em; text-align: center;">
-  Notism AWS infrastructure · Account 249550149516 · us-east-1
+  Notism AWS infrastructure · Account 249550149516 · ap-northeast-1
 </p>
 
 </div>

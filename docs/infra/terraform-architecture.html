@@ -257,7 +257,7 @@
         <p class="subtitle">Walkthrough of the infrastructure-as-code in <code>notism-api/terraform/</code></p>
         <div class="meta">
             <span><strong>AWS Account:</strong> 249550149516</span>
-            <span><strong>Region:</strong> us-east-1</span>
+            <span><strong>Region:</strong> ap-northeast-1</span>
             <span><strong>Provider:</strong> hashicorp/aws ~&gt; 5.0</span>
             <span><strong>Terraform:</strong> &gt;= 1.0</span>
             <span><strong>Files:</strong> 12 .tf, 664 lines</span>
@@ -277,6 +277,7 @@
                 <li><a href="#eip">eip.tf</a></li>
                 <li><a href="#ecr">ecr.tf</a></li>
                 <li><a href="#iam">iam.tf</a></li>
+                <li><a href="#lambda">lambda.tf</a></li>
                 <li><a href="#s3">s3.tf</a></li>
                 <li><a href="#cf">cloudfront.tf</a></li>
                 <li><a href="#outputs">outputs.tf</a></li>
@@ -320,10 +321,18 @@
             ┌─────────────────────┐ ┌─────────────────────┐
             │ S3: private-storage │ │ S3: public-storage │
             │ (referer-gated) │ │ (public read) │
-            └─────────────────────┘ └─────────────────────┘
+            └──────────┬──────────┘ └────────────▲────────┘
+                       │ S3 ObjectCreated          │
+                       ▼ (avatars/, food/)         │ PutObject
+            ┌──────────────────────────────────────┴────────────┐
+            │ Lambda ap-northeast-1 (notism-image-resizing-role) │
+            │  • notism-avatar-resizing   (200×200)              │
+            │  • notism-food-resizing     (400×400) ──┐          │
+            │  • notism-food-detail-resizing (800×800)◄┘ invoke  │
+            └────────────────────────────────────────────────────┘
 
             VPC 10.0.0.0/16
-            └── public subnet 10.0.1.0/24 (AZ us-east-1a)
+            └── public subnet 10.0.1.0/24 (AZ ap-northeast-1a)
             └── IGW → 0.0.0.0/0
         </div>
 
@@ -338,6 +347,7 @@
             <li>eip.tf</li>
             <li>ecr.tf</li>
             <li>iam.tf</li>
+            <li>lambda.tf</li>
             <li>s3.tf</li>
             <li>cloudfront.tf</li>
             <li>outputs.tf</li>
@@ -356,8 +366,8 @@
   }
 }</code></pre>
 
-        <h3 id="provider"><code>provider.tf</code> <span class="badge regional">11 lines</span></h3>
-        <p>AWS provider configured from <code>var.aws_region</code>. <strong>Default tags</strong> applied to every
+        <h3 id="provider"><code>provider.tf</code> <span class="badge regional">12 lines</span></h3>
+        <p>Single AWS provider configured from <code>var.aws_region</code> (<code>ap-northeast-1</code>). <strong>Default tags</strong> applied to every
             taggable resource: <code>Project=notism</code>, <code>Environment=prod</code>,
             <code>ManagedBy=terraform</code>. Cuts boilerplate; cost-allocation reports work out of the box.</p>
 
@@ -370,7 +380,7 @@
             </tr>
             <tr>
                 <td><code>aws_region</code></td>
-                <td><code>us-east-1</code></td>
+                <td><code>ap-northeast-1</code></td>
                 <td>Primary deploy region</td>
             </tr>
             <tr>
@@ -486,7 +496,8 @@ chmod +x /usr/local/lib/docker/cli-plugins/docker-compose</code></pre>
         </ul>
         <p>CI builds the .NET image, pushes here. EC2 pulls via ECR ReadOnly policy.</p>
 
-        <h3 id="iam"><code>iam.tf</code> <span class="badge regional">59 lines</span></h3>
+        <h3 id="iam"><code>iam.tf</code> <span class="badge regional">118 lines</span></h3>
+        <p><strong>EC2 role</strong></p>
         <table>
             <tr>
                 <th>Resource</th>
@@ -509,9 +520,58 @@ chmod +x /usr/local/lib/docker/cli-plugins/docker-compose</code></pre>
                 <td>Wraps the role for EC2 attach</td>
             </tr>
         </table>
+        <p><strong>Lambda image-resizing role</strong> (<code>notism-image-resizing-role</code>)</p>
+        <table>
+            <tr>
+                <th>Resource</th>
+                <th>Purpose</th>
+            </tr>
+            <tr>
+                <td><code>aws_iam_role.lambda_image_resizing</code></td>
+                <td>Trust policy: assumed by <code>lambda.amazonaws.com</code></td>
+            </tr>
+            <tr>
+                <td><code>aws_iam_role_policy.lambda_image_resizing_s3</code></td>
+                <td>Inline: <code>s3:Get/Put/Delete</code> on both storage buckets; <code>lambda:InvokeFunction</code> on <code>notism-food-detail-resizing</code></td>
+            </tr>
+            <tr>
+                <td><code>aws_iam_role_policy_attachment.lambda_image_resizing_basic_execution</code></td>
+                <td>Managed: <code>AWSLambdaBasicExecutionRole</code> (CloudWatch Logs write)</td>
+            </tr>
+        </table>
         <p>Result: app on EC2 calls AWS APIs using role credentials — no keys on disk.</p>
 
-        <h3 id="s3"><code>s3.tf</code> <span class="badge regional">219 lines</span></h3>
+        <h3 id="lambda"><code>lambda.tf</code> <span class="badge regional">140 lines</span></h3>
+        <p>Three image-resizing Lambda functions deployed in <code>ap-northeast-1</code>. All share <code>notism-image-resizing-role</code> and the sharp layer (<code>arn:aws:lambda:${var.aws_region}:${account_id}:layer:sharp:1</code> — ARN constructed from locals, no hardcoded region).</p>
+        <table>
+            <tr>
+                <th>Function</th>
+                <th>Trigger</th>
+                <th>Output (public bucket)</th>
+                <th>Memory / Timeout</th>
+            </tr>
+            <tr>
+                <td><code>notism-avatar-resizing</code></td>
+                <td>S3 <code>avatars/</code></td>
+                <td><code>avatars/</code> 200×200</td>
+                <td>128 MB / 3 s</td>
+            </tr>
+            <tr>
+                <td><code>notism-food-resizing</code></td>
+                <td>S3 <code>food/</code></td>
+                <td><code>food/</code> 400×400, then invokes food-detail</td>
+                <td>256 MB / 30 s</td>
+            </tr>
+            <tr>
+                <td><code>notism-food-detail-resizing</code></td>
+                <td>Lambda→Lambda (invoked by food-resizing)</td>
+                <td><code>food-detail/</code> 800×800</td>
+                <td>256 MB / 30 s</td>
+            </tr>
+        </table>
+        <p>Code is managed by CI/CD (not Terraform). <code>ignore_changes = [filename, source_code_hash, layers, runtime]</code> prevents Terraform from overwriting deployed code. Two <code>aws_lambda_permission</code> resources grant S3 the right to invoke avatar and food functions.</p>
+
+        <h3 id="s3"><code>s3.tf</code> <span class="badge regional">~230 lines</span></h3>
         <p>Three buckets, all <code>BucketOwnerEnforced</code> (no ACLs), all AES256 + bucket key.</p>
         <table>
             <tr>
@@ -541,6 +601,7 @@ chmod +x /usr/local/lib/docker/cli-plugins/docker-compose</code></pre>
             </tr>
         </table>
         <p>CORS configured on the two storage buckets for <code>localhost:4200</code> + CloudFront origins.</p>
+        <p><strong>S3 event notifications</strong> (<code>aws_s3_bucket_notification.private_storage</code>) wire <code>private-notism-storage</code> to the Lambda pipeline: <code>ObjectCreated:*</code> under <code>avatars/</code> → avatar-resizing; <code>ObjectCreated:*</code> under <code>food/</code> → food-resizing.</p>
         <div class="callout danger">
             <strong>Weak gating:</strong> <code>aws:Referer</code> is a client-supplied header — trivially forged with
             <code>curl -H</code>. Acceptable as a soft "don't deep-link from random sites" filter, NOT as
@@ -645,7 +706,7 @@ chmod +x /usr/local/lib/docker/cli-plugins/docker-compose</code></pre>
 
         <hr>
         <p style="color: var(--muted); font-size: 0.85em; text-align: center;">
-            Generated from <code>notism-api/terraform/</code> · 12 files, 664 lines · AWS account 249550149516
+            Generated from <code>notism-api/terraform/</code> · 13 files · AWS account 249550149516 · ap-northeast-1
         </p>
 
     </div>
