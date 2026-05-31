@@ -15,6 +15,7 @@ public class GetFoodByIdResponse
     public int StockQuantity { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+    public required List<FoodCustomisationGroupResponse> Customisations { get; set; }
 }
 
 public class FoodImageResponse
@@ -23,4 +24,19 @@ public class FoodImageResponse
     public int DisplayOrder { get; set; }
     public string? AltText { get; set; }
     public required string ImageUrl { get; set; }
+}
+
+public class FoodCustomisationGroupResponse
+{
+    public Guid Id { get; set; }
+    public required string Label { get; set; }
+    public bool Required { get; set; }
+    public required List<FoodCustomisationOptionResponse> Options { get; set; }
+}
+
+public class FoodCustomisationOptionResponse
+{
+    public Guid Value { get; set; }
+    public required string Label { get; set; }
+    public decimal? Surcharge { get; set; }
 }

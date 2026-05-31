@@ -19,6 +19,9 @@ public class Food : AggregateRoot
     private readonly List<FoodImage> _images = new();
     public IReadOnlyCollection<FoodImage> Images => _images.AsReadOnly();
 
+    private readonly List<FoodCustomisationGroup> _customisationGroups = new();
+    public IReadOnlyCollection<FoodCustomisationGroup> CustomisationGroups => _customisationGroups.AsReadOnly();
+
     private Food(
         string name,
         string description,
@@ -227,6 +230,12 @@ public class Food : AggregateRoot
             _images.Add(FoodImage.Create(Id, fileKey, displayOrder, altText));
         }
 
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void AddCustomisationGroup(FoodCustomisationGroup group)
+    {
+        _customisationGroups.Add(group);
         UpdatedAt = DateTime.UtcNow;
     }
 }
