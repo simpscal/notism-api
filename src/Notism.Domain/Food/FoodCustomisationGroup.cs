@@ -51,6 +51,43 @@ public class FoodCustomisationGroup : Entity
         _options.Add(option);
     }
 
+    public void Update(string? label = null, bool? isRequired = null, int? displayOrder = null)
+    {
+        if (label != null)
+        {
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                throw new ArgumentException("Group label cannot be empty", nameof(label));
+            }
+
+            Label = label;
+        }
+
+        if (isRequired.HasValue)
+        {
+            IsRequired = isRequired.Value;
+        }
+
+        if (displayOrder.HasValue)
+        {
+            if (displayOrder.Value < 0)
+            {
+                throw new ArgumentException("Display order cannot be negative", nameof(displayOrder));
+            }
+
+            DisplayOrder = displayOrder.Value;
+        }
+    }
+
+    public void RemoveOption(Guid optionId)
+    {
+        var option = _options.FirstOrDefault(o => o.Id == optionId);
+        if (option != null)
+        {
+            _options.Remove(option);
+        }
+    }
+
     private FoodCustomisationGroup()
     {
         Label = string.Empty;

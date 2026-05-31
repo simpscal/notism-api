@@ -100,6 +100,12 @@
   <data name="DiscountPriceMustBeLess" xml:space="preserve">
     <value>Discount price must be less than the original price</value>
   </data>
+  <data name="CustomisationGroupNotFound" xml:space="preserve">
+    <value>Customisation group not found</value>
+  </data>
+  <data name="CustomisationOptionNotFound" xml:space="preserve">
+    <value>Customisation option not found</value>
+  </data>
   <data name="InsufficientStock" xml:space="preserve">
     <value>Insufficient stock</value>
   </data>

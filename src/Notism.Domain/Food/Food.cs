@@ -238,4 +238,14 @@ public class Food : AggregateRoot
         _customisationGroups.Add(group);
         UpdatedAt = DateTime.UtcNow;
     }
+
+    public void RemoveCustomisationGroup(Guid groupId)
+    {
+        var group = _customisationGroups.FirstOrDefault(g => g.Id == groupId);
+        if (group != null)
+        {
+            _customisationGroups.Remove(group);
+            UpdatedAt = DateTime.UtcNow;
+        }
+    }
 }

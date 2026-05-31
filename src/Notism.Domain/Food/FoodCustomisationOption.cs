@@ -42,6 +42,34 @@ public class FoodCustomisationOption : Entity
         return new FoodCustomisationOption(groupId, label, surcharge, displayOrder);
     }
 
+    public void Update(string? label = null, decimal? surcharge = null, int? displayOrder = null)
+    {
+        if (label != null)
+        {
+            if (string.IsNullOrWhiteSpace(label))
+            {
+                throw new ArgumentException("Option label cannot be empty", nameof(label));
+            }
+
+            Label = label;
+        }
+
+        if (surcharge.HasValue)
+        {
+            Surcharge = surcharge.Value;
+        }
+
+        if (displayOrder.HasValue)
+        {
+            if (displayOrder.Value < 0)
+            {
+                throw new ArgumentException("Display order cannot be negative", nameof(displayOrder));
+            }
+
+            DisplayOrder = displayOrder.Value;
+        }
+    }
+
     private FoodCustomisationOption()
     {
         Label = string.Empty;

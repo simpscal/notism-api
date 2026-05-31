@@ -100,6 +100,12 @@
   <data name="DiscountPriceMustBeLess" xml:space="preserve">
     <value>Giá giảm phải nhỏ hơn giá gốc</value>
   </data>
+  <data name="CustomisationGroupNotFound" xml:space="preserve">
+    <value>Nhóm tùy chỉnh không tìm thấy</value>
+  </data>
+  <data name="CustomisationOptionNotFound" xml:space="preserve">
+    <value>Tùy chọn tùy chỉnh không tìm thấy</value>
+  </data>
   <data name="InsufficientStock" xml:space="preserve">
     <value>Hàng tồn kho không đủ</value>
   </data>

@@ -28,6 +28,8 @@ public class Messages : IMessages
     public string FoodNotFound => _localizer["FoodNotFound"];
     public string FoodNotAvailable => _localizer["FoodNotAvailable"];
     public string DiscountPriceMustBeLess => _localizer["DiscountPriceMustBeLess"];
+    public string CustomisationGroupNotFound => _localizer["CustomisationGroupNotFound"];
+    public string CustomisationOptionNotFound => _localizer["CustomisationOptionNotFound"];
 
     // Cart Messages
     public string InsufficientStock => _localizer["InsufficientStock"];
