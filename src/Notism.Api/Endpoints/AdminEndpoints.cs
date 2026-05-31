@@ -3,12 +3,18 @@ using MediatR;
 using Notism.Api.Extensions;
 using Notism.Api.Models;
 using Notism.Application.Food.AdminAddCategory;
+using Notism.Application.Food.AdminAddCustomisationGroup;
+using Notism.Application.Food.AdminAddCustomisationOption;
 using Notism.Application.Food.AdminAddFood;
 using Notism.Application.Food.AdminDeleteCategory;
+using Notism.Application.Food.AdminDeleteCustomisationGroup;
+using Notism.Application.Food.AdminDeleteCustomisationOption;
 using Notism.Application.Food.AdminDeleteFood;
 using Notism.Application.Food.AdminGetCategories;
 using Notism.Application.Food.AdminGetCategoryDetail;
 using Notism.Application.Food.AdminUpdateCategory;
+using Notism.Application.Food.AdminUpdateCustomisationGroup;
+using Notism.Application.Food.AdminUpdateCustomisationOption;
 using Notism.Application.Food.AdminUpdateFood;
 using Notism.Application.Food.GetFoodById;
 using Notism.Application.Food.GetFoods;
@@ -31,6 +37,7 @@ public static class AdminEndpoints
         MapAdminOrderEndpoints(app);
         MapAdminCategoryEndpoints(app);
         MapAdminFoodEndpoints(app);
+        MapAdminFoodCustomisationEndpoints(app);
     }
 
     private static void MapAdminUserEndpoints(IEndpointRouteBuilder app)
@@ -247,6 +254,190 @@ public static class AdminEndpoints
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
             .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+    }
+
+    private static void MapAdminFoodCustomisationEndpoints(IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/api/admin/foods/{foodId:guid}/customisation-groups")
+            .WithTags("Admin Food Customisation Management")
+            .WithOpenApi()
+            .RequireAuthorization();
+
+        group.MapPost("/", AdminAddCustomisationGroupAsync)
+            .WithName("AdminAddCustomisationGroup")
+            .WithSummary("Add customisation group")
+            .WithDescription("Adds a new customisation group to a food item.")
+            .RequireAdmin()
+            .Produces<AdminAddCustomisationGroupResponse>(StatusCodes.Status201Created)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+
+        group.MapPatch("/{groupId:guid}", AdminUpdateCustomisationGroupAsync)
+            .WithName("AdminUpdateCustomisationGroup")
+            .WithSummary("Update customisation group")
+            .WithDescription("Updates an existing customisation group on a food item.")
+            .RequireAdmin()
+            .Produces<AdminUpdateCustomisationGroupResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+
+        group.MapDelete("/{groupId:guid}", AdminDeleteCustomisationGroupAsync)
+            .WithName("AdminDeleteCustomisationGroup")
+            .WithSummary("Delete customisation group")
+            .WithDescription("Deletes a customisation group and all its options from a food item.")
+            .RequireAdmin()
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+
+        group.MapPost("/{groupId:guid}/options", AdminAddCustomisationOptionAsync)
+            .WithName("AdminAddCustomisationOption")
+            .WithSummary("Add customisation option")
+            .WithDescription("Adds a new option to a customisation group.")
+            .RequireAdmin()
+            .Produces<AdminAddCustomisationOptionResponse>(StatusCodes.Status201Created)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+
+        group.MapPatch("/{groupId:guid}/options/{optionId:guid}", AdminUpdateCustomisationOptionAsync)
+            .WithName("AdminUpdateCustomisationOption")
+            .WithSummary("Update customisation option")
+            .WithDescription("Updates an existing option within a customisation group.")
+            .RequireAdmin()
+            .Produces<AdminUpdateCustomisationOptionResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+
+        group.MapDelete("/{groupId:guid}/options/{optionId:guid}", AdminDeleteCustomisationOptionAsync)
+            .WithName("AdminDeleteCustomisationOption")
+            .WithSummary("Delete customisation option")
+            .WithDescription("Deletes an option from a customisation group.")
+            .RequireAdmin()
+            .Produces(StatusCodes.Status204NoContent)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+    }
+
+    private static async Task<IResult> AdminAddCustomisationGroupAsync(
+        IMediator mediator,
+        Guid foodId,
+        AdminAddCustomisationGroupPayload payload,
+        CancellationToken cancellationToken)
+    {
+        var request = new AdminAddCustomisationGroupRequest
+        {
+            FoodId = foodId,
+            Label = payload.Label,
+            IsRequired = payload.IsRequired,
+            DisplayOrder = payload.DisplayOrder,
+        };
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Created(
+            $"/api/admin/foods/{foodId}/customisation-groups/{result.Id}",
+            result);
+    }
+
+    private static async Task<IResult> AdminUpdateCustomisationGroupAsync(
+        IMediator mediator,
+        Guid foodId,
+        Guid groupId,
+        AdminUpdateCustomisationGroupPayload payload,
+        CancellationToken cancellationToken)
+    {
+        var request = new AdminUpdateCustomisationGroupRequest
+        {
+            FoodId = foodId,
+            GroupId = groupId,
+            Label = payload.Label,
+            IsRequired = payload.IsRequired,
+            DisplayOrder = payload.DisplayOrder,
+        };
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AdminDeleteCustomisationGroupAsync(
+        IMediator mediator,
+        Guid foodId,
+        Guid groupId,
+        CancellationToken cancellationToken)
+    {
+        var request = new AdminDeleteCustomisationGroupRequest
+        {
+            FoodId = foodId,
+            GroupId = groupId,
+        };
+        await mediator.Send(request, cancellationToken);
+        return Results.NoContent();
+    }
+
+    private static async Task<IResult> AdminAddCustomisationOptionAsync(
+        IMediator mediator,
+        Guid foodId,
+        Guid groupId,
+        AdminAddCustomisationOptionPayload payload,
+        CancellationToken cancellationToken)
+    {
+        var request = new AdminAddCustomisationOptionRequest
+        {
+            FoodId = foodId,
+            GroupId = groupId,
+            Label = payload.Label,
+            Surcharge = payload.Surcharge,
+            DisplayOrder = payload.DisplayOrder,
+        };
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Created(
+            $"/api/admin/foods/{foodId}/customisation-groups/{groupId}/options/{result.Id}",
+            result);
+    }
+
+    private static async Task<IResult> AdminUpdateCustomisationOptionAsync(
+        IMediator mediator,
+        Guid foodId,
+        Guid groupId,
+        Guid optionId,
+        AdminUpdateCustomisationOptionPayload payload,
+        CancellationToken cancellationToken)
+    {
+        var request = new AdminUpdateCustomisationOptionRequest
+        {
+            FoodId = foodId,
+            GroupId = groupId,
+            OptionId = optionId,
+            Label = payload.Label,
+            Surcharge = payload.Surcharge,
+            DisplayOrder = payload.DisplayOrder,
+        };
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AdminDeleteCustomisationOptionAsync(
+        IMediator mediator,
+        Guid foodId,
+        Guid groupId,
+        Guid optionId,
+        CancellationToken cancellationToken)
+    {
+        var request = new AdminDeleteCustomisationOptionRequest
+        {
+            FoodId = foodId,
+            GroupId = groupId,
+            OptionId = optionId,
+        };
+        await mediator.Send(request, cancellationToken);
+        return Results.NoContent();
     }
 
     private static async Task<IResult> AdminGetCategoriesAsync(
@@ -471,4 +662,32 @@ public record AdminUpdateUserPayload
 public record AdminUpdateCategoryPayload
 {
     public string Name { get; set; } = string.Empty;
+}
+
+public record AdminAddCustomisationGroupPayload
+{
+    public string Label { get; set; } = string.Empty;
+    public bool IsRequired { get; set; }
+    public int DisplayOrder { get; set; }
+}
+
+public record AdminUpdateCustomisationGroupPayload
+{
+    public string? Label { get; set; }
+    public bool? IsRequired { get; set; }
+    public int? DisplayOrder { get; set; }
+}
+
+public record AdminAddCustomisationOptionPayload
+{
+    public string Label { get; set; } = string.Empty;
+    public decimal? Surcharge { get; set; }
+    public int DisplayOrder { get; set; }
+}
+
+public record AdminUpdateCustomisationOptionPayload
+{
+    public string? Label { get; set; }
+    public decimal? Surcharge { get; set; }
+    public int? DisplayOrder { get; set; }
 }
