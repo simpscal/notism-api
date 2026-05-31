@@ -32,10 +32,10 @@ public class AdminUpdateCustomisationGroupHandler : IRequestHandler<AdminUpdateC
         var spec = new FilterSpecification<Domain.Food.Food>(f => f.Id == request.FoodId && !f.IsDeleted)
             .Include("CustomisationGroups.Options");
         var food = await _foodRepository.FindByExpressionAsync(spec)
-            ?? throw new ResultFailureException(_messages.FoodNotFound);
+            ?? throw new NotFoundException(_messages.FoodNotFound);
 
         var group = food.CustomisationGroups.FirstOrDefault(g => g.Id == request.GroupId)
-            ?? throw new ResultFailureException(_messages.CustomisationGroupNotFound);
+            ?? throw new NotFoundException(_messages.CustomisationGroupNotFound);
 
         group.Update(request.Label, request.IsRequired, request.DisplayOrder);
         await _foodRepository.SaveChangesAsync();

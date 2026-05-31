@@ -30,10 +30,10 @@ public class AdminDeleteCustomisationGroupHandler : IRequestHandler<AdminDeleteC
         var spec = new FilterSpecification<Domain.Food.Food>(f => f.Id == request.FoodId && !f.IsDeleted)
             .Include("CustomisationGroups.Options");
         var food = await _foodRepository.FindByExpressionAsync(spec)
-            ?? throw new ResultFailureException(_messages.FoodNotFound);
+            ?? throw new NotFoundException(_messages.FoodNotFound);
 
         var group = food.CustomisationGroups.FirstOrDefault(g => g.Id == request.GroupId)
-            ?? throw new ResultFailureException(_messages.CustomisationGroupNotFound);
+            ?? throw new NotFoundException(_messages.CustomisationGroupNotFound);
 
         food.RemoveCustomisationGroup(group.Id);
         await _foodRepository.SaveChangesAsync();

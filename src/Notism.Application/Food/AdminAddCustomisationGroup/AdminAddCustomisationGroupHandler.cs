@@ -33,7 +33,7 @@ public class AdminAddCustomisationGroupHandler : IRequestHandler<AdminAddCustomi
         var spec = new FilterSpecification<Domain.Food.Food>(f => f.Id == request.FoodId && !f.IsDeleted)
             .Include("CustomisationGroups.Options");
         var food = await _foodRepository.FindByExpressionAsync(spec)
-            ?? throw new ResultFailureException(_messages.FoodNotFound);
+            ?? throw new NotFoundException(_messages.FoodNotFound);
 
         var group = FoodCustomisationGroup.Create(
             food.Id,
