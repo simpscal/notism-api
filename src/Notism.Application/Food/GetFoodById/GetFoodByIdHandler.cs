@@ -62,7 +62,7 @@ public class GetFoodByIdHandler : IRequestHandler<GetFoodByIdRequest, GetFoodByI
             StockQuantity = food.StockQuantity,
             CreatedAt = food.CreatedAt,
             UpdatedAt = food.UpdatedAt,
-            Customisations = GetCustomisations(food.CustomisationGroups),
+            Customisations = GetCustomisations(food.CustomisationGroups, request.IncludeEmptyGroups),
         };
     }
 
@@ -89,10 +89,11 @@ public class GetFoodByIdHandler : IRequestHandler<GetFoodByIdRequest, GetFoodByI
     }
 
     private static List<FoodCustomisationGroupResponse> GetCustomisations(
-        IReadOnlyCollection<Domain.Food.FoodCustomisationGroup> groups)
+        IReadOnlyCollection<Domain.Food.FoodCustomisationGroup> groups,
+        bool includeEmptyGroups = false)
     {
         return groups
-            .Where(g => g.Options.Count > 0)
+            .Where(g => includeEmptyGroups || g.Options.Count > 0)
             .OrderBy(g => g.DisplayOrder)
             .Select(g => new FoodCustomisationGroupResponse
             {

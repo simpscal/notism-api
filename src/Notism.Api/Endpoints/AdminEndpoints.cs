@@ -613,7 +613,7 @@ public static class AdminEndpoints
         Guid id,
         CancellationToken cancellationToken)
     {
-        var request = new GetFoodByIdRequest { FoodId = id };
+        var request = new GetFoodByIdRequest { FoodId = id, IncludeEmptyGroups = true };
         var result = await mediator.Send(request, cancellationToken);
         return Results.Ok(result);
     }
