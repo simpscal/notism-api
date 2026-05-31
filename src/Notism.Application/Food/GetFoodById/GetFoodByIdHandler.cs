@@ -37,7 +37,8 @@ public class GetFoodByIdHandler : IRequestHandler<GetFoodByIdRequest, GetFoodByI
     {
         var specification = new FilterSpecification<Domain.Food.Food>(f => f.Id == request.FoodId && !f.IsDeleted)
             .Include(f => f.Images)
-            .Include("Category");
+            .Include("Category")
+            .Include("CustomisationGroups.Options");
         var food = await _foodRepository.FindByExpressionAsync(specification);
         if (food == null)
         {
@@ -61,6 +62,7 @@ public class GetFoodByIdHandler : IRequestHandler<GetFoodByIdRequest, GetFoodByI
             StockQuantity = food.StockQuantity,
             CreatedAt = food.CreatedAt,
             UpdatedAt = food.UpdatedAt,
+            Customisations = GetCustomisations(food.CustomisationGroups),
         };
     }
 
@@ -82,6 +84,30 @@ public class GetFoodByIdHandler : IRequestHandler<GetFoodByIdRequest, GetFoodByI
                 DisplayOrder = img.DisplayOrder,
                 AltText = img.AltText,
                 ImageUrl = GetDetailImageUrl(img.FileKey),
+            })
+            .ToList();
+    }
+
+    private static List<FoodCustomisationGroupResponse> GetCustomisations(
+        IReadOnlyCollection<Domain.Food.FoodCustomisationGroup> groups)
+    {
+        return groups
+            .Where(g => g.Options.Count > 0)
+            .OrderBy(g => g.DisplayOrder)
+            .Select(g => new FoodCustomisationGroupResponse
+            {
+                Id = g.Id,
+                Label = g.Label,
+                Required = g.IsRequired,
+                Options = g.Options
+                    .OrderBy(o => o.DisplayOrder)
+                    .Select(o => new FoodCustomisationOptionResponse
+                    {
+                        Value = o.Id,
+                        Label = o.Label,
+                        Surcharge = o.Surcharge.HasValue && o.Surcharge.Value != 0m ? o.Surcharge : null,
+                    })
+                    .ToList(),
             })
             .ToList();
     }
