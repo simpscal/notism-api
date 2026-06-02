@@ -50,25 +50,77 @@ public class GetCartItemsHandler : IRequestHandler<GetCartItemsRequest, GetCartI
         var specification = new FilterSpecification<CartItem>(c => c.UserId == _request!.UserId)
             .Include(c => c.Food)
             .Include("Food.Category")
-            .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1));
+            .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1))
+            .Include("Food.CustomisationGroups.Options");
         return await _cartItemRepository.FilterByExpressionAsync(specification);
     }
 
     private List<CartItemResponse> MapToResponse(IEnumerable<CartItem> cartItems)
     {
-        return cartItems.Select(cartItem => new CartItemResponse
+        return cartItems.Select(cartItem =>
         {
-            Id = cartItem.Id,
-            FoodId = cartItem.FoodId,
-            Name = cartItem.Food.Name,
-            Description = cartItem.Food.Description,
-            Price = cartItem.Food.Price,
-            DiscountPrice = cartItem.Food.DiscountPrice,
-            ImageUrl = GetImageUrl(cartItem.Food.Images),
-            Category = cartItem.Food.Category?.Name ?? string.Empty,
-            Quantity = cartItem.Quantity,
-            StockQuantity = cartItem.Food.StockQuantity,
-            QuantityUnit = cartItem.Food.QuantityUnit.GetStringValue(),
+            var response = new CartItemResponse
+            {
+                Id = cartItem.Id,
+                FoodId = cartItem.FoodId,
+                Name = cartItem.Food.Name,
+                Description = cartItem.Food.Description,
+                Price = cartItem.Food.Price,
+                DiscountPrice = cartItem.Food.DiscountPrice,
+                ImageUrl = GetImageUrl(cartItem.Food.Images),
+                Category = cartItem.Food.Category?.Name ?? string.Empty,
+                Quantity = cartItem.Quantity,
+                StockQuantity = cartItem.Food.StockQuantity,
+                QuantityUnit = cartItem.Food.QuantityUnit.GetStringValue(),
+            };
+
+            if (cartItem.CustomisationGroupId.HasValue)
+            {
+                var group = cartItem.Food.CustomisationGroups
+                    .FirstOrDefault(g => g.Id == cartItem.CustomisationGroupId.Value);
+
+                if (group != null)
+                {
+                    response = response with
+                    {
+                        CustomisationGroupId = group.Id,
+                        CustomisationGroupLabel = group.Label,
+                        CustomisationOptions = group.Options
+                            .Select(o => new CustomisationOptionResponse
+                            {
+                                Id = o.Id,
+                                Label = o.Label,
+                                Surcharge = o.Surcharge,
+                            })
+                            .ToList(),
+                    };
+
+                    // Verify the stored option still exists in the group
+                    var optionStillExists = group.Options.Any(o => o.Id == cartItem.CustomisationOptionId);
+
+                    if (optionStillExists && cartItem.CustomisationOptionId.HasValue)
+                    {
+                        response = response with
+                        {
+                            CustomisationOptionId = cartItem.CustomisationOptionId,
+                            CustomisationLabel = cartItem.CustomisationLabel,
+                            Surcharge = cartItem.Surcharge,
+                        };
+                    }
+                    else
+                    {
+                        // Orphaned option — the option no longer exists in the food's group
+                        response = response with
+                        {
+                            CustomisationOptionId = null,
+                            CustomisationLabel = "Option no longer available",
+                            Surcharge = null,
+                        };
+                    }
+                }
+            }
+
+            return response;
         }).ToList();
     }
 

@@ -8,6 +8,10 @@ public class CartItem : AggregateRoot
     public Guid UserId { get; private set; }
     public Guid FoodId { get; private set; }
     public int Quantity { get; private set; }
+    public Guid? CustomisationOptionId { get; private set; }
+    public Guid? CustomisationGroupId { get; private set; }
+    public string? CustomisationLabel { get; private set; }
+    public decimal? Surcharge { get; private set; }
     public Domain.Food.Food Food { get; private set; } = null!;
 
     private CartItem(Guid userId, Guid foodId, int quantity)
@@ -42,5 +46,14 @@ public class CartItem : AggregateRoot
 
         ClearDomainEvents();
         AddDomainEvent(new CartItemQuantityUpdatedEvent(Id, UserId, FoodId, oldQuantity, quantity));
+    }
+
+    public void SetCustomisation(Guid groupId, Guid optionId, string label, decimal? surcharge)
+    {
+        CustomisationGroupId = groupId;
+        CustomisationOptionId = optionId;
+        CustomisationLabel = label;
+        Surcharge = surcharge;
+        UpdatedAt = DateTime.UtcNow;
     }
 }

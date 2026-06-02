@@ -8,6 +8,7 @@ using Notism.Application.Cart.ClearCart;
 using Notism.Application.Cart.GetCartItemCount;
 using Notism.Application.Cart.GetCartItems;
 using Notism.Application.Cart.RemoveCartItem;
+using Notism.Application.Cart.UpdateCartItemCustomisation;
 using Notism.Application.Cart.UpdateCartItemQuantity;
 
 namespace Notism.Api.Endpoints;
@@ -59,6 +60,16 @@ public static class CartEndpoints
             .Produces<UpdateCartItemQuantityResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+
+        group.MapPatch("/items/{cartItemId:guid}/customisation", UpdateCartItemCustomisationAsync)
+            .WithName("UpdateCartItemCustomisation")
+            .WithSummary("Update cart item customisation")
+            .WithDescription("Updates the customisation selection for a specific cart item.")
+            .Produces<UpdateCartItemCustomisationResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
             .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
 
         group.MapDelete("/items/{id:guid}", RemoveCartItemAsync)
@@ -118,6 +129,7 @@ public static class CartEndpoints
             UserId = userId,
             FoodId = payload.FoodId,
             Quantity = payload.Quantity,
+            CustomisationOptionId = payload.CustomisationOptionId,
         };
 
         var result = await mediator.Send(request, cancellationToken);
@@ -188,6 +200,27 @@ public static class CartEndpoints
         return Results.Ok();
     }
 
+    private static async Task<IResult> UpdateCartItemCustomisationAsync(
+        HttpContext httpContext,
+        IMediator mediator,
+        Guid cartItemId,
+        UpdateCartItemCustomisationPayload payload,
+        CancellationToken cancellationToken)
+    {
+        var userId = httpContext.User.GetUserId();
+
+        var request = new UpdateCartItemCustomisationRequest
+        {
+            UserId = userId,
+            CartItemId = cartItemId,
+            CustomisationOptionId = payload.CustomisationOptionId,
+        };
+
+        var result = await mediator.Send(request, cancellationToken);
+
+        return Results.Ok(result);
+    }
+
     private static async Task<IResult> ClearCartAsync(
         HttpContext httpContext,
         IMediator mediator,
@@ -206,6 +239,7 @@ public record AddCartItemPayload
 {
     public Guid FoodId { get; set; }
     public int Quantity { get; set; }
+    public Guid? CustomisationOptionId { get; set; }
 }
 
 public record UpdateCartItemQuantityPayload
@@ -222,4 +256,9 @@ public record CartItemPayload
 {
     public Guid FoodId { get; set; }
     public int Quantity { get; set; }
+}
+
+public record UpdateCartItemCustomisationPayload
+{
+    public Guid CustomisationOptionId { get; set; }
 }
