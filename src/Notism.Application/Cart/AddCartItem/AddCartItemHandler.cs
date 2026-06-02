@@ -8,6 +8,7 @@ using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
+using Notism.Domain.Food;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Extensions;
 
@@ -17,6 +18,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
 {
     private readonly ICartItemRepository _cartItemRepository;
     private readonly IRepository<Domain.Food.Food> _foodRepository;
+    private readonly IRepository<FoodCustomisationOption> _optionRepository;
     private readonly IStorageService _storageService;
     private readonly ILogger<AddCartItemHandler> _logger;
     private readonly IMessages _messages;
@@ -25,12 +27,14 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
     public AddCartItemHandler(
         ICartItemRepository cartItemRepository,
         IRepository<Domain.Food.Food> foodRepository,
+        IRepository<FoodCustomisationOption> optionRepository,
         IStorageService storageService,
         ILogger<AddCartItemHandler> logger,
         IMessages messages)
     {
         _cartItemRepository = cartItemRepository;
         _foodRepository = foodRepository;
+        _optionRepository = optionRepository;
         _storageService = storageService;
         _logger = logger;
         _messages = messages;
@@ -78,6 +82,23 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         return await _cartItemRepository.FindByExpressionAsync(cartItemSpecification);
     }
 
+    private async Task<FoodCustomisationOption?> ResolveCustomisationOptionAsync(Guid foodId)
+    {
+        if (_request!.CustomisationOptionId is null)
+        {
+            return null;
+        }
+
+        var optionSpec = new FilterSpecification<FoodCustomisationOption>(
+            o => o.Id == _request.CustomisationOptionId.Value && o.Group.FoodId == foodId)
+            .Include(o => o.Group);
+
+        var option = await _optionRepository.FindByExpressionAsync(optionSpec)
+            ?? throw new ResultFailureException(_messages.CustomisationOptionNotFound);
+
+        return option;
+    }
+
     private async Task<AddCartItemResponse> UpdateExistingCartItemAsync(
         CartItem existingCartItem,
         Domain.Food.Food food)
@@ -89,6 +110,16 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         }
 
         existingCartItem.UpdateQuantity(newQuantity);
+
+        if (_request.CustomisationOptionId.HasValue)
+        {
+            var option = await ResolveCustomisationOptionAsync(food.Id);
+            if (option != null)
+            {
+                existingCartItem.SetCustomisation(option.GroupId, option.Id, option.Label, option.Surcharge);
+            }
+        }
+
         await _cartItemRepository.SaveChangesAsync();
 
         _logger.LogInformation(
@@ -120,7 +151,15 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             throw new ResultFailureException(_messages.InsufficientStock);
         }
 
+        var option = await ResolveCustomisationOptionAsync(food.Id);
+
         var cartItem = CartItem.Create(_request.UserId, _request.FoodId, _request.Quantity);
+
+        if (option != null)
+        {
+            cartItem.SetCustomisation(option.GroupId, option.Id, option.Label, option.Surcharge);
+        }
+
         _cartItemRepository.Add(cartItem);
 
         await _cartItemRepository.SaveChangesAsync();

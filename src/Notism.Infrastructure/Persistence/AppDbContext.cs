@@ -313,6 +313,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
             entity.Property(ci => ci.Quantity)
                 .IsRequired();
 
+            entity.Property(ci => ci.CustomisationOptionId);
+
+            entity.Property(ci => ci.CustomisationGroupId);
+
+            entity.Property(ci => ci.CustomisationLabel)
+                .HasMaxLength(100);
+
+            entity.Property(ci => ci.Surcharge)
+                .HasPrecision(10, 2);
+
             entity.Property(ci => ci.CreatedAt)
                 .IsRequired();
 
@@ -327,6 +337,16 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
                 .WithMany()
                 .HasForeignKey(ci => ci.FoodId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasOne<FoodCustomisationOption>()
+                .WithMany()
+                .HasForeignKey(ci => ci.CustomisationOptionId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne<FoodCustomisationGroup>()
+                .WithMany()
+                .HasForeignKey(ci => ci.CustomisationGroupId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 
