@@ -71,7 +71,8 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
     {
         var cartItemSpecification = new FilterSpecification<CartItem>(c => c.UserId == request.UserId && request.CartItemIds.Contains(c.Id))
             .Include(c => c.Food)
-            .Include(c => c.Food.Images);
+            .Include(c => c.Food.Images)
+            .Include(c => c.Customisations);
         var cartItems = (await _cartItemRepository.FilterByExpressionAsync(cartItemSpecification)).ToList();
 
         if (cartItems.Count == 0)
@@ -89,6 +90,10 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
     {
         foreach (var cartItem in cartItems)
         {
+            var customisationLabel = cartItem.Customisations.Count > 0
+                ? string.Join(", ", cartItem.Customisations.Select(c => c.OptionLabel))
+                : null;
+
             var orderItem = OrderItem.Create(
                 order.Id,
                 cartItem.FoodId,
@@ -96,8 +101,8 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
                 cartItem.Food.Price,
                 cartItem.Food.DiscountPrice,
                 cartItem.Quantity,
-                cartItem.Surcharge,
-                cartItem.CustomisationLabel);
+                cartItem.TotalSurcharge > 0 ? cartItem.TotalSurcharge : null,
+                customisationLabel);
 
             order.AddItem(orderItem);
             cartItem.Food.DeductStock(cartItem.Quantity);

@@ -8,7 +8,7 @@ using Notism.Application.Cart.ClearCart;
 using Notism.Application.Cart.GetCartItemCount;
 using Notism.Application.Cart.GetCartItems;
 using Notism.Application.Cart.RemoveCartItem;
-using Notism.Application.Cart.UpdateCartItemCustomisation;
+using Notism.Application.Cart.UpdateCartItemCustomisations;
 using Notism.Application.Cart.UpdateCartItemQuantity;
 
 namespace Notism.Api.Endpoints;
@@ -62,11 +62,11 @@ public static class CartEndpoints
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
 
-        group.MapPatch("/items/{cartItemId:guid}/customisation", UpdateCartItemCustomisationAsync)
-            .WithName("UpdateCartItemCustomisation")
-            .WithSummary("Update cart item customisation")
-            .WithDescription("Updates the customisation selection for a specific cart item.")
-            .Produces<UpdateCartItemCustomisationResponse>(StatusCodes.Status200OK)
+        group.MapPut("/items/{cartItemId:guid}/customisations", UpdateCartItemCustomisationsAsync)
+            .WithName("UpdateCartItemCustomisations")
+            .WithSummary("Update cart item customisations")
+            .WithDescription("Replaces all customisation selections for a specific cart item.")
+            .Produces<UpdateCartItemCustomisationsResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
@@ -129,7 +129,13 @@ public static class CartEndpoints
             UserId = userId,
             FoodId = payload.FoodId,
             Quantity = payload.Quantity,
-            CustomisationOptionId = payload.CustomisationOptionId,
+            Customisations = payload.Customisations?
+                .Select(s => new Notism.Application.Cart.AddCartItem.CartItemCustomisationSelection
+                {
+                    GroupId = s.GroupId,
+                    OptionId = s.OptionId,
+                })
+                .ToList(),
         };
 
         var result = await mediator.Send(request, cancellationToken);
@@ -200,20 +206,26 @@ public static class CartEndpoints
         return Results.Ok();
     }
 
-    private static async Task<IResult> UpdateCartItemCustomisationAsync(
+    private static async Task<IResult> UpdateCartItemCustomisationsAsync(
         HttpContext httpContext,
         IMediator mediator,
         Guid cartItemId,
-        UpdateCartItemCustomisationPayload payload,
+        UpdateCartItemCustomisationsPayload payload,
         CancellationToken cancellationToken)
     {
         var userId = httpContext.User.GetUserId();
 
-        var request = new UpdateCartItemCustomisationRequest
+        var request = new UpdateCartItemCustomisationsRequest
         {
             UserId = userId,
             CartItemId = cartItemId,
-            CustomisationOptionId = payload.CustomisationOptionId,
+            Customisations = payload.Customisations
+                .Select(s => new Notism.Application.Cart.UpdateCartItemCustomisations.CartItemCustomisationSelection
+                {
+                    GroupId = s.GroupId,
+                    OptionId = s.OptionId,
+                })
+                .ToList(),
         };
 
         var result = await mediator.Send(request, cancellationToken);
@@ -239,7 +251,7 @@ public record AddCartItemPayload
 {
     public Guid FoodId { get; set; }
     public int Quantity { get; set; }
-    public Guid? CustomisationOptionId { get; set; }
+    public List<CartItemCustomisationSelectionPayload>? Customisations { get; set; }
 }
 
 public record UpdateCartItemQuantityPayload
@@ -258,7 +270,13 @@ public record CartItemPayload
     public int Quantity { get; set; }
 }
 
-public record UpdateCartItemCustomisationPayload
+public record UpdateCartItemCustomisationsPayload
 {
-    public Guid CustomisationOptionId { get; set; }
+    public List<CartItemCustomisationSelectionPayload> Customisations { get; set; } = new();
+}
+
+public record CartItemCustomisationSelectionPayload
+{
+    public Guid GroupId { get; set; }
+    public Guid OptionId { get; set; }
 }

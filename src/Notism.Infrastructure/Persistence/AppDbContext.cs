@@ -33,6 +33,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
     public DbSet<FoodCustomisationGroup> FoodCustomisationGroups { get; set; }
     public DbSet<FoodCustomisationOption> FoodCustomisationOptions { get; set; }
     public DbSet<CartItem> CartItems { get; set; }
+    public DbSet<CartItemCustomisation> CartItemCustomisations { get; set; }
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<DeliveryStatusHistory> DeliveryStatusHistories { get; set; }
@@ -65,6 +66,7 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
         ConfigureFoodCustomisationGroup(modelBuilder);
         ConfigureFoodCustomisationOption(modelBuilder);
         ConfigureCartItem(modelBuilder);
+        ConfigureCartItemCustomisation(modelBuilder);
         ConfigureOrder(modelBuilder);
         ConfigureOrderItem(modelBuilder);
         ConfigureDeliveryStatusHistory(modelBuilder);
@@ -313,16 +315,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
             entity.Property(ci => ci.Quantity)
                 .IsRequired();
 
-            entity.Property(ci => ci.CustomisationOptionId);
-
-            entity.Property(ci => ci.CustomisationGroupId);
-
-            entity.Property(ci => ci.CustomisationLabel)
-                .HasMaxLength(100);
-
-            entity.Property(ci => ci.Surcharge)
-                .HasPrecision(10, 2);
-
             entity.Property(ci => ci.CreatedAt)
                 .IsRequired();
 
@@ -338,14 +330,53 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
                 .HasForeignKey(ci => ci.FoodId)
                 .OnDelete(DeleteBehavior.Restrict);
 
-            entity.HasOne<FoodCustomisationOption>()
-                .WithMany()
-                .HasForeignKey(ci => ci.CustomisationOptionId)
-                .OnDelete(DeleteBehavior.SetNull);
+            entity.HasMany(ci => ci.Customisations)
+                .WithOne(c => c.CartItem)
+                .HasForeignKey(c => c.CartItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureCartItemCustomisation(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CartItemCustomisation>(entity =>
+        {
+            entity.HasKey(c => c.Id);
+
+            entity.Property(c => c.CartItemId)
+                .IsRequired();
+
+            entity.Property(c => c.CustomisationGroupId);
+
+            entity.Property(c => c.CustomisationOptionId);
+
+            entity.Property(c => c.GroupLabel)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(c => c.OptionLabel)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(c => c.Surcharge)
+                .HasPrecision(10, 2);
+
+            entity.Property(c => c.CreatedAt)
+                .IsRequired();
+
+            entity.Property(c => c.UpdatedAt)
+                .IsRequired();
+
+            entity.HasIndex(c => c.CartItemId);
 
             entity.HasOne<FoodCustomisationGroup>()
                 .WithMany()
-                .HasForeignKey(ci => ci.CustomisationGroupId)
+                .HasForeignKey(c => c.CustomisationGroupId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne<FoodCustomisationOption>()
+                .WithMany()
+                .HasForeignKey(c => c.CustomisationOptionId)
                 .OnDelete(DeleteBehavior.SetNull);
         });
     }

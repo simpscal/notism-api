@@ -82,21 +82,28 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         return await _cartItemRepository.FindByExpressionAsync(cartItemSpecification);
     }
 
-    private async Task<FoodCustomisationOption?> ResolveCustomisationOptionAsync(Guid foodId)
+    private async Task<List<FoodCustomisationOption>> ResolveCustomisationOptionsAsync(Guid foodId)
     {
-        if (_request!.CustomisationOptionId is null)
+        var resolved = new List<FoodCustomisationOption>();
+
+        if (_request!.Customisations == null || _request.Customisations.Count == 0)
         {
-            return null;
+            return resolved;
         }
 
-        var optionSpec = new FilterSpecification<FoodCustomisationOption>(
-            o => o.Id == _request.CustomisationOptionId.Value && o.Group.FoodId == foodId)
-            .Include(o => o.Group);
+        foreach (var selection in _request.Customisations)
+        {
+            var optionSpec = new FilterSpecification<FoodCustomisationOption>(
+                o => o.Id == selection.OptionId && o.Group.FoodId == foodId && o.GroupId == selection.GroupId)
+                .Include(o => o.Group);
 
-        var option = await _optionRepository.FindByExpressionAsync(optionSpec)
-            ?? throw new ResultFailureException(_messages.CustomisationOptionNotFound);
+            var option = await _optionRepository.FindByExpressionAsync(optionSpec)
+                ?? throw new ResultFailureException(_messages.CustomisationOptionNotFound);
 
-        return option;
+            resolved.Add(option);
+        }
+
+        return resolved;
     }
 
     private async Task<AddCartItemResponse> UpdateExistingCartItemAsync(
@@ -111,12 +118,13 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
 
         existingCartItem.UpdateQuantity(newQuantity);
 
-        if (_request.CustomisationOptionId.HasValue)
+        if (_request.Customisations != null && _request.Customisations.Count > 0)
         {
-            var option = await ResolveCustomisationOptionAsync(food.Id);
-            if (option != null)
+            var options = await ResolveCustomisationOptionsAsync(food.Id);
+            existingCartItem.ClearCustomisations();
+            foreach (var option in options)
             {
-                existingCartItem.SetCustomisation(option.GroupId, option.Id, option.Label, option.Surcharge);
+                existingCartItem.AddCustomisation(option.GroupId, option.Id, option.Group.Label, option.Label, option.Surcharge);
             }
         }
 
@@ -141,6 +149,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             Quantity = existingCartItem.Quantity,
             StockQuantity = existingCartItem.Food.StockQuantity,
             QuantityUnit = existingCartItem.Food.QuantityUnit.GetStringValue(),
+            TotalSurcharge = existingCartItem.TotalSurcharge,
         };
     }
 
@@ -151,13 +160,13 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             throw new ResultFailureException(_messages.InsufficientStock);
         }
 
-        var option = await ResolveCustomisationOptionAsync(food.Id);
+        var options = await ResolveCustomisationOptionsAsync(food.Id);
 
         var cartItem = CartItem.Create(_request.UserId, _request.FoodId, _request.Quantity);
 
-        if (option != null)
+        foreach (var option in options)
         {
-            cartItem.SetCustomisation(option.GroupId, option.Id, option.Label, option.Surcharge);
+            cartItem.AddCustomisation(option.GroupId, option.Id, option.Group.Label, option.Label, option.Surcharge);
         }
 
         _cartItemRepository.Add(cartItem);
@@ -182,6 +191,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             Quantity = cartItem.Quantity,
             StockQuantity = food.StockQuantity,
             QuantityUnit = food.QuantityUnit.GetStringValue(),
+            TotalSurcharge = cartItem.TotalSurcharge,
         };
     }
 

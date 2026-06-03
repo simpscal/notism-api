@@ -8,11 +8,12 @@ public class CartItem : AggregateRoot
     public Guid UserId { get; private set; }
     public Guid FoodId { get; private set; }
     public int Quantity { get; private set; }
-    public Guid? CustomisationOptionId { get; private set; }
-    public Guid? CustomisationGroupId { get; private set; }
-    public string? CustomisationLabel { get; private set; }
-    public decimal? Surcharge { get; private set; }
     public Domain.Food.Food Food { get; private set; } = null!;
+
+    private readonly List<CartItemCustomisation> _customisations = new();
+    public ICollection<CartItemCustomisation> Customisations => _customisations.AsReadOnly();
+
+    public decimal TotalSurcharge => _customisations.Sum(c => c.Surcharge ?? 0);
 
     private CartItem(Guid userId, Guid foodId, int quantity)
     {
@@ -48,12 +49,20 @@ public class CartItem : AggregateRoot
         AddDomainEvent(new CartItemQuantityUpdatedEvent(Id, UserId, FoodId, oldQuantity, quantity));
     }
 
-    public void SetCustomisation(Guid groupId, Guid optionId, string label, decimal? surcharge)
+    public void AddCustomisation(Guid groupId, Guid optionId, string groupLabel, string optionLabel, decimal? surcharge)
     {
-        CustomisationGroupId = groupId;
-        CustomisationOptionId = optionId;
-        CustomisationLabel = label;
-        Surcharge = surcharge;
+        var customisation = CartItemCustomisation.Create(Id, groupId, optionId, groupLabel, optionLabel, surcharge);
+        _customisations.Add(customisation);
         UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void ClearCustomisations()
+    {
+        _customisations.Clear();
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    private CartItem()
+    {
     }
 }
