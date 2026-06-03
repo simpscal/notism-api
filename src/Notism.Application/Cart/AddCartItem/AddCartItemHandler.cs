@@ -84,21 +84,25 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
 
     private async Task<List<FoodCustomisationOption>> ResolveCustomisationOptionsAsync(Guid foodId)
     {
-        var resolved = new List<FoodCustomisationOption>();
-
         if (_request!.Customisations == null || _request.Customisations.Count == 0)
         {
-            return resolved;
+            return new List<FoodCustomisationOption>();
         }
 
+        var requestedOptionIds = _request.Customisations.Select(c => c.OptionId).ToList();
+        var optionSpec = new FilterSpecification<FoodCustomisationOption>(
+            o => requestedOptionIds.Contains(o.Id) && o.Group.FoodId == foodId)
+            .Include(o => o.Group);
+        var fetched = (await _optionRepository.FilterByExpressionAsync(optionSpec))
+            .ToDictionary(o => o.Id);
+
+        var resolved = new List<FoodCustomisationOption>();
         foreach (var selection in _request.Customisations)
         {
-            var optionSpec = new FilterSpecification<FoodCustomisationOption>(
-                o => o.Id == selection.OptionId && o.Group.FoodId == foodId && o.GroupId == selection.GroupId)
-                .Include(o => o.Group);
-
-            var option = await _optionRepository.FindByExpressionAsync(optionSpec)
-                ?? throw new ResultFailureException(_messages.CustomisationOptionNotFound);
+            if (!fetched.TryGetValue(selection.OptionId, out var option) || option.GroupId != selection.GroupId)
+            {
+                throw new ResultFailureException(_messages.CustomisationOptionNotFound);
+            }
 
             resolved.Add(option);
         }
