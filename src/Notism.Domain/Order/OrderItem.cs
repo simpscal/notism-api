@@ -11,6 +11,8 @@ public class OrderItem : Entity
     public decimal? DiscountPrice { get; private set; }
     public int Quantity { get; private set; }
     public decimal TotalPrice { get; private set; }
+    public decimal? Surcharge { get; private set; }
+    public string? CustomisationLabel { get; private set; }
     public Domain.Food.Food Food { get; private set; } = null!;
     public Order Order { get; private set; } = null!;
 
@@ -20,7 +22,9 @@ public class OrderItem : Entity
         string foodName,
         decimal unitPrice,
         decimal? discountPrice,
-        int quantity)
+        int quantity,
+        decimal? surcharge,
+        string? customisationLabel)
     {
         OrderId = orderId;
         FoodId = foodId;
@@ -28,7 +32,10 @@ public class OrderItem : Entity
         UnitPrice = unitPrice;
         DiscountPrice = discountPrice;
         Quantity = quantity;
-        TotalPrice = (discountPrice.HasValue && discountPrice.Value > 0 ? discountPrice.Value : unitPrice) * quantity;
+        Surcharge = surcharge;
+        CustomisationLabel = customisationLabel;
+        var effectivePrice = discountPrice.HasValue && discountPrice.Value > 0 ? discountPrice.Value : unitPrice;
+        TotalPrice = (effectivePrice + (surcharge ?? 0)) * quantity;
     }
 
     public static OrderItem Create(
@@ -37,7 +44,9 @@ public class OrderItem : Entity
         string foodName,
         decimal unitPrice,
         decimal? discountPrice,
-        int quantity)
+        int quantity,
+        decimal? surcharge = null,
+        string? customisationLabel = null)
     {
         if (quantity <= 0)
         {
@@ -49,7 +58,7 @@ public class OrderItem : Entity
             throw new ArgumentException("Unit price must be greater than zero", nameof(unitPrice));
         }
 
-        return new OrderItem(orderId, foodId, foodName, unitPrice, discountPrice, quantity);
+        return new OrderItem(orderId, foodId, foodName, unitPrice, discountPrice, quantity, surcharge, customisationLabel);
     }
 
     private OrderItem()

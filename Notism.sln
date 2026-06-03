@@ -23,6 +23,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Notism.Application.Tests", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Notism.Api.Tests", "tests\Notism.Api.Tests\Notism.Api.Tests.csproj", "{730B4472-B4AD-464E-B75B-1211A9B3B9D2}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Notism.Domain.Tests", "tests\Notism.Domain.Tests\Notism.Domain.Tests.csproj", "{B8A5977A-0F60-4D45-B8F2-8B520CA9C62E}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -129,6 +131,18 @@ Global
 		{730B4472-B4AD-464E-B75B-1211A9B3B9D2}.Release|x64.Build.0 = Release|Any CPU
 		{730B4472-B4AD-464E-B75B-1211A9B3B9D2}.Release|x86.ActiveCfg = Release|Any CPU
 		{730B4472-B4AD-464E-B75B-1211A9B3B9D2}.Release|x86.Build.0 = Release|Any CPU
+		{B8A5977A-0F60-4D45-B8F2-8B520CA9C62E}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B8A5977A-0F60-4D45-B8F2-8B520CA9C62E}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B8A5977A-0F60-4D45-B8F2-8B520CA9C62E}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{B8A5977A-0F60-4D45-B8F2-8B520CA9C62E}.Debug|x64.Build.0 = Debug|Any CPU
+		{B8A5977A-0F60-4D45-B8F2-8B520CA9C62E}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{B8A5977A-0F60-4D45-B8F2-8B520CA9C62E}.Debug|x86.Build.0 = Debug|Any CPU
+		{B8A5977A-0F60-4D45-B8F2-8B520CA9C62E}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B8A5977A-0F60-4D45-B8F2-8B520CA9C62E}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B8A5977A-0F60-4D45-B8F2-8B520CA9C62E}.Release|x64.ActiveCfg = Release|Any CPU
+		{B8A5977A-0F60-4D45-B8F2-8B520CA9C62E}.Release|x64.Build.0 = Release|Any CPU
+		{B8A5977A-0F60-4D45-B8F2-8B520CA9C62E}.Release|x86.ActiveCfg = Release|Any CPU
+		{B8A5977A-0F60-4D45-B8F2-8B520CA9C62E}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -142,5 +156,6 @@ Global
 		{953279E4-EFCC-48F5-B5A7-9080BED7A466} = {E6C0A80B-5ADC-4138-A79D-C9C128EA163B}
 		{2D5ABE8E-797D-4FA9-BDE0-66FB3CFA7BD3} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 		{730B4472-B4AD-464E-B75B-1211A9B3B9D2} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{B8A5977A-0F60-4D45-B8F2-8B520CA9C62E} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
 	EndGlobalSection
 EndGlobal

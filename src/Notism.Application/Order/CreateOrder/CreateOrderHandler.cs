@@ -95,7 +95,9 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
                 cartItem.Food.Name,
                 cartItem.Food.Price,
                 cartItem.Food.DiscountPrice,
-                cartItem.Quantity);
+                cartItem.Quantity,
+                cartItem.Surcharge,
+                cartItem.CustomisationLabel);
 
             order.AddItem(orderItem);
             cartItem.Food.DeductStock(cartItem.Quantity);
