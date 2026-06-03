@@ -61,7 +61,8 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
     {
         var foodSpecification = new FilterSpecification<Domain.Food.Food>(f => f.Id == _request!.FoodId)
             .Include("Category")
-            .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1));
+            .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1))
+            .Include("CustomisationGroups.Options");
         var food = await _foodRepository.FindByExpressionAsync(foodSpecification)
             ?? throw new ResultFailureException(_messages.FoodNotFound);
 
@@ -125,10 +126,13 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         if (_request.Customisations != null && _request.Customisations.Count > 0)
         {
             var options = await ResolveCustomisationOptionsAsync(food.Id);
+            FillRequiredGroupDefaults(food, options);
+            var groupLabels = food.CustomisationGroups.ToDictionary(g => g.Id, g => g.Label);
             existingCartItem.ClearCustomisations();
             foreach (var option in options)
             {
-                existingCartItem.AddCustomisation(option.GroupId, option.Id, option.Group.Label, option.Label, option.Surcharge);
+                var groupLabel = option.Group?.Label ?? groupLabels.GetValueOrDefault(option.GroupId, string.Empty);
+                existingCartItem.AddCustomisation(option.GroupId, option.Id, groupLabel, option.Label, option.Surcharge);
             }
         }
 
@@ -165,12 +169,15 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         }
 
         var options = await ResolveCustomisationOptionsAsync(food.Id);
+        FillRequiredGroupDefaults(food, options);
 
+        var groupLabels = food.CustomisationGroups.ToDictionary(g => g.Id, g => g.Label);
         var cartItem = CartItem.Create(_request.UserId, _request.FoodId, _request.Quantity);
 
         foreach (var option in options)
         {
-            cartItem.AddCustomisation(option.GroupId, option.Id, option.Group.Label, option.Label, option.Surcharge);
+            var groupLabel = option.Group?.Label ?? groupLabels.GetValueOrDefault(option.GroupId, string.Empty);
+            cartItem.AddCustomisation(option.GroupId, option.Id, groupLabel, option.Label, option.Surcharge);
         }
 
         _cartItemRepository.Add(cartItem);
@@ -197,6 +204,22 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             QuantityUnit = food.QuantityUnit.GetStringValue(),
             TotalSurcharge = cartItem.TotalSurcharge,
         };
+    }
+
+    private static void FillRequiredGroupDefaults(Domain.Food.Food food, List<FoodCustomisationOption> resolved)
+    {
+        var coveredGroupIds = resolved.Select(o => o.GroupId).ToHashSet();
+
+        foreach (var group in food.CustomisationGroups
+                                   .Where(g => g.IsRequired && !coveredGroupIds.Contains(g.Id))
+                                   .OrderBy(g => g.DisplayOrder))
+        {
+            var defaultOption = group.Options.OrderBy(o => o.DisplayOrder).FirstOrDefault();
+            if (defaultOption != null)
+            {
+                resolved.Add(defaultOption);
+            }
+        }
     }
 
     private string GetImageUrl(IReadOnlyCollection<Domain.Food.FoodImage> images)
