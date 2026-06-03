@@ -42,6 +42,8 @@ public static class OrderMapper
             DiscountPrice = item.DiscountPrice,
             Quantity = item.Quantity,
             TotalPrice = item.TotalPrice,
+            Surcharge = item.Surcharge,
+            CustomisationLabel = item.CustomisationLabel,
             ImageUrl = GetImageUrl(item.Food.Images, storageService),
         };
     }

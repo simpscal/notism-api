@@ -9,5 +9,7 @@ public class OrderItemResponse
     public decimal? DiscountPrice { get; set; }
     public int Quantity { get; set; }
     public decimal TotalPrice { get; set; }
+    public decimal? Surcharge { get; set; }
+    public string? CustomisationLabel { get; set; }
     public string? ImageUrl { get; set; }
 }

@@ -450,6 +450,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
                 .HasPrecision(18, 2)
                 .IsRequired();
 
+            entity.Property(oi => oi.Surcharge)
+                .HasPrecision(10, 2);
+
+            entity.Property(oi => oi.CustomisationLabel)
+                .HasMaxLength(200);
+
             entity.Property(oi => oi.CreatedAt)
                 .IsRequired();
 
