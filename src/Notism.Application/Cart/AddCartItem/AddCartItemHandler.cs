@@ -2,6 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Cart.Models;
 using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
@@ -61,7 +62,8 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
     {
         var foodSpecification = new FilterSpecification<Domain.Food.Food>(f => f.Id == _request!.FoodId)
             .Include("Category")
-            .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1));
+            .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1))
+            .Include("CustomisationGroups.Options");
         var food = await _foodRepository.FindByExpressionAsync(foodSpecification)
             ?? throw new ResultFailureException(_messages.FoodNotFound);
 
@@ -140,7 +142,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             newQuantity,
             existingCartItem.UserId);
 
-        return new AddCartItemResponse
+        var response = new AddCartItemResponse
         {
             Id = existingCartItem.Id,
             FoodId = existingCartItem.FoodId,
@@ -155,6 +157,34 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             QuantityUnit = existingCartItem.Food.QuantityUnit.GetStringValue(),
             TotalSurcharge = existingCartItem.TotalSurcharge,
         };
+
+        if (existingCartItem.CustomisationGroupId.HasValue)
+        {
+            var group = food.CustomisationGroups
+                .FirstOrDefault(g => g.Id == existingCartItem.CustomisationGroupId.Value);
+            if (group != null)
+            {
+                response = response with
+                {
+                    CustomisationGroupId = group.Id,
+                    CustomisationGroupLabel = group.Label,
+                    CustomisationOptionId = existingCartItem.CustomisationOptionId,
+                    CustomisationLabel = existingCartItem.CustomisationLabel,
+                    Surcharge = existingCartItem.Surcharge,
+                    CustomisationOptions = group.Options
+                        .OrderBy(o => o.DisplayOrder)
+                        .Select(o => new CustomisationOptionResponse
+                        {
+                            Id = o.Id,
+                            Label = o.Label,
+                            Surcharge = o.Surcharge,
+                        })
+                        .ToList(),
+                };
+            }
+        }
+
+        return response;
     }
 
     private async Task<AddCartItemResponse> CreateNewCartItemAsync(Domain.Food.Food food)
@@ -165,6 +195,12 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         }
 
         var options = await ResolveCustomisationOptionsAsync(food.Id);
+
+        option ??= food.CustomisationGroups
+            .Where(g => g.IsRequired)
+            .OrderBy(g => g.DisplayOrder)
+            .SelectMany(g => g.Options.OrderBy(o => o.DisplayOrder).Take(1))
+            .FirstOrDefault();
 
         var cartItem = CartItem.Create(_request.UserId, _request.FoodId, _request.Quantity);
 
@@ -182,7 +218,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             cartItem.Id,
             _request.UserId);
 
-        return new AddCartItemResponse
+        var response = new AddCartItemResponse
         {
             Id = cartItem.Id,
             FoodId = cartItem.FoodId,
@@ -197,6 +233,34 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             QuantityUnit = food.QuantityUnit.GetStringValue(),
             TotalSurcharge = cartItem.TotalSurcharge,
         };
+
+        if (cartItem.CustomisationGroupId.HasValue)
+        {
+            var group = food.CustomisationGroups
+                .FirstOrDefault(g => g.Id == cartItem.CustomisationGroupId.Value);
+            if (group != null)
+            {
+                response = response with
+                {
+                    CustomisationGroupId = group.Id,
+                    CustomisationGroupLabel = group.Label,
+                    CustomisationOptionId = cartItem.CustomisationOptionId,
+                    CustomisationLabel = cartItem.CustomisationLabel,
+                    Surcharge = cartItem.Surcharge,
+                    CustomisationOptions = group.Options
+                        .OrderBy(o => o.DisplayOrder)
+                        .Select(o => new CustomisationOptionResponse
+                        {
+                            Id = o.Id,
+                            Label = o.Label,
+                            Surcharge = o.Surcharge,
+                        })
+                        .ToList(),
+                };
+            }
+        }
+
+        return response;
     }
 
     private string GetImageUrl(IReadOnlyCollection<Domain.Food.FoodImage> images)
