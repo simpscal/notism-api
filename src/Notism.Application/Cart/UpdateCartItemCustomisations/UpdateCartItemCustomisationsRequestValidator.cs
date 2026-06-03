@@ -18,6 +18,11 @@ public class UpdateCartItemCustomisationsRequestValidator : AbstractValidator<Up
             .NotNull()
             .WithMessage("Customisations is required");
 
+        RuleFor(x => x.Customisations)
+            .Must(c => c.Select(s => s.GroupId).Distinct().Count() == c.Count)
+            .WithMessage("Duplicate group IDs are not allowed in a single request")
+            .When(x => x.Customisations != null);
+
         RuleForEach(x => x.Customisations).ChildRules(selection =>
         {
             selection.RuleFor(s => s.GroupId)

@@ -52,28 +52,25 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
             throw new ForbiddenException(_messages.CartItemNotBelongToUser);
         }
 
-        // Validate no duplicate groupIds in request
-        var groupIds = request.Customisations.Select(c => c.GroupId).ToList();
-        if (groupIds.Distinct().Count() != groupIds.Count)
-        {
-            throw new ResultFailureException("Duplicate group IDs are not allowed in a single request");
-        }
+        // Resolve all options in a single query
+        var requestedOptionIds = request.Customisations.Select(c => c.OptionId).ToList();
+        var optionSpec = new FilterSpecification<FoodCustomisationOption>(
+            o => requestedOptionIds.Contains(o.Id) && o.Group.FoodId == cartItem.FoodId)
+            .Include(o => o.Group);
+        var fetchedOptions = (await _optionRepository.FilterByExpressionAsync(optionSpec))
+            .ToDictionary(o => o.Id);
 
-        // Resolve all options before mutating
         var resolvedOptions = new List<(FoodCustomisationOption Option, string GroupLabel)>();
         foreach (var selection in request.Customisations)
         {
-            var optionSpec = new FilterSpecification<FoodCustomisationOption>(
-                o => o.Id == selection.OptionId && o.Group.FoodId == cartItem.FoodId && o.GroupId == selection.GroupId)
-                .Include(o => o.Group);
-            var option = await _optionRepository.FindByExpressionAsync(optionSpec)
-                ?? throw new NotFoundException(_messages.CustomisationOptionNotFound);
+            if (!fetchedOptions.TryGetValue(selection.OptionId, out var option) || option.GroupId != selection.GroupId)
+            {
+                throw new NotFoundException(_messages.CustomisationOptionNotFound);
+            }
 
-            // Derive group label from the food's loaded customisation groups
             var groupLabel = cartItem.Food.CustomisationGroups
                 .FirstOrDefault(g => g.Id == option.GroupId)?.Label
-                ?? option.Group?.Label
-                ?? string.Empty;
+                ?? option.Group.Label;
 
             resolvedOptions.Add((option, groupLabel));
         }
