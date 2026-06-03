@@ -2,7 +2,7 @@ using FluentAssertions;
 
 using Notism.Domain.Order;
 
-namespace Notism.Application.Tests.Order.OrderItem;
+namespace Notism.Domain.Tests.Order.OrderItem;
 
 public class OrderItemTotalPriceTests
 {
