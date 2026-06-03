@@ -82,21 +82,32 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         return await _cartItemRepository.FindByExpressionAsync(cartItemSpecification);
     }
 
-    private async Task<FoodCustomisationOption?> ResolveCustomisationOptionAsync(Guid foodId)
+    private async Task<List<FoodCustomisationOption>> ResolveCustomisationOptionsAsync(Guid foodId)
     {
-        if (_request!.CustomisationOptionId is null)
+        if (_request!.Customisations == null || _request.Customisations.Count == 0)
         {
-            return null;
+            return new List<FoodCustomisationOption>();
         }
 
+        var requestedOptionIds = _request.Customisations.Select(c => c.OptionId).ToList();
         var optionSpec = new FilterSpecification<FoodCustomisationOption>(
-            o => o.Id == _request.CustomisationOptionId.Value && o.Group.FoodId == foodId)
+            o => requestedOptionIds.Contains(o.Id) && o.Group.FoodId == foodId)
             .Include(o => o.Group);
+        var fetched = (await _optionRepository.FilterByExpressionAsync(optionSpec))
+            .ToDictionary(o => o.Id);
 
-        var option = await _optionRepository.FindByExpressionAsync(optionSpec)
-            ?? throw new ResultFailureException(_messages.CustomisationOptionNotFound);
+        var resolved = new List<FoodCustomisationOption>();
+        foreach (var selection in _request.Customisations)
+        {
+            if (!fetched.TryGetValue(selection.OptionId, out var option) || option.GroupId != selection.GroupId)
+            {
+                throw new ResultFailureException(_messages.CustomisationOptionNotFound);
+            }
 
-        return option;
+            resolved.Add(option);
+        }
+
+        return resolved;
     }
 
     private async Task<AddCartItemResponse> UpdateExistingCartItemAsync(
@@ -111,12 +122,13 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
 
         existingCartItem.UpdateQuantity(newQuantity);
 
-        if (_request.CustomisationOptionId.HasValue)
+        if (_request.Customisations != null && _request.Customisations.Count > 0)
         {
-            var option = await ResolveCustomisationOptionAsync(food.Id);
-            if (option != null)
+            var options = await ResolveCustomisationOptionsAsync(food.Id);
+            existingCartItem.ClearCustomisations();
+            foreach (var option in options)
             {
-                existingCartItem.SetCustomisation(option.GroupId, option.Id, option.Label, option.Surcharge);
+                existingCartItem.AddCustomisation(option.GroupId, option.Id, option.Group.Label, option.Label, option.Surcharge);
             }
         }
 
@@ -141,6 +153,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             Quantity = existingCartItem.Quantity,
             StockQuantity = existingCartItem.Food.StockQuantity,
             QuantityUnit = existingCartItem.Food.QuantityUnit.GetStringValue(),
+            TotalSurcharge = existingCartItem.TotalSurcharge,
         };
     }
 
@@ -151,13 +164,13 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             throw new ResultFailureException(_messages.InsufficientStock);
         }
 
-        var option = await ResolveCustomisationOptionAsync(food.Id);
+        var options = await ResolveCustomisationOptionsAsync(food.Id);
 
         var cartItem = CartItem.Create(_request.UserId, _request.FoodId, _request.Quantity);
 
-        if (option != null)
+        foreach (var option in options)
         {
-            cartItem.SetCustomisation(option.GroupId, option.Id, option.Label, option.Surcharge);
+            cartItem.AddCustomisation(option.GroupId, option.Id, option.Group.Label, option.Label, option.Surcharge);
         }
 
         _cartItemRepository.Add(cartItem);
@@ -182,6 +195,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             Quantity = cartItem.Quantity,
             StockQuantity = food.StockQuantity,
             QuantityUnit = food.QuantityUnit.GetStringValue(),
+            TotalSurcharge = cartItem.TotalSurcharge,
         };
     }
 

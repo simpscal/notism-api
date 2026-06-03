@@ -51,7 +51,8 @@ public class GetCartItemsHandler : IRequestHandler<GetCartItemsRequest, GetCartI
             .Include(c => c.Food)
             .Include("Food.Category")
             .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1))
-            .Include("Food.CustomisationGroups.Options");
+            .Include("Food.CustomisationGroups.Options")
+            .Include(c => c.Customisations);
         return await _cartItemRepository.FilterByExpressionAsync(specification);
     }
 
@@ -59,7 +60,35 @@ public class GetCartItemsHandler : IRequestHandler<GetCartItemsRequest, GetCartI
     {
         return cartItems.Select(cartItem =>
         {
-            var response = new CartItemResponse
+            var customisations = cartItem.Customisations.Select(c =>
+            {
+                var group = cartItem.Food.CustomisationGroups
+                    .FirstOrDefault(g => g.Id == c.CustomisationGroupId);
+
+                var availableOptions = group?.Options
+                    .Select(o => new CartItemAvailableOptionResponse
+                    {
+                        Id = o.Id,
+                        Label = o.Label,
+                        Surcharge = o.Surcharge,
+                    })
+                    .ToList() ?? new List<CartItemAvailableOptionResponse>();
+
+                // Orphan check: if stored option no longer exists in the food's group
+                var optionStillExists = group?.Options.Any(o => o.Id == c.CustomisationOptionId) ?? false;
+
+                return new CartItemCustomisationResponse
+                {
+                    GroupId = c.CustomisationGroupId,
+                    GroupLabel = c.GroupLabel,
+                    OptionId = optionStillExists ? c.CustomisationOptionId : null,
+                    OptionLabel = optionStillExists ? c.OptionLabel : "Option no longer available",
+                    Surcharge = optionStillExists ? c.Surcharge : null,
+                    AvailableOptions = availableOptions,
+                };
+            }).ToList();
+
+            return new CartItemResponse
             {
                 Id = cartItem.Id,
                 FoodId = cartItem.FoodId,
@@ -72,55 +101,9 @@ public class GetCartItemsHandler : IRequestHandler<GetCartItemsRequest, GetCartI
                 Quantity = cartItem.Quantity,
                 StockQuantity = cartItem.Food.StockQuantity,
                 QuantityUnit = cartItem.Food.QuantityUnit.GetStringValue(),
+                Customisations = customisations,
+                TotalSurcharge = cartItem.TotalSurcharge,
             };
-
-            if (cartItem.CustomisationGroupId.HasValue)
-            {
-                var group = cartItem.Food.CustomisationGroups
-                    .FirstOrDefault(g => g.Id == cartItem.CustomisationGroupId.Value);
-
-                if (group != null)
-                {
-                    response = response with
-                    {
-                        CustomisationGroupId = group.Id,
-                        CustomisationGroupLabel = group.Label,
-                        CustomisationOptions = group.Options
-                            .Select(o => new CustomisationOptionResponse
-                            {
-                                Id = o.Id,
-                                Label = o.Label,
-                                Surcharge = o.Surcharge,
-                            })
-                            .ToList(),
-                    };
-
-                    // Verify the stored option still exists in the group
-                    var optionStillExists = group.Options.Any(o => o.Id == cartItem.CustomisationOptionId);
-
-                    if (optionStillExists && cartItem.CustomisationOptionId.HasValue)
-                    {
-                        response = response with
-                        {
-                            CustomisationOptionId = cartItem.CustomisationOptionId,
-                            CustomisationLabel = cartItem.CustomisationLabel,
-                            Surcharge = cartItem.Surcharge,
-                        };
-                    }
-                    else
-                    {
-                        // Orphaned option — the option no longer exists in the food's group
-                        response = response with
-                        {
-                            CustomisationOptionId = null,
-                            CustomisationLabel = "Option no longer available",
-                            Surcharge = null,
-                        };
-                    }
-                }
-            }
-
-            return response;
         }).ToList();
     }
 
