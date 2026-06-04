@@ -23,6 +23,7 @@ public static class AdminOrderMapper
             CreatedAt = order.CreatedAt,
             UpdatedAt = order.UpdatedAt,
             TotalItems = order.Items.Count,
+            DeliveryNotes = order.DeliveryNotes,
         };
     }
 

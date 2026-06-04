@@ -88,6 +88,7 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
             PaymentStatus = order.PaymentStatus.GetStringValue(),
             PaidAt = order.PaidAt,
             PaymentQr = paymentQr,
+            DeliveryNotes = baseResponse.DeliveryNotes,
         };
     }
 }

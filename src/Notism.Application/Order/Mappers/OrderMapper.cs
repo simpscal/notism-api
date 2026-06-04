@@ -26,6 +26,7 @@ public static class OrderMapper
             DeliveryStatusTiming = CalculateDeliveryStatusTiming(order),
             PaymentStatus = order.PaymentStatus.GetStringValue(),
             PaidAt = order.PaidAt,
+            DeliveryNotes = order.DeliveryNotes,
         };
     }
 
