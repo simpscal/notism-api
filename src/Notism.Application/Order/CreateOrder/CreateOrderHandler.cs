@@ -43,7 +43,7 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
         {
             var cartItems = await ValidateAndFetchCartItemsAsync(request);
             var paymentMethod = request.PaymentMethod.ToEnum<PaymentMethod>();
-            var order = Domain.Order.Order.Create(request.UserId, paymentMethod, request.CartItemIds);
+            var order = Domain.Order.Order.Create(request.UserId, paymentMethod, request.CartItemIds, request.DeliveryNotes);
 
             AddOrderItems(order, cartItems);
             RemoveCartItems(cartItems);

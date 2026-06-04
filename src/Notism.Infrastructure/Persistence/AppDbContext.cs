@@ -431,6 +431,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
 
             entity.Property(o => o.PaidAt);
 
+            entity.Property(o => o.DeliveryNotes)
+                .HasMaxLength(500);
+
             entity.HasIndex(o => o.UserId);
             entity.HasIndex(o => o.SlugId)
                 .IsUnique();
