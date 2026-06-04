@@ -188,7 +188,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             Description = cartFood.Description,
             Price = cartFood.Price,
             DiscountPrice = cartFood.DiscountPrice,
-            ImageUrl = cartFood.Images.OrderBy(i => i.DisplayOrder).FirstOrDefault()?.FileKey ?? string.Empty,
+            ImageUrl = cartFood.Images.FirstOrDefault()?.FileKey ?? string.Empty,
             Category = cartFood.Category?.Name ?? string.Empty,
             Quantity = cartItem.Quantity,
             StockQuantity = cartFood.StockQuantity,

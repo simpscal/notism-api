@@ -109,7 +109,7 @@ public class GetCartItemsHandler : IRequestHandler<GetCartItemsRequest, GetCartI
 
     private string GetImageUrl(IReadOnlyCollection<Domain.Food.FoodImage> images)
     {
-        var firstImage = images.OrderBy(img => img.DisplayOrder).FirstOrDefault();
+        var firstImage = images.FirstOrDefault();
         return firstImage == null ? string.Empty : _storageService.GetPublicUrl(firstImage.FileKey, StorageTypeConstants.Food);
     }
 }
