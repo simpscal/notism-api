@@ -131,7 +131,7 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
             Description = cartItem.Food.Description,
             Price = cartItem.Food.Price,
             DiscountPrice = cartItem.Food.DiscountPrice,
-            ImageUrl = cartItem.Food.Images.OrderBy(i => i.DisplayOrder).FirstOrDefault()?.FileKey ?? string.Empty,
+            ImageUrl = cartItem.Food.Images.FirstOrDefault()?.FileKey ?? string.Empty,
             Category = cartItem.Food.Category?.Name ?? string.Empty,
             Quantity = cartItem.Quantity,
             StockQuantity = cartItem.Food.StockQuantity,

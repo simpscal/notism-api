@@ -126,11 +126,14 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
 
         if (_request.Customisations != null && _request.Customisations.Count > 0)
         {
-            var options = await ResolveCustomisationOptionsAsync(food.Id);
+            var explicitOptions = await ResolveCustomisationOptionsAsync(food.Id);
+            var allOptions = explicitOptions.Concat(GetRequiredGroupDefaults(food, explicitOptions.Select(o => o.GroupId))).ToList();
+            var groupLabels = food.CustomisationGroups.ToDictionary(g => g.Id, g => g.Label);
             existingCartItem.ClearCustomisations();
-            foreach (var option in options)
+            foreach (var option in allOptions)
             {
-                existingCartItem.AddCustomisation(option.GroupId, option.Id, option.Group.Label, option.Label, option.Surcharge);
+                var groupLabel = option.Group?.Label ?? groupLabels.GetValueOrDefault(option.GroupId, string.Empty);
+                existingCartItem.AddCustomisation(option.GroupId, option.Id, groupLabel, option.Label, option.Surcharge);
             }
         }
 
@@ -142,49 +145,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             newQuantity,
             existingCartItem.UserId);
 
-        var response = new AddCartItemResponse
-        {
-            Id = existingCartItem.Id,
-            FoodId = existingCartItem.FoodId,
-            Name = existingCartItem.Food.Name,
-            Description = existingCartItem.Food.Description,
-            Price = existingCartItem.Food.Price,
-            DiscountPrice = existingCartItem.Food.DiscountPrice,
-            ImageUrl = GetImageUrl(existingCartItem.Food.Images),
-            Category = existingCartItem.Food.Category?.Name ?? string.Empty,
-            Quantity = existingCartItem.Quantity,
-            StockQuantity = existingCartItem.Food.StockQuantity,
-            QuantityUnit = existingCartItem.Food.QuantityUnit.GetStringValue(),
-            TotalSurcharge = existingCartItem.TotalSurcharge,
-        };
-
-        if (existingCartItem.CustomisationGroupId.HasValue)
-        {
-            var group = food.CustomisationGroups
-                .FirstOrDefault(g => g.Id == existingCartItem.CustomisationGroupId.Value);
-            if (group != null)
-            {
-                response = response with
-                {
-                    CustomisationGroupId = group.Id,
-                    CustomisationGroupLabel = group.Label,
-                    CustomisationOptionId = existingCartItem.CustomisationOptionId,
-                    CustomisationLabel = existingCartItem.CustomisationLabel,
-                    Surcharge = existingCartItem.Surcharge,
-                    CustomisationOptions = group.Options
-                        .OrderBy(o => o.DisplayOrder)
-                        .Select(o => new CustomisationOptionResponse
-                        {
-                            Id = o.Id,
-                            Label = o.Label,
-                            Surcharge = o.Surcharge,
-                        })
-                        .ToList(),
-                };
-            }
-        }
-
-        return response;
+        return BuildResponse(existingCartItem, existingCartItem.Food, food);
     }
 
     private async Task<AddCartItemResponse> CreateNewCartItemAsync(Domain.Food.Food food)
@@ -194,23 +155,19 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             throw new ResultFailureException(_messages.InsufficientStock);
         }
 
-        var options = await ResolveCustomisationOptionsAsync(food.Id);
+        var explicitOptions = await ResolveCustomisationOptionsAsync(food.Id);
+        var allOptions = explicitOptions.Concat(GetRequiredGroupDefaults(food, explicitOptions.Select(o => o.GroupId))).ToList();
 
-        option ??= food.CustomisationGroups
-            .Where(g => g.IsRequired)
-            .OrderBy(g => g.DisplayOrder)
-            .SelectMany(g => g.Options.OrderBy(o => o.DisplayOrder).Take(1))
-            .FirstOrDefault();
-
+        var groupLabels = food.CustomisationGroups.ToDictionary(g => g.Id, g => g.Label);
         var cartItem = CartItem.Create(_request.UserId, _request.FoodId, _request.Quantity);
 
-        foreach (var option in options)
+        foreach (var option in allOptions)
         {
-            cartItem.AddCustomisation(option.GroupId, option.Id, option.Group.Label, option.Label, option.Surcharge);
+            var groupLabel = option.Group?.Label ?? groupLabels.GetValueOrDefault(option.GroupId, string.Empty);
+            cartItem.AddCustomisation(option.GroupId, option.Id, groupLabel, option.Label, option.Surcharge);
         }
 
         _cartItemRepository.Add(cartItem);
-
         await _cartItemRepository.SaveChangesAsync();
 
         _logger.LogInformation(
@@ -218,54 +175,59 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             cartItem.Id,
             _request.UserId);
 
-        var response = new AddCartItemResponse
+        return BuildResponse(cartItem, food, food);
+    }
+
+    private static AddCartItemResponse BuildResponse(CartItem cartItem, Domain.Food.Food cartFood, Domain.Food.Food fullFood)
+    {
+        return new AddCartItemResponse
         {
             Id = cartItem.Id,
             FoodId = cartItem.FoodId,
-            Name = food.Name,
-            Description = food.Description,
-            Price = food.Price,
-            DiscountPrice = food.DiscountPrice,
-            ImageUrl = GetImageUrl(food.Images),
-            Category = food.Category?.Name ?? string.Empty,
+            Name = cartFood.Name,
+            Description = cartFood.Description,
+            Price = cartFood.Price,
+            DiscountPrice = cartFood.DiscountPrice,
+            ImageUrl = cartFood.Images.FirstOrDefault()?.FileKey ?? string.Empty,
+            Category = cartFood.Category?.Name ?? string.Empty,
             Quantity = cartItem.Quantity,
-            StockQuantity = food.StockQuantity,
-            QuantityUnit = food.QuantityUnit.GetStringValue(),
-            TotalSurcharge = cartItem.TotalSurcharge,
-        };
-
-        if (cartItem.CustomisationGroupId.HasValue)
-        {
-            var group = food.CustomisationGroups
-                .FirstOrDefault(g => g.Id == cartItem.CustomisationGroupId.Value);
-            if (group != null)
+            StockQuantity = cartFood.StockQuantity,
+            QuantityUnit = cartFood.QuantityUnit.GetStringValue(),
+            Customisations = cartItem.Customisations.Select(c =>
             {
-                response = response with
+                var group = fullFood.CustomisationGroups.FirstOrDefault(g => g.Id == c.CustomisationGroupId);
+                return new CartItemCustomisationResponse
                 {
-                    CustomisationGroupId = group.Id,
-                    CustomisationGroupLabel = group.Label,
-                    CustomisationOptionId = cartItem.CustomisationOptionId,
-                    CustomisationLabel = cartItem.CustomisationLabel,
-                    Surcharge = cartItem.Surcharge,
-                    CustomisationOptions = group.Options
+                    GroupId = c.CustomisationGroupId,
+                    GroupLabel = c.GroupLabel,
+                    OptionId = c.CustomisationOptionId,
+                    OptionLabel = c.OptionLabel,
+                    Surcharge = c.Surcharge,
+                    AvailableOptions = group?.Options
                         .OrderBy(o => o.DisplayOrder)
-                        .Select(o => new CustomisationOptionResponse
+                        .Select(o => new CartItemAvailableOptionResponse
                         {
                             Id = o.Id,
                             Label = o.Label,
                             Surcharge = o.Surcharge,
                         })
-                        .ToList(),
+                        .ToList() ?? new List<CartItemAvailableOptionResponse>(),
                 };
-            }
-        }
-
-        return response;
+            }).ToList(),
+            TotalSurcharge = cartItem.TotalSurcharge,
+        };
     }
 
-    private string GetImageUrl(IReadOnlyCollection<Domain.Food.FoodImage> images)
+    private static IEnumerable<FoodCustomisationOption> GetRequiredGroupDefaults(
+        Domain.Food.Food food,
+        IEnumerable<Guid> coveredGroupIds)
     {
-        var firstImage = images.OrderBy(img => img.DisplayOrder).FirstOrDefault();
-        return firstImage == null ? string.Empty : _storageService.GetPublicUrl(firstImage.FileKey, StorageTypeConstants.Food);
+        var covered = coveredGroupIds.ToHashSet();
+
+        return food.CustomisationGroups
+            .Where(g => g.IsRequired && !covered.Contains(g.Id))
+            .OrderBy(g => g.DisplayOrder)
+            .Select(g => g.Options.OrderBy(o => o.DisplayOrder).FirstOrDefault())
+            .OfType<FoodCustomisationOption>();
     }
 }
