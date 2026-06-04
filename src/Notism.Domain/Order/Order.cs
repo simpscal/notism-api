@@ -17,6 +17,7 @@ public class Order : AggregateRoot
     public DeliveryStatus DeliveryStatus { get; private set; }
     public PaymentStatus PaymentStatus { get; private set; }
     public DateTime? PaidAt { get; private set; }
+    public string? DeliveryNotes { get; private set; }
 
     private readonly List<OrderItem> _items = new();
     public IReadOnlyCollection<OrderItem> Items => _items.AsReadOnly();
@@ -27,22 +28,24 @@ public class Order : AggregateRoot
     private Order(
         Guid userId,
         PaymentMethod paymentMethod,
-        List<Guid> cartItemIds)
+        List<Guid> cartItemIds,
+        string? deliveryNotes = null)
     {
         UserId = userId;
         SlugId = SlugGenerator.Generate(Slugs.OrderPrefix);
         PaymentMethod = paymentMethod;
         DeliveryStatus = DeliveryStatus.OrderPlaced;
         PaymentStatus = PaymentStatus.Unpaid;
+        DeliveryNotes = deliveryNotes;
 
         _statusHistory.Add(DeliveryStatusHistory.Create(Id, DeliveryStatus.OrderPlaced));
 
         AddDomainEvent(new OrderCreatedEvent(Id, UserId, TotalAmount, cartItemIds));
     }
 
-    public static Order Create(Guid userId, PaymentMethod paymentMethod, List<Guid> cartItemIds)
+    public static Order Create(Guid userId, PaymentMethod paymentMethod, List<Guid> cartItemIds, string? deliveryNotes = null)
     {
-        return new Order(userId, paymentMethod, cartItemIds);
+        return new Order(userId, paymentMethod, cartItemIds, deliveryNotes);
     }
 
     public void AddItem(OrderItem item)

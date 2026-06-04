@@ -116,6 +116,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
             entity.Property(u => u.AvatarUrl)
                 .HasMaxLength(500);
 
+            entity.Property(u => u.Location)
+                .HasMaxLength(200);
+
             entity.Property(u => u.CreatedAt)
                 .IsRequired();
 
@@ -427,6 +430,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
                 .HasDefaultValue(PaymentStatus.Unpaid);
 
             entity.Property(o => o.PaidAt);
+
+            entity.Property(o => o.DeliveryNotes)
+                .HasMaxLength(500);
 
             entity.HasIndex(o => o.UserId);
             entity.HasIndex(o => o.SlugId)
