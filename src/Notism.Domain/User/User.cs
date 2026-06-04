@@ -13,6 +13,7 @@ public class User : AggregateRoot
     public string? FirstName { get; private set; }
     public string? LastName { get; private set; }
     public string? AvatarUrl { get; private set; }
+    public string? Location { get; private set; }
 
     private User(Email email, Password password, UserRole role = UserRole.User, string? firstName = null, string? lastName = null, string? avatarUrl = null)
     {
@@ -54,11 +55,12 @@ public class User : AggregateRoot
         AddDomainEvent(new PasswordResetCompletedEvent(Id, Email));
     }
 
-    public void UpdateProfile(string? firstName, string? lastName, string? avatarUrl = null)
+    public void UpdateProfile(string? firstName, string? lastName, string? avatarUrl = null, string? location = null)
     {
         FirstName = firstName;
         LastName = lastName;
         AvatarUrl = avatarUrl;
+        Location = location;
 
         ClearDomainEvents();
         AddDomainEvent(new UserProfileUpdatedEvent(Id, Email, FirstName, LastName, Role, AvatarUrl));

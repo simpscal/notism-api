@@ -116,6 +116,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
             entity.Property(u => u.AvatarUrl)
                 .HasMaxLength(500);
 
+            entity.Property(u => u.Location)
+                .HasMaxLength(200);
+
             entity.Property(u => u.CreatedAt)
                 .IsRequired();
 

@@ -37,7 +37,8 @@ public class UpdateUserProfileHandler : IRequestHandler<UpdateUserProfileRequest
         user.UpdateProfile(
             request.FirstName,
             request.LastName,
-            request.AvatarUrl);
+            request.AvatarUrl,
+            request.Location);
 
         await _userRepository.SaveChangesAsync();
 
@@ -51,6 +52,7 @@ public class UpdateUserProfileHandler : IRequestHandler<UpdateUserProfileRequest
             Email = user.Email?.Value ?? string.Empty,
             Role = user.Role.ToCamelCase(),
             AvatarUrl = user.AvatarUrl,
+            Location = user.Location,
             Message = "User profile updated successfully",
         };
     }

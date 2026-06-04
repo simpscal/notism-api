@@ -17,5 +17,9 @@ public class UpdateUserProfileValidator : AbstractValidator<UpdateUserProfileReq
         RuleFor(x => x.LastName)
             .MaximumLength(50)
             .WithMessage("Last name cannot exceed 50 characters");
+
+        RuleFor(x => x.Location)
+            .MaximumLength(200)
+            .WithMessage("Location cannot exceed 200 characters");
     }
 }
