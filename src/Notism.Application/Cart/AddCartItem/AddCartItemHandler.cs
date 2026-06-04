@@ -126,11 +126,11 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
 
         if (_request.Customisations != null && _request.Customisations.Count > 0)
         {
-            var options = await ResolveCustomisationOptionsAsync(food.Id);
-            FillRequiredGroupDefaults(food, options);
+            var explicitOptions = await ResolveCustomisationOptionsAsync(food.Id);
+            var allOptions = explicitOptions.Concat(GetRequiredGroupDefaults(food, explicitOptions.Select(o => o.GroupId))).ToList();
             var groupLabels = food.CustomisationGroups.ToDictionary(g => g.Id, g => g.Label);
             existingCartItem.ClearCustomisations();
-            foreach (var option in options)
+            foreach (var option in allOptions)
             {
                 var groupLabel = option.Group?.Label ?? groupLabels.GetValueOrDefault(option.GroupId, string.Empty);
                 existingCartItem.AddCustomisation(option.GroupId, option.Id, groupLabel, option.Label, option.Surcharge);
@@ -155,13 +155,13 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             throw new ResultFailureException(_messages.InsufficientStock);
         }
 
-        var options = await ResolveCustomisationOptionsAsync(food.Id);
-        FillRequiredGroupDefaults(food, options);
+        var explicitOptions = await ResolveCustomisationOptionsAsync(food.Id);
+        var allOptions = explicitOptions.Concat(GetRequiredGroupDefaults(food, explicitOptions.Select(o => o.GroupId))).ToList();
 
         var groupLabels = food.CustomisationGroups.ToDictionary(g => g.Id, g => g.Label);
         var cartItem = CartItem.Create(_request.UserId, _request.FoodId, _request.Quantity);
 
-        foreach (var option in options)
+        foreach (var option in allOptions)
         {
             var groupLabel = option.Group?.Label ?? groupLabels.GetValueOrDefault(option.GroupId, string.Empty);
             cartItem.AddCustomisation(option.GroupId, option.Id, groupLabel, option.Label, option.Surcharge);
@@ -218,19 +218,16 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         };
     }
 
-    private static void FillRequiredGroupDefaults(Domain.Food.Food food, List<FoodCustomisationOption> resolved)
+    private static IEnumerable<FoodCustomisationOption> GetRequiredGroupDefaults(
+        Domain.Food.Food food,
+        IEnumerable<Guid> coveredGroupIds)
     {
-        var coveredGroupIds = resolved.Select(o => o.GroupId).ToHashSet();
+        var covered = coveredGroupIds.ToHashSet();
 
-        foreach (var group in food.CustomisationGroups
-                                   .Where(g => g.IsRequired && !coveredGroupIds.Contains(g.Id))
-                                   .OrderBy(g => g.DisplayOrder))
-        {
-            var defaultOption = group.Options.OrderBy(o => o.DisplayOrder).FirstOrDefault();
-            if (defaultOption != null)
-            {
-                resolved.Add(defaultOption);
-            }
-        }
+        return food.CustomisationGroups
+            .Where(g => g.IsRequired && !covered.Contains(g.Id))
+            .OrderBy(g => g.DisplayOrder)
+            .Select(g => g.Options.OrderBy(o => o.DisplayOrder).FirstOrDefault())
+            .OfType<FoodCustomisationOption>();
     }
 }
