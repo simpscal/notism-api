@@ -50,31 +50,66 @@ public class GetCartItemsHandler : IRequestHandler<GetCartItemsRequest, GetCartI
         var specification = new FilterSpecification<CartItem>(c => c.UserId == _request!.UserId)
             .Include(c => c.Food)
             .Include("Food.Category")
-            .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1));
+            .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1))
+            .Include("Food.CustomisationGroups.Options")
+            .Include(c => c.Customisations);
         return await _cartItemRepository.FilterByExpressionAsync(specification);
     }
 
     private List<CartItemResponse> MapToResponse(IEnumerable<CartItem> cartItems)
     {
-        return cartItems.Select(cartItem => new CartItemResponse
+        return cartItems.Select(cartItem =>
         {
-            Id = cartItem.Id,
-            FoodId = cartItem.FoodId,
-            Name = cartItem.Food.Name,
-            Description = cartItem.Food.Description,
-            Price = cartItem.Food.Price,
-            DiscountPrice = cartItem.Food.DiscountPrice,
-            ImageUrl = GetImageUrl(cartItem.Food.Images),
-            Category = cartItem.Food.Category?.Name ?? string.Empty,
-            Quantity = cartItem.Quantity,
-            StockQuantity = cartItem.Food.StockQuantity,
-            QuantityUnit = cartItem.Food.QuantityUnit.GetStringValue(),
+            var customisations = cartItem.Customisations.Select(c =>
+            {
+                var group = cartItem.Food.CustomisationGroups
+                    .FirstOrDefault(g => g.Id == c.CustomisationGroupId);
+
+                var availableOptions = group?.Options
+                    .Select(o => new CartItemAvailableOptionResponse
+                    {
+                        Id = o.Id,
+                        Label = o.Label,
+                        Surcharge = o.Surcharge,
+                    })
+                    .ToList() ?? new List<CartItemAvailableOptionResponse>();
+
+                // Orphan check: if stored option no longer exists in the food's group
+                var optionStillExists = group?.Options.Any(o => o.Id == c.CustomisationOptionId) ?? false;
+
+                return new CartItemCustomisationResponse
+                {
+                    GroupId = c.CustomisationGroupId,
+                    GroupLabel = c.GroupLabel,
+                    OptionId = optionStillExists ? c.CustomisationOptionId : null,
+                    OptionLabel = optionStillExists ? c.OptionLabel : "Option no longer available",
+                    Surcharge = optionStillExists ? c.Surcharge : null,
+                    AvailableOptions = availableOptions,
+                };
+            }).ToList();
+
+            return new CartItemResponse
+            {
+                Id = cartItem.Id,
+                FoodId = cartItem.FoodId,
+                Name = cartItem.Food.Name,
+                Description = cartItem.Food.Description,
+                Price = cartItem.Food.Price,
+                DiscountPrice = cartItem.Food.DiscountPrice,
+                ImageUrl = GetImageUrl(cartItem.Food.Images),
+                Category = cartItem.Food.Category?.Name ?? string.Empty,
+                Quantity = cartItem.Quantity,
+                StockQuantity = cartItem.Food.StockQuantity,
+                QuantityUnit = cartItem.Food.QuantityUnit.GetStringValue(),
+                Customisations = customisations,
+                TotalSurcharge = cartItem.TotalSurcharge,
+            };
         }).ToList();
     }
 
     private string GetImageUrl(IReadOnlyCollection<Domain.Food.FoodImage> images)
     {
-        var firstImage = images.OrderBy(img => img.DisplayOrder).FirstOrDefault();
+        var firstImage = images.FirstOrDefault();
         return firstImage == null ? string.Empty : _storageService.GetPublicUrl(firstImage.FileKey, StorageTypeConstants.Food);
     }
 }

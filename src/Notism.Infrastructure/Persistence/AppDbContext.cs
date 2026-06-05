@@ -30,7 +30,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
     public DbSet<Category> Categories { get; set; }
     public DbSet<Food> Foods { get; set; }
     public DbSet<FoodImage> FoodImages { get; set; }
+    public DbSet<FoodCustomisationGroup> FoodCustomisationGroups { get; set; }
+    public DbSet<FoodCustomisationOption> FoodCustomisationOptions { get; set; }
     public DbSet<CartItem> CartItems { get; set; }
+    public DbSet<CartItemCustomisation> CartItemCustomisations { get; set; }
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<DeliveryStatusHistory> DeliveryStatusHistories { get; set; }
@@ -60,7 +63,10 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
         ConfigureCategory(modelBuilder);
         ConfigureFood(modelBuilder);
         ConfigureFoodImage(modelBuilder);
+        ConfigureFoodCustomisationGroup(modelBuilder);
+        ConfigureFoodCustomisationOption(modelBuilder);
         ConfigureCartItem(modelBuilder);
+        ConfigureCartItemCustomisation(modelBuilder);
         ConfigureOrder(modelBuilder);
         ConfigureOrderItem(modelBuilder);
         ConfigureDeliveryStatusHistory(modelBuilder);
@@ -109,6 +115,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
 
             entity.Property(u => u.AvatarUrl)
                 .HasMaxLength(500);
+
+            entity.Property(u => u.Location)
+                .HasMaxLength(200);
 
             entity.Property(u => u.CreatedAt)
                 .IsRequired();
@@ -256,6 +265,11 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
                 .WithOne(i => i.Food)
                 .HasForeignKey(i => i.FoodId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasMany(f => f.CustomisationGroups)
+                .WithOne(g => g.Food)
+                .HasForeignKey(g => g.FoodId)
+                .OnDelete(DeleteBehavior.Cascade);
         });
     }
 
@@ -318,6 +332,55 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
                 .WithMany()
                 .HasForeignKey(ci => ci.FoodId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            entity.HasMany(ci => ci.Customisations)
+                .WithOne(c => c.CartItem)
+                .HasForeignKey(c => c.CartItemId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureCartItemCustomisation(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<CartItemCustomisation>(entity =>
+        {
+            entity.HasKey(c => c.Id);
+
+            entity.Property(c => c.CartItemId)
+                .IsRequired();
+
+            entity.Property(c => c.CustomisationGroupId);
+
+            entity.Property(c => c.CustomisationOptionId);
+
+            entity.Property(c => c.GroupLabel)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(c => c.OptionLabel)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(c => c.Surcharge)
+                .HasPrecision(10, 2);
+
+            entity.Property(c => c.CreatedAt)
+                .IsRequired();
+
+            entity.Property(c => c.UpdatedAt)
+                .IsRequired();
+
+            entity.HasIndex(c => c.CartItemId);
+
+            entity.HasOne<FoodCustomisationGroup>()
+                .WithMany()
+                .HasForeignKey(c => c.CustomisationGroupId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasOne<FoodCustomisationOption>()
+                .WithMany()
+                .HasForeignKey(c => c.CustomisationOptionId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 
@@ -367,6 +430,9 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
                 .HasDefaultValue(PaymentStatus.Unpaid);
 
             entity.Property(o => o.PaidAt);
+
+            entity.Property(o => o.DeliveryNotes)
+                .HasMaxLength(500);
 
             entity.HasIndex(o => o.UserId);
             entity.HasIndex(o => o.SlugId)
@@ -420,6 +486,12 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
             entity.Property(oi => oi.TotalPrice)
                 .HasPrecision(18, 2)
                 .IsRequired();
+
+            entity.Property(oi => oi.Surcharge)
+                .HasPrecision(10, 2);
+
+            entity.Property(oi => oi.CustomisationLabel)
+                .HasMaxLength(200);
 
             entity.Property(oi => oi.CreatedAt)
                 .IsRequired();
@@ -534,6 +606,69 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
 
             entity.HasIndex(bc => bc.UserId);
             entity.HasIndex(bc => bc.IsUsed);
+        });
+    }
+
+    private static void ConfigureFoodCustomisationGroup(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<FoodCustomisationGroup>(entity =>
+        {
+            entity.HasKey(g => g.Id);
+
+            entity.Property(g => g.FoodId)
+                .IsRequired();
+
+            entity.Property(g => g.Label)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(g => g.IsRequired)
+                .IsRequired();
+
+            entity.Property(g => g.DisplayOrder)
+                .IsRequired();
+
+            entity.Property(g => g.CreatedAt)
+                .IsRequired();
+
+            entity.Property(g => g.UpdatedAt)
+                .IsRequired();
+
+            entity.HasIndex(g => g.FoodId);
+
+            entity.HasMany(g => g.Options)
+                .WithOne(o => o.Group)
+                .HasForeignKey(o => o.GroupId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+    }
+
+    private static void ConfigureFoodCustomisationOption(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<FoodCustomisationOption>(entity =>
+        {
+            entity.HasKey(o => o.Id);
+
+            entity.Property(o => o.GroupId)
+                .IsRequired();
+
+            entity.Property(o => o.Label)
+                .HasMaxLength(100)
+                .IsRequired();
+
+            entity.Property(o => o.Surcharge)
+                .HasPrecision(18, 2);
+
+            entity.Property(o => o.DisplayOrder)
+                .IsRequired();
+
+            entity.Property(o => o.CreatedAt)
+                .IsRequired();
+
+            entity.Property(o => o.UpdatedAt)
+                .IsRequired();
+
+            entity.HasIndex(o => o.GroupId);
         });
     }
 

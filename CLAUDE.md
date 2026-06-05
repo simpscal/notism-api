@@ -97,9 +97,19 @@ File location: `tests/Notism.Application.Tests/{Feature}/{Operation}/{Operation}
 
 | Topic | Location |
 |-------|----------|
-| Architecture | `docs/architecture.md` |
-| Best practices | `docs/best-practices.md` |
-| Infrastructure | `docs/infra` |
+| Architecture | `docs/rules/architecture.md` |
+| Best practices index | `docs/rules/best-practices.md` |
+| Repository Pattern | `docs/rules/repository-pattern.md` |
+| Specification Pattern | `docs/rules/specification-pattern.md` |
+| Domain Events | `docs/rules/domain-events.md` |
+| Handler Design | `docs/rules/handler-design.md` |
+| Validation | `docs/rules/validation.md` |
+| Error Handling | `docs/rules/error-handling.md` |
+| Naming Conventions | `docs/rules/naming.md` |
+| Code Organization | `docs/rules/code-organization.md` |
+| Additional Practices | `docs/rules/additional-practices.md` |
+| Image resizing flow | `docs/flows/image-resizing.md` |
+| Auth cookie flow | `docs/flows/secure-authentication-cookies.md` |
 
 ## Infrastructure (Terraform)
 

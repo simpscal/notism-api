@@ -55,6 +55,7 @@ public class GetUserProfileHandler : IRequestHandler<GetUserProfileRequest, GetU
             Email = user.Email,
             Role = user.Role.ToCamelCase(),
             AvatarUrl = avatarUrl,
+            Location = user.Location,
         };
     }
 }

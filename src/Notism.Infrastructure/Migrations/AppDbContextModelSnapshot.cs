@@ -67,6 +67,64 @@ namespace Notism.Infrastructure.Migrations
                     b.ToTable("CartItems");
                 });
 
+            modelBuilder.Entity("Notism.Domain.Cart.CartItemCustomisation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CartItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CustomisationGroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CustomisationOptionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("GroupLabel")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("OptionLabel")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal?>("Surcharge")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CartItemId");
+
+                    b.HasIndex("CustomisationGroupId");
+
+                    b.HasIndex("CustomisationOptionId");
+
+                    b.ToTable("CartItemCustomisations");
+                });
+
             modelBuilder.Entity("Notism.Domain.Food.Category", b =>
                 {
                     b.Property<Guid>("Id")
@@ -172,6 +230,97 @@ namespace Notism.Infrastructure.Migrations
                     b.HasIndex("CategoryId", "IsAvailable");
 
                     b.ToTable("Foods");
+                });
+
+            modelBuilder.Entity("Notism.Domain.Food.FoodCustomisationGroup", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("FoodId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FoodId");
+
+                    b.ToTable("FoodCustomisationGroups");
+                });
+
+            modelBuilder.Entity("Notism.Domain.Food.FoodCustomisationOption", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("GroupId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<decimal?>("Surcharge")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GroupId");
+
+                    b.ToTable("FoodCustomisationOptions");
                 });
 
             modelBuilder.Entity("Notism.Domain.Food.FoodImage", b =>
@@ -281,6 +430,10 @@ namespace Notism.Infrastructure.Migrations
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<string>("DeliveryNotes")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
                     b.Property<string>("DeliveryStatus")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -348,6 +501,10 @@ namespace Notism.Infrastructure.Migrations
                     b.Property<Guid?>("CreatedBy")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("CustomisationLabel")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -371,6 +528,10 @@ namespace Notism.Infrastructure.Migrations
 
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
+
+                    b.Property<decimal?>("Surcharge")
+                        .HasPrecision(10, 2)
+                        .HasColumnType("numeric(10,2)");
 
                     b.Property<decimal>("TotalPrice")
                         .HasPrecision(18, 2)
@@ -627,6 +788,10 @@ namespace Notism.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<string>("Location")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
                     b.Property<string>("Password")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -663,6 +828,27 @@ namespace Notism.Infrastructure.Migrations
                     b.Navigation("Food");
                 });
 
+            modelBuilder.Entity("Notism.Domain.Cart.CartItemCustomisation", b =>
+                {
+                    b.HasOne("Notism.Domain.Cart.CartItem", "CartItem")
+                        .WithMany("Customisations")
+                        .HasForeignKey("CartItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("Notism.Domain.Food.FoodCustomisationGroup", null)
+                        .WithMany()
+                        .HasForeignKey("CustomisationGroupId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("Notism.Domain.Food.FoodCustomisationOption", null)
+                        .WithMany()
+                        .HasForeignKey("CustomisationOptionId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("CartItem");
+                });
+
             modelBuilder.Entity("Notism.Domain.Food.Food", b =>
                 {
                     b.HasOne("Notism.Domain.Food.Category", "Category")
@@ -671,6 +857,28 @@ namespace Notism.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("Category");
+                });
+
+            modelBuilder.Entity("Notism.Domain.Food.FoodCustomisationGroup", b =>
+                {
+                    b.HasOne("Notism.Domain.Food.Food", "Food")
+                        .WithMany("CustomisationGroups")
+                        .HasForeignKey("FoodId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Food");
+                });
+
+            modelBuilder.Entity("Notism.Domain.Food.FoodCustomisationOption", b =>
+                {
+                    b.HasOne("Notism.Domain.Food.FoodCustomisationGroup", "Group")
+                        .WithMany("Options")
+                        .HasForeignKey("GroupId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Group");
                 });
 
             modelBuilder.Entity("Notism.Domain.Food.FoodImage", b =>
@@ -725,9 +933,21 @@ namespace Notism.Infrastructure.Migrations
                     b.Navigation("Order");
                 });
 
+            modelBuilder.Entity("Notism.Domain.Cart.CartItem", b =>
+                {
+                    b.Navigation("Customisations");
+                });
+
             modelBuilder.Entity("Notism.Domain.Food.Food", b =>
                 {
+                    b.Navigation("CustomisationGroups");
+
                     b.Navigation("Images");
+                });
+
+            modelBuilder.Entity("Notism.Domain.Food.FoodCustomisationGroup", b =>
+                {
+                    b.Navigation("Options");
                 });
 
             modelBuilder.Entity("Notism.Domain.Order.Order", b =>

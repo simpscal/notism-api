@@ -8,6 +8,7 @@ using Notism.Application.Cart.ClearCart;
 using Notism.Application.Cart.GetCartItemCount;
 using Notism.Application.Cart.GetCartItems;
 using Notism.Application.Cart.RemoveCartItem;
+using Notism.Application.Cart.UpdateCartItemCustomisations;
 using Notism.Application.Cart.UpdateCartItemQuantity;
 
 namespace Notism.Api.Endpoints;
@@ -59,6 +60,16 @@ public static class CartEndpoints
             .Produces<UpdateCartItemQuantityResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+
+        group.MapPut("/items/{cartItemId:guid}/customisations", UpdateCartItemCustomisationsAsync)
+            .WithName("UpdateCartItemCustomisations")
+            .WithSummary("Update cart item customisations")
+            .WithDescription("Replaces all customisation selections for a specific cart item.")
+            .Produces<UpdateCartItemCustomisationsResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
             .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
 
         group.MapDelete("/items/{id:guid}", RemoveCartItemAsync)
@@ -118,6 +129,13 @@ public static class CartEndpoints
             UserId = userId,
             FoodId = payload.FoodId,
             Quantity = payload.Quantity,
+            Customisations = payload.Customisations?
+                .Select(s => new Notism.Application.Cart.AddCartItem.CartItemCustomisationSelection
+                {
+                    GroupId = s.GroupId,
+                    OptionId = s.OptionId,
+                })
+                .ToList(),
         };
 
         var result = await mediator.Send(request, cancellationToken);
@@ -188,6 +206,33 @@ public static class CartEndpoints
         return Results.Ok();
     }
 
+    private static async Task<IResult> UpdateCartItemCustomisationsAsync(
+        HttpContext httpContext,
+        IMediator mediator,
+        Guid cartItemId,
+        UpdateCartItemCustomisationsPayload payload,
+        CancellationToken cancellationToken)
+    {
+        var userId = httpContext.User.GetUserId();
+
+        var request = new UpdateCartItemCustomisationsRequest
+        {
+            UserId = userId,
+            CartItemId = cartItemId,
+            Customisations = payload.Customisations
+                .Select(s => new Notism.Application.Cart.UpdateCartItemCustomisations.CartItemCustomisationSelection
+                {
+                    GroupId = s.GroupId,
+                    OptionId = s.OptionId,
+                })
+                .ToList(),
+        };
+
+        var result = await mediator.Send(request, cancellationToken);
+
+        return Results.Ok(result);
+    }
+
     private static async Task<IResult> ClearCartAsync(
         HttpContext httpContext,
         IMediator mediator,
@@ -206,6 +251,7 @@ public record AddCartItemPayload
 {
     public Guid FoodId { get; set; }
     public int Quantity { get; set; }
+    public List<CartItemCustomisationSelectionPayload>? Customisations { get; set; }
 }
 
 public record UpdateCartItemQuantityPayload
@@ -222,4 +268,15 @@ public record CartItemPayload
 {
     public Guid FoodId { get; set; }
     public int Quantity { get; set; }
+}
+
+public record UpdateCartItemCustomisationsPayload
+{
+    public List<CartItemCustomisationSelectionPayload> Customisations { get; set; } = new();
+}
+
+public record CartItemCustomisationSelectionPayload
+{
+    public Guid GroupId { get; set; }
+    public Guid OptionId { get; set; }
 }

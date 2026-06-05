@@ -27,10 +27,20 @@ Notism API is a backend service built following Clean Architecture principles wi
 
 Detailed documentation is available in the `docs/` directory:
 
-| Folder | Purpose |
-|--------|---------|
-| `docs/rules/` | Architecture guidelines, coding standards, and implementation methodology |
-| `docs/features/` | Feature-specific documentation and technical flows |
+| File | Purpose |
+|------|---------|
+| `docs/rules/architecture.md` | Clean Architecture layers and dependency rules |
+| `docs/rules/repository-pattern.md` | IRepository\<T\> and specification usage |
+| `docs/rules/specification-pattern.md` | FilterSpecification composition and patterns |
+| `docs/rules/domain-events.md` | Domain event dispatch and handler patterns |
+| `docs/rules/handler-design.md` | MediatR handler conventions |
+| `docs/rules/validation.md` | FluentValidation request and domain rules |
+| `docs/rules/error-handling.md` | Exception types and HTTP status mapping |
+| `docs/rules/naming.md` | Naming conventions for aggregates, handlers, requests |
+| `docs/rules/code-organization.md` | Feature folder layout and endpoint grouping |
+| `docs/rules/additional-practices.md` | Aggregate roots, value objects, private constructors |
+| `docs/flows/image-resizing.md` | Image upload and resizing flow |
+| `docs/flows/secure-authentication-cookies.md` | Auth cookie security flow |
 
 ## Technologies
 

@@ -65,6 +65,7 @@ public static class OrderEndpoints
             UserId = userId,
             PaymentMethod = payload.PaymentMethod,
             CartItemIds = payload.CartItemIds,
+            DeliveryNotes = payload.DeliveryNotes,
         };
 
         var result = await mediator.Send(request, cancellationToken);
@@ -131,4 +132,5 @@ public record CreateOrderPayload
 {
     public string PaymentMethod { get; set; } = string.Empty;
     public List<Guid> CartItemIds { get; set; } = new();
+    public string? DeliveryNotes { get; set; }
 }

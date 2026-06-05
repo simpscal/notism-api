@@ -43,7 +43,7 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
         {
             var cartItems = await ValidateAndFetchCartItemsAsync(request);
             var paymentMethod = request.PaymentMethod.ToEnum<PaymentMethod>();
-            var order = Domain.Order.Order.Create(request.UserId, paymentMethod, request.CartItemIds);
+            var order = Domain.Order.Order.Create(request.UserId, paymentMethod, request.CartItemIds, request.DeliveryNotes);
 
             AddOrderItems(order, cartItems);
             RemoveCartItems(cartItems);
@@ -71,7 +71,8 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
     {
         var cartItemSpecification = new FilterSpecification<CartItem>(c => c.UserId == request.UserId && request.CartItemIds.Contains(c.Id))
             .Include(c => c.Food)
-            .Include(c => c.Food.Images);
+            .Include(c => c.Food.Images)
+            .Include(c => c.Customisations);
         var cartItems = (await _cartItemRepository.FilterByExpressionAsync(cartItemSpecification)).ToList();
 
         if (cartItems.Count == 0)
@@ -89,13 +90,19 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
     {
         foreach (var cartItem in cartItems)
         {
+            var customisationLabel = cartItem.Customisations.Count > 0
+                ? string.Join(", ", cartItem.Customisations.Select(c => c.OptionLabel))
+                : null;
+
             var orderItem = OrderItem.Create(
                 order.Id,
                 cartItem.FoodId,
                 cartItem.Food.Name,
                 cartItem.Food.Price,
                 cartItem.Food.DiscountPrice,
-                cartItem.Quantity);
+                cartItem.Quantity,
+                cartItem.TotalSurcharge > 0 ? cartItem.TotalSurcharge : null,
+                customisationLabel);
 
             order.AddItem(orderItem);
             cartItem.Food.DeductStock(cartItem.Quantity);

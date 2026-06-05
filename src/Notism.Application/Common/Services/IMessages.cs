@@ -19,6 +19,8 @@ public interface IMessages
     string FoodNotFound { get; }
     string FoodNotAvailable { get; }
     string DiscountPriceMustBeLess { get; }
+    string CustomisationGroupNotFound { get; }
+    string CustomisationOptionNotFound { get; }
 
     // Cart Messages
     string InsufficientStock { get; }

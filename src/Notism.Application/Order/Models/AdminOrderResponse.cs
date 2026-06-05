@@ -14,4 +14,5 @@ public class AdminOrderResponse
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
     public int TotalItems { get; set; }
+    public string? DeliveryNotes { get; set; }
 }

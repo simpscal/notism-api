@@ -13,4 +13,23 @@ public record CartItemResponse
     public int Quantity { get; set; }
     public int StockQuantity { get; set; }
     public required string QuantityUnit { get; set; }
+    public List<CartItemCustomisationResponse> Customisations { get; set; } = new();
+    public decimal TotalSurcharge { get; set; }
+}
+
+public record CartItemCustomisationResponse
+{
+    public Guid? GroupId { get; set; }
+    public required string GroupLabel { get; set; }
+    public Guid? OptionId { get; set; }
+    public required string OptionLabel { get; set; }
+    public decimal? Surcharge { get; set; }
+    public List<CartItemAvailableOptionResponse> AvailableOptions { get; set; } = new();
+}
+
+public record CartItemAvailableOptionResponse
+{
+    public Guid Id { get; set; }
+    public required string Label { get; set; }
+    public decimal? Surcharge { get; set; }
 }

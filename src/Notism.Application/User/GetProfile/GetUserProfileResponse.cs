@@ -8,4 +8,5 @@ public class GetUserProfileResponse
     public string Email { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
     public string? AvatarUrl { get; set; }
+    public string? Location { get; set; }
 }
