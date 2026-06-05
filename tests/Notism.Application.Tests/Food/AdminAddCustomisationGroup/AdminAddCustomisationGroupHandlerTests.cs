@@ -70,7 +70,7 @@ public class AdminAddCustomisationGroupHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenFoodNotFound_ThrowsResultFailureException()
+    public async Task Handle_WhenFoodNotFound_ThrowsNotFoundException()
     {
         _foodRepository
             .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Food.Food>>())
@@ -86,6 +86,6 @@ public class AdminAddCustomisationGroupHandlerTests
 
         var act = async () => await _handler.Handle(request, CancellationToken.None);
 
-        await act.Should().ThrowAsync<ResultFailureException>();
+        await act.Should().ThrowAsync<NotFoundException>();
     }
 }

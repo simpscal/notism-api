@@ -60,8 +60,8 @@ public class UpdateCartItemCustomisationsHandlerTests
             .Returns(cartItem);
 
         _optionRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<FoodCustomisationOption>>())
-            .Returns(option);
+            .FilterByExpressionAsync(Arg.Any<FilterSpecification<FoodCustomisationOption>>())
+            .Returns(new List<FoodCustomisationOption> { option });
 
         var request = new UpdateCartItemCustomisationsRequest
         {
@@ -160,20 +160,16 @@ public class UpdateCartItemCustomisationsHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenDuplicateGroupIdInRequest_ThrowsResultFailureException()
+    public void Validator_WhenDuplicateGroupIdInRequest_FailsValidation()
     {
-        var userId = Guid.NewGuid();
-        var cartItem = CreateCartItem(userId, Guid.NewGuid());
+        // Duplicate-group rejection lives in the request validator, not the handler.
         var duplicateGroupId = Guid.NewGuid();
-
-        _cartItemRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<CartItem>>())
-            .Returns(cartItem);
+        var validator = new UpdateCartItemCustomisationsRequestValidator();
 
         var request = new UpdateCartItemCustomisationsRequest
         {
-            CartItemId = cartItem.Id,
-            UserId = userId,
+            CartItemId = Guid.NewGuid(),
+            UserId = Guid.NewGuid(),
             Customisations = new List<CartItemCustomisationSelection>
             {
                 new CartItemCustomisationSelection { GroupId = duplicateGroupId, OptionId = Guid.NewGuid() },
@@ -181,9 +177,10 @@ public class UpdateCartItemCustomisationsHandlerTests
             },
         };
 
-        var act = async () => await _handler.Handle(request, CancellationToken.None);
+        var result = validator.Validate(request);
 
-        await act.Should().ThrowAsync<ResultFailureException>();
+        result.IsValid.Should().BeFalse();
+        result.Errors.Should().Contain(e => e.ErrorMessage == "Duplicate group IDs are not allowed in a single request");
     }
 
     private static Domain.Food.Food CreateFood()

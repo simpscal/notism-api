@@ -67,7 +67,7 @@ public class AdminDeleteCustomisationGroupHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenFoodNotFound_ThrowsResultFailureException()
+    public async Task Handle_WhenFoodNotFound_ThrowsNotFoundException()
     {
         _foodRepository
             .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Food.Food>>())
@@ -81,12 +81,12 @@ public class AdminDeleteCustomisationGroupHandlerTests
 
         var act = async () => await _handler.Handle(request, CancellationToken.None);
 
-        await act.Should().ThrowAsync<ResultFailureException>()
+        await act.Should().ThrowAsync<NotFoundException>()
             .WithMessage("Food not found.");
     }
 
     [Fact]
-    public async Task Handle_WhenGroupBelongsToDifferentFood_ThrowsResultFailureException()
+    public async Task Handle_WhenGroupBelongsToDifferentFood_ThrowsNotFoundException()
     {
         var food = Domain.Food.Food.Create(
             "Pizza",
@@ -112,7 +112,7 @@ public class AdminDeleteCustomisationGroupHandlerTests
 
         var act = async () => await _handler.Handle(request, CancellationToken.None);
 
-        await act.Should().ThrowAsync<ResultFailureException>()
+        await act.Should().ThrowAsync<NotFoundException>()
             .WithMessage("Customisation group not found.");
     }
 }
