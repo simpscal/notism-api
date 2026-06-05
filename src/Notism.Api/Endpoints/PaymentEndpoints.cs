@@ -83,28 +83,10 @@ public static class PaymentEndpoints
     }
 
     private static async Task<IResult> GetBankAccountAsync(
-        HttpContext httpContext,
         IMediator mediator,
-        Guid? checkoutId,
         CancellationToken cancellationToken)
     {
-        var userId = httpContext.User.GetUserId();
-        var isAdmin = httpContext.User.IsInRole("admin");
-
-        GetBankAccountRequest request;
-
-        if (isAdmin)
-        {
-            // Admin retrieves their own bank account record.
-            request = new GetBankAccountRequest { StorerId = userId };
-        }
-        else
-        {
-            // Consumer retrieves the storer's bank account via their checkout.
-            request = new GetBankAccountRequest { CheckoutId = checkoutId, UserId = userId };
-        }
-
-        var result = await mediator.Send(request, cancellationToken);
+        var result = await mediator.Send(new GetBankAccountRequest(), cancellationToken);
 
         return Results.Ok(result);
     }
