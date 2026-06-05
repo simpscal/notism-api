@@ -1,7 +1,5 @@
 using FluentAssertions;
 
-using Microsoft.Extensions.Logging;
-
 using Notism.Application.Payment.GetBankAccount;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Payment;
@@ -13,14 +11,12 @@ namespace Notism.Application.Tests.Payment.GetBankAccount;
 public class GetBankAccountHandlerTests
 {
     private readonly IPaymentRepository _paymentRepository;
-    private readonly ILogger<GetBankAccountHandler> _logger;
     private readonly GetBankAccountHandler _handler;
 
     public GetBankAccountHandlerTests()
     {
         _paymentRepository = Substitute.For<IPaymentRepository>();
-        _logger = Substitute.For<ILogger<GetBankAccountHandler>>();
-        _handler = new GetBankAccountHandler(_paymentRepository, _logger);
+        _handler = new GetBankAccountHandler(_paymentRepository);
     }
 
     [Fact]
@@ -33,7 +29,7 @@ public class GetBankAccountHandlerTests
             .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Payment.Payment>>())
             .Returns(payment);
 
-        var result = await _handler.Handle(new GetBankAccountRequest { StorerId = storerId }, CancellationToken.None);
+        var result = await _handler.Handle(new GetBankAccountRequest(), CancellationToken.None);
 
         result.Should().NotBeNull();
         result!.BankCode.Should().Be("Vietcombank");
@@ -44,13 +40,11 @@ public class GetBankAccountHandlerTests
     [Fact]
     public async Task Handle_WhenNoPayment_ReturnsNull()
     {
-        var storerId = Guid.NewGuid();
-
         _paymentRepository
             .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Payment.Payment>>())
             .Returns((Domain.Payment.Payment?)null);
 
-        var result = await _handler.Handle(new GetBankAccountRequest { StorerId = storerId }, CancellationToken.None);
+        var result = await _handler.Handle(new GetBankAccountRequest(), CancellationToken.None);
 
         result.Should().BeNull();
     }
