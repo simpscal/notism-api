@@ -25,11 +25,11 @@ public static class PaymentEndpoints
         group.MapGet("/bank-account", GetBankAccountAsync)
             .WithName("GetBankAccount")
             .WithSummary("Get bank account")
-            .WithDescription("Retrieves the storer's configured bank account details.")
-            .RequireAdmin()
+            .WithDescription("Retrieves the storer's configured bank account details. Admins call without parameters; consumers supply their checkoutId to prove an active checkout.")
             .Produces<GetBankAccountResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
-            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
 
         group.MapPut("/bank-account", SaveBankAccountAsync)
             .WithName("SaveBankAccount")
@@ -85,11 +85,25 @@ public static class PaymentEndpoints
     private static async Task<IResult> GetBankAccountAsync(
         HttpContext httpContext,
         IMediator mediator,
+        Guid? checkoutId,
         CancellationToken cancellationToken)
     {
         var userId = httpContext.User.GetUserId();
+        var isAdmin = httpContext.User.IsInRole("admin");
 
-        var request = new GetBankAccountRequest { StorerId = userId };
+        GetBankAccountRequest request;
+
+        if (isAdmin)
+        {
+            // Admin retrieves their own bank account record.
+            request = new GetBankAccountRequest { StorerId = userId };
+        }
+        else
+        {
+            // Consumer retrieves the storer's bank account via their checkout.
+            request = new GetBankAccountRequest { CheckoutId = checkoutId, UserId = userId };
+        }
+
         var result = await mediator.Send(request, cancellationToken);
 
         return Results.Ok(result);
