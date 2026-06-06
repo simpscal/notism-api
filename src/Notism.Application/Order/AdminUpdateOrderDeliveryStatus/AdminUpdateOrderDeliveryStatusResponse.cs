@@ -1,24 +1,18 @@
-using Notism.Application.Order.Models;
-
 namespace Notism.Application.Order.AdminUpdateOrderDeliveryStatus;
 
-public class AdminUpdateOrderDeliveryStatusResponse : AdminOrderResponse
+public class AdminUpdateOrderDeliveryStatusResponse
 {
-    public AdminUpdateOrderDeliveryStatusResponse()
-    {
-    }
-
-    public AdminUpdateOrderDeliveryStatusResponse(AdminOrderResponse source)
-    {
-        Id = source.Id;
-        SlugId = source.SlugId;
-        UserId = source.UserId;
-        UserEmail = source.UserEmail;
-        UserName = source.UserName;
-        TotalAmount = source.TotalAmount;
-        DeliveryStatus = source.DeliveryStatus;
-        CreatedAt = source.CreatedAt;
-        UpdatedAt = source.UpdatedAt;
-        TotalItems = source.TotalItems;
-    }
+    public Guid Id { get; set; }
+    public string SlugId { get; set; } = string.Empty;
+    public Guid UserId { get; set; }
+    public string UserEmail { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
+    public decimal TotalAmount { get; set; }
+    public string DeliveryStatus { get; set; } = string.Empty;
+    public string PaymentStatus { get; set; } = string.Empty;
+    public DateTime? PaidAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public int TotalItems { get; set; }
+    public string? DeliveryNotes { get; set; }
 }

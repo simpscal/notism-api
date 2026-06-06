@@ -3,7 +3,6 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
-using Notism.Application.Order.Mappers;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
 using Notism.Shared.Exceptions;
@@ -45,7 +44,20 @@ public class AdminUpdateOrderDeliveryStatusHandler : IRequestHandler<AdminUpdate
             request.OrderId,
             request.DeliveryStatus);
 
-        var adminOrder = AdminOrderMapper.ToAdminOrderResponse(order, order.User);
-        return new AdminUpdateOrderDeliveryStatusResponse(adminOrder);
+        var user = order.User;
+
+        return new AdminUpdateOrderDeliveryStatusResponse
+        {
+            Id = order.Id,
+            SlugId = order.SlugId,
+            UserId = order.UserId,
+            UserEmail = user?.Email.Value ?? string.Empty,
+            UserName = user?.FullName ?? string.Empty,
+            TotalAmount = order.TotalAmount,
+            DeliveryStatus = order.DeliveryStatus.GetStringValue(),
+            CreatedAt = order.CreatedAt,
+            UpdatedAt = order.UpdatedAt,
+            TotalItems = order.Items.Count,
+        };
     }
 }

@@ -2,7 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Cart.Models;
+using Notism.Application.Cart.Common;
 using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.Cart;
@@ -66,12 +66,7 @@ public class GetCartItemsHandler : IRequestHandler<GetCartItemsRequest, GetCartI
                     .FirstOrDefault(g => g.Id == c.CustomisationGroupId);
 
                 var availableOptions = group?.Options
-                    .Select(o => new CartItemAvailableOptionResponse
-                    {
-                        Id = o.Id,
-                        Label = o.Label,
-                        Surcharge = o.Surcharge,
-                    })
+                    .Select(CartItemAvailableOptionResponse.FromDomain)
                     .ToList() ?? new List<CartItemAvailableOptionResponse>();
 
                 // Orphan check: if stored option no longer exists in the food's group
@@ -88,22 +83,11 @@ public class GetCartItemsHandler : IRequestHandler<GetCartItemsRequest, GetCartI
                 };
             }).ToList();
 
-            return new CartItemResponse
-            {
-                Id = cartItem.Id,
-                FoodId = cartItem.FoodId,
-                Name = cartItem.Food.Name,
-                Description = cartItem.Food.Description,
-                Price = cartItem.Food.Price,
-                DiscountPrice = cartItem.Food.DiscountPrice,
-                ImageUrl = GetImageUrl(cartItem.Food.Images),
-                Category = cartItem.Food.Category?.Name ?? string.Empty,
-                Quantity = cartItem.Quantity,
-                StockQuantity = cartItem.Food.StockQuantity,
-                QuantityUnit = cartItem.Food.QuantityUnit.GetStringValue(),
-                Customisations = customisations,
-                TotalSurcharge = cartItem.TotalSurcharge,
-            };
+            return CartItemResponse.FromDomain(
+                cartItem,
+                cartItem.Food,
+                GetImageUrl(cartItem.Food.Images),
+                customisations);
         }).ToList();
     }
 

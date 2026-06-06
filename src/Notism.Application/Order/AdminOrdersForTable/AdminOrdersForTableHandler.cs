@@ -2,9 +2,6 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Common.Interfaces;
-using Notism.Application.Order.Mappers;
-using Notism.Application.Order.Models;
 using Notism.Domain.Order;
 using Notism.Domain.Payment.Enums;
 using Notism.Shared.Extensions;
@@ -42,7 +39,7 @@ public class AdminOrdersForTableHandler : IRequestHandler<AdminOrdersForTableReq
             paymentStatus);
 
         var pagedResult = await _orderRepository.FilterPagedByExpressionAsync(specification, request);
-        var items = pagedResult.Items.Select(order => AdminOrderMapper.ToAdminOrderResponse(order, order.User)).ToList();
+        var items = pagedResult.Items.Select(MapToResponse).ToList();
 
         _logger.LogInformation("Retrieved {Count} orders for table view", items.Count);
 
@@ -50,6 +47,28 @@ public class AdminOrdersForTableHandler : IRequestHandler<AdminOrdersForTableReq
         {
             TotalCount = pagedResult.TotalCount,
             Items = items,
+        };
+    }
+
+    private static AdminOrdersForTableOrderResponse MapToResponse(Domain.Order.Order order)
+    {
+        var user = order.User;
+
+        return new AdminOrdersForTableOrderResponse
+        {
+            Id = order.Id,
+            SlugId = order.SlugId,
+            UserId = order.UserId,
+            UserEmail = user?.Email.Value ?? string.Empty,
+            UserName = user?.FullName ?? string.Empty,
+            TotalAmount = order.TotalAmount,
+            DeliveryStatus = order.DeliveryStatus.GetStringValue(),
+            PaymentStatus = order.PaymentStatus.GetStringValue(),
+            PaidAt = order.PaidAt,
+            CreatedAt = order.CreatedAt,
+            UpdatedAt = order.UpdatedAt,
+            TotalItems = order.Items.Count,
+            DeliveryNotes = order.DeliveryNotes,
         };
     }
 }

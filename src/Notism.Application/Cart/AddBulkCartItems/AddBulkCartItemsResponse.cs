@@ -1,4 +1,4 @@
-using Notism.Application.Cart.Models;
+using Notism.Application.Cart.Common;
 
 namespace Notism.Application.Cart.AddBulkCartItems;
 

@@ -73,4 +73,9 @@ public class User : AggregateRoot
     }
 
     public bool IsAdmin() => Role == UserRole.Admin;
+
+    public string FullName =>
+        string.IsNullOrWhiteSpace(FirstName) && string.IsNullOrWhiteSpace(LastName)
+            ? string.Empty
+            : $"{FirstName} {LastName}".Trim();
 }

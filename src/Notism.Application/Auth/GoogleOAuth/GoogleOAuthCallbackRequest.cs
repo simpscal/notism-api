@@ -1,10 +1,8 @@
 using MediatR;
 
-using Notism.Application.Auth.Models;
-
 namespace Notism.Application.Auth.GoogleOAuth;
 
-public class GoogleOAuthCallbackRequest : IRequest<(AuthenticationResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
+public class GoogleOAuthCallbackRequest : IRequest<(GoogleOAuthCallbackResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
 {
     public required string Code { get; set; }
     public required string State { get; set; }

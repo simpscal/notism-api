@@ -2,7 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Cart.Models;
+using Notism.Application.Cart.Common;
 using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
@@ -101,12 +101,7 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
                 .FirstOrDefault(g => g.Id == c.CustomisationGroupId);
 
             var availableOptions = group?.Options
-                .Select(o => new CartItemAvailableOptionResponse
-                {
-                    Id = o.Id,
-                    Label = o.Label,
-                    Surcharge = o.Surcharge,
-                })
+                .Select(CartItemAvailableOptionResponse.FromDomain)
                 .ToList() ?? new List<CartItemAvailableOptionResponse>();
 
             // Orphan check: if stored option no longer exists

@@ -2,8 +2,6 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Order.Mappers;
-using Notism.Application.Order.Models;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
 using Notism.Domain.Payment.Enums;
@@ -40,7 +38,7 @@ public class AdminOrdersForKanbanHandler : IRequestHandler<AdminOrdersForKanbanR
         var specification = new AdminOrdersForKanbanSpecification(deliveryStatus, paymentStatus);
         var pagedResult = await _orderRepository.FilterPagedByExpressionAsync(specification, request);
 
-        var items = pagedResult.Items.Select(order => AdminOrderMapper.ToAdminOrderResponse(order, order.User)).ToList();
+        var items = pagedResult.Items.Select(MapToResponse).ToList();
 
         _logger.LogInformation(
             "Retrieved {Count} orders for kanban view with status {Status}",
@@ -51,6 +49,28 @@ public class AdminOrdersForKanbanHandler : IRequestHandler<AdminOrdersForKanbanR
         {
             TotalCount = pagedResult.TotalCount,
             Items = items,
+        };
+    }
+
+    private static AdminOrdersForKanbanOrderResponse MapToResponse(Domain.Order.Order order)
+    {
+        var user = order.User;
+
+        return new AdminOrdersForKanbanOrderResponse
+        {
+            Id = order.Id,
+            SlugId = order.SlugId,
+            UserId = order.UserId,
+            UserEmail = user?.Email.Value ?? string.Empty,
+            UserName = user?.FullName ?? string.Empty,
+            TotalAmount = order.TotalAmount,
+            DeliveryStatus = order.DeliveryStatus.GetStringValue(),
+            PaymentStatus = order.PaymentStatus.GetStringValue(),
+            PaidAt = order.PaidAt,
+            CreatedAt = order.CreatedAt,
+            UpdatedAt = order.UpdatedAt,
+            TotalItems = order.Items.Count,
+            DeliveryNotes = order.DeliveryNotes,
         };
     }
 }

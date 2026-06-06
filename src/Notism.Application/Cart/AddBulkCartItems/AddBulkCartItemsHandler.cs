@@ -2,7 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Cart.Models;
+using Notism.Application.Cart.Common;
 using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
@@ -142,20 +142,11 @@ public class AddBulkCartItemsHandler : IRequestHandler<AddBulkCartItemsRequest, 
 
     private CartItemResponse ToCartItemResponse(CartItem cartItem, Domain.Food.Food food)
     {
-        return new CartItemResponse
-        {
-            Id = cartItem.Id,
-            FoodId = cartItem.FoodId,
-            Name = food.Name,
-            Description = food.Description,
-            Price = food.Price,
-            DiscountPrice = food.DiscountPrice,
-            ImageUrl = GetImageUrl(food.Images),
-            Category = food.Category?.Name ?? string.Empty,
-            Quantity = cartItem.Quantity,
-            StockQuantity = food.StockQuantity,
-            QuantityUnit = food.QuantityUnit.GetStringValue(),
-        };
+        return CartItemResponse.FromDomain(
+            cartItem,
+            food,
+            GetImageUrl(food.Images),
+            new List<CartItemCustomisationResponse>());
     }
 
     private string GetImageUrl(IReadOnlyCollection<Domain.Food.FoodImage> images)

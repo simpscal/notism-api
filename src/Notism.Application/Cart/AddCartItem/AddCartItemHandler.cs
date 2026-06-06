@@ -2,7 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Cart.Models;
+using Notism.Application.Cart.Common;
 using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
@@ -196,23 +196,11 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             Customisations = cartItem.Customisations.Select(c =>
             {
                 var group = fullFood.CustomisationGroups.FirstOrDefault(g => g.Id == c.CustomisationGroupId);
-                return new CartItemCustomisationResponse
-                {
-                    GroupId = c.CustomisationGroupId,
-                    GroupLabel = c.GroupLabel,
-                    OptionId = c.CustomisationOptionId,
-                    OptionLabel = c.OptionLabel,
-                    Surcharge = c.Surcharge,
-                    AvailableOptions = group?.Options
-                        .OrderBy(o => o.DisplayOrder)
-                        .Select(o => new CartItemAvailableOptionResponse
-                        {
-                            Id = o.Id,
-                            Label = o.Label,
-                            Surcharge = o.Surcharge,
-                        })
-                        .ToList() ?? new List<CartItemAvailableOptionResponse>(),
-                };
+                var availableOptions = group?.Options
+                    .OrderBy(o => o.DisplayOrder)
+                    .Select(CartItemAvailableOptionResponse.FromDomain)
+                    .ToList() ?? new List<CartItemAvailableOptionResponse>();
+                return CartItemCustomisationResponse.FromDomain(c, availableOptions);
             }).ToList(),
             TotalSurcharge = cartItem.TotalSurcharge,
         };

@@ -1,4 +1,4 @@
-using Notism.Application.Food.Models;
+using Notism.Application.Food.Common;
 
 namespace Notism.Application.Food.AdminUpdateCategory;
 

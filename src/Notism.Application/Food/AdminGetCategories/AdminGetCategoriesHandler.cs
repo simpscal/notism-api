@@ -2,7 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Food.Models;
+using Notism.Application.Food.Common;
 using Notism.Domain.Food;
 
 namespace Notism.Application.Food.AdminGetCategories;
@@ -27,7 +27,7 @@ public class AdminGetCategoriesHandler : IRequestHandler<AdminGetCategoriesReque
         var specification = new AdminGetCategoriesSpecification();
         var categories = await _categoryRepository.FilterByExpressionAsync(specification);
         var items = categories
-            .Select(c => new CategoryResponse { Id = c.Id, Name = c.Name })
+            .Select(CategoryResponse.FromDomain)
             .ToList();
 
         _logger.LogInformation("Retrieved {Count} categories for admin", items.Count);

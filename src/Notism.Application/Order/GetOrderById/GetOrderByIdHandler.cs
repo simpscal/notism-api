@@ -4,8 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
-using Notism.Application.Order.Mappers;
-using Notism.Application.Order.Models;
+using Notism.Application.Order.Common;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
@@ -63,32 +62,24 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
         PaymentQrResponse? paymentQr = null;
         if (bankAccountConfigured && order.PaymentMethod == PaymentMethod.Banking && order.PaymentStatus == PaymentStatus.Unpaid)
         {
-            paymentQr = new PaymentQrResponse
-            {
-                BankCode = payment!.BankCode,
-                AccountNumber = payment.AccountNumber,
-                AccountHolderName = payment.AccountHolderName,
-                Amount = order.TotalAmount,
-                OrderReference = order.SlugId,
-            };
+            paymentQr = PaymentQrResponse.FromDomain(payment!, order.TotalAmount, order.SlugId);
         }
 
-        var baseResponse = OrderMapper.ToResponse(order, _storageService);
         return new GetOrderByIdResponse
         {
-            Id = baseResponse.Id,
-            SlugId = baseResponse.SlugId,
-            TotalAmount = baseResponse.TotalAmount,
-            PaymentMethod = baseResponse.PaymentMethod,
-            DeliveryStatus = baseResponse.DeliveryStatus,
-            CreatedAt = baseResponse.CreatedAt,
-            UpdatedAt = baseResponse.UpdatedAt,
-            Items = baseResponse.Items,
-            DeliveryStatusTiming = baseResponse.DeliveryStatusTiming,
+            Id = order.Id,
+            SlugId = order.SlugId,
+            TotalAmount = order.TotalAmount,
+            PaymentMethod = order.PaymentMethod.GetStringValue(),
+            DeliveryStatus = order.DeliveryStatus.GetStringValue(),
+            CreatedAt = order.CreatedAt,
+            UpdatedAt = order.UpdatedAt,
+            Items = order.Items.Select(item => OrderItemResponse.FromDomain(item, _storageService)).ToList(),
+            DeliveryStatusTiming = DeliveryStatusTimingResponse.FromDomain(order.GetDeliveryStatusTiming()),
             PaymentStatus = order.PaymentStatus.GetStringValue(),
             PaidAt = order.PaidAt,
             PaymentQr = paymentQr,
-            DeliveryNotes = baseResponse.DeliveryNotes,
+            DeliveryNotes = order.DeliveryNotes,
         };
     }
 }

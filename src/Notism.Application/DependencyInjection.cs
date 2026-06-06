@@ -13,7 +13,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddMediatR().AddValidations().AddMappers().AddUtilities();
+        services.AddMediatR().AddValidations().AddUtilities();
 
         return services;
     }
@@ -33,13 +33,6 @@ public static class DependencyInjection
     private static IServiceCollection AddValidations(this IServiceCollection services)
     {
         services.AddValidatorsFromAssemblyContaining(typeof(DependencyInjection));
-
-        return services;
-    }
-
-    private static IServiceCollection AddMappers(this IServiceCollection services)
-    {
-        services.AddAutoMapper(typeof(DependencyInjection).Assembly);
 
         return services;
     }
