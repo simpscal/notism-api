@@ -4,7 +4,7 @@ using Notism.Shared.Extensions;
 
 namespace Notism.Application.Cart.UpdateCartItemCustomisations;
 
-public record UpdateCartItemCustomisationsResponse : CartItemResponse
+public sealed record UpdateCartItemCustomisationsResponse : CartItemResponse
 {
     public static UpdateCartItemCustomisationsResponse FromDomain(CartItem cartItem)
     {

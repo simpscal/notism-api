@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Application.Order.Common;
-using Notism.Domain.Common.Specifications;
+using Notism.Application.Payment.Common;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
 using Notism.Domain.Payment;
@@ -45,18 +45,15 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
         var userRole = request.Role.FromCamelCase<UserRole>() ?? UserRole.User;
         var isAdmin = userRole == UserRole.Admin;
 
-        var specification = new FilterSpecification<Domain.Order.Order>(o =>
+        var specification = new OrderDetailSpecification(o =>
             o.SlugId == request.SlugId &&
-            (o.UserId == request.UserId || isAdmin))
-            .Include("Items.Food.Images")
-            .Include(o => o.StatusHistory);
+            (o.UserId == request.UserId || isAdmin));
         var order = await _orderRepository.FindByExpressionAsync(specification)
             ?? throw new ResultFailureException(_messages.OrderNotFound);
 
         _logger.LogInformation("Retrieved order {SlugId} for user {UserId} (Admin: {IsAdmin})", request.SlugId, request.UserId, isAdmin);
 
-        var paymentSpec = new FilterSpecification<Domain.Payment.Payment>(p => true);
-        var payment = await _paymentRepository.FindByExpressionAsync(paymentSpec);
+        var payment = await _paymentRepository.FindByExpressionAsync(new BankAccountSpecification());
         var bankAccountConfigured = payment != null;
 
         PaymentQrResponse? paymentQr = null;

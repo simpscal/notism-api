@@ -1,6 +1,6 @@
 namespace Notism.Application.Storage.GenerateUploadUrl;
 
-public class GenerateUploadUrlResponse
+public sealed record GenerateUploadUrlResponse
 {
     public required string UploadUrl { get; set; }
     public required string FileKey { get; set; }

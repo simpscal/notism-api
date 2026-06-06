@@ -3,7 +3,7 @@ using Notism.Application.Common.Interfaces;
 
 namespace Notism.Application.Auth.GoogleOAuth;
 
-public class GoogleOAuthCallbackResponse
+public sealed record GoogleOAuthCallbackResponse
 {
     public required AuthenticationUserInfoResponse User { get; set; }
     public required string Token { get; set; }

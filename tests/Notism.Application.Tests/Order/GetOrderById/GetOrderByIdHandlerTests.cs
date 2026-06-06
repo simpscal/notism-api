@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Application.Order.GetOrderById;
+using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
@@ -51,11 +52,11 @@ public class GetOrderByIdHandlerTests
         var payment = Domain.Payment.Payment.Create(storerId, "Vietcombank", "123456789", "Nguyen Van A");
 
         _orderRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Order.Order>>())
             .Returns(order);
 
         _paymentRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Payment.Payment>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Payment.Payment>>())
             .Returns(payment);
 
         var request = new GetOrderByIdRequest { SlugId = order.SlugId, UserId = userId, Role = "user" };
@@ -76,11 +77,11 @@ public class GetOrderByIdHandlerTests
         var order = Domain.Order.Order.Create(userId, PaymentMethod.CashOnDelivery, new List<Guid>());
 
         _orderRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Order.Order>>())
             .Returns(order);
 
         _paymentRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Payment.Payment>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Payment.Payment>>())
             .Returns((Domain.Payment.Payment?)null);
 
         var request = new GetOrderByIdRequest { SlugId = order.SlugId, UserId = userId, Role = "user" };
@@ -96,11 +97,11 @@ public class GetOrderByIdHandlerTests
         var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
 
         _orderRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Order.Order>>())
             .Returns(order);
 
         _paymentRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Payment.Payment>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Payment.Payment>>())
             .Returns((Domain.Payment.Payment?)null);
 
         var request = new GetOrderByIdRequest { SlugId = order.SlugId, UserId = userId, Role = "user" };
@@ -117,11 +118,11 @@ public class GetOrderByIdHandlerTests
         order.MarkAsPaid(DateTime.UtcNow);
 
         _orderRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Order.Order>>())
             .Returns(order);
 
         _paymentRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Payment.Payment>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Payment.Payment>>())
             .Returns((Domain.Payment.Payment?)null);
 
         var request = new GetOrderByIdRequest { SlugId = order.SlugId, UserId = userId, Role = "user" };
@@ -139,7 +140,7 @@ public class GetOrderByIdHandlerTests
         order.MarkAsPaid(paidAt);
 
         _orderRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Order.Order>>())
             .Returns(order);
 
         var request = new GetOrderByIdRequest { SlugId = order.SlugId, UserId = userId, Role = "user" };
@@ -153,7 +154,7 @@ public class GetOrderByIdHandlerTests
     public async Task Handle_WhenOrderNotFound_ThrowsResultFailureException()
     {
         _orderRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Order.Order>>())
             .Returns((Domain.Order.Order?)null);
 
         var request = new GetOrderByIdRequest { SlugId = "ORD-MISSING", UserId = Guid.NewGuid(), Role = "user" };
@@ -172,11 +173,11 @@ public class GetOrderByIdHandlerTests
         var payment = Domain.Payment.Payment.Create(storerId, "MB", "9999", "Le Van C");
 
         _orderRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Order.Order>>())
             .Returns(order);
 
         _paymentRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Payment.Payment>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Payment.Payment>>())
             .Returns(payment);
 
         var request = new GetOrderByIdRequest { SlugId = order.SlugId, UserId = userId, Role = "user" };

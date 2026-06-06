@@ -1,6 +1,6 @@
 namespace Notism.Application.Auth.RefreshToken;
 
-public class RefreshTokenResponse
+public sealed record RefreshTokenResponse
 {
     public string Token { get; set; } = string.Empty;
     public DateTime ExpiresAt { get; set; }

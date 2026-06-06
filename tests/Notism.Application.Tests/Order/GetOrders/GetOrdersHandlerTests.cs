@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Order.GetOrders;
-using Notism.Domain.Common.Specifications;
+using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
 using Notism.Domain.Payment.Enums;
@@ -37,7 +37,7 @@ public class GetOrdersHandlerTests
         var unpaidOrder = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
 
         _orderRepository
-            .FilterByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
+            .FilterByExpressionAsync(Arg.Any<ISpecification<Domain.Order.Order>>())
             .Returns(new List<Domain.Order.Order> { paidOrder, unpaidOrder });
 
         var request = new GetOrdersRequest { UserId = userId };
@@ -55,7 +55,7 @@ public class GetOrdersHandlerTests
         var unpaidOrder = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
 
         _orderRepository
-            .FilterByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
+            .FilterByExpressionAsync(Arg.Any<ISpecification<Domain.Order.Order>>())
             .Returns(new List<Domain.Order.Order> { paidOrder, unpaidOrder });
 
         var request = new GetOrdersRequest { UserId = userId, PaymentStatus = "paid" };
@@ -74,7 +74,7 @@ public class GetOrdersHandlerTests
         var unpaidOrder = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
 
         _orderRepository
-            .FilterByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
+            .FilterByExpressionAsync(Arg.Any<ISpecification<Domain.Order.Order>>())
             .Returns(new List<Domain.Order.Order> { paidOrder, unpaidOrder });
 
         var request = new GetOrdersRequest { UserId = userId, PaymentStatus = "unpaid" };
@@ -93,7 +93,7 @@ public class GetOrdersHandlerTests
         var unpaidOrder = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
 
         _orderRepository
-            .FilterByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
+            .FilterByExpressionAsync(Arg.Any<ISpecification<Domain.Order.Order>>())
             .Returns(new List<Domain.Order.Order> { paidOrder, unpaidOrder });
 
         var request = new GetOrdersRequest { UserId = userId, PaymentStatus = "unknown-value" };
@@ -111,7 +111,7 @@ public class GetOrdersHandlerTests
         order.MarkAsPaid(paidAt);
 
         _orderRepository
-            .FilterByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
+            .FilterByExpressionAsync(Arg.Any<ISpecification<Domain.Order.Order>>())
             .Returns(new List<Domain.Order.Order> { order });
 
         var request = new GetOrdersRequest { UserId = userId };
@@ -129,7 +129,7 @@ public class GetOrdersHandlerTests
         var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
 
         _orderRepository
-            .FilterByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
+            .FilterByExpressionAsync(Arg.Any<ISpecification<Domain.Order.Order>>())
             .Returns(new List<Domain.Order.Order> { order });
 
         var request = new GetOrdersRequest { UserId = userId };

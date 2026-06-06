@@ -1,6 +1,5 @@
 using System.Globalization;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 using MediatR;
 
@@ -147,32 +146,4 @@ public static class PaymentEndpoints
 
         return Results.Ok();
     }
-}
-
-public record CreateBankingCheckoutPayload
-{
-    public List<Guid> CartItemIds { get; set; } = new();
-    public decimal TotalAmount { get; set; }
-}
-
-public record SaveBankAccountPayload
-{
-    public string BankCode { get; set; } = string.Empty;
-    public string AccountNumber { get; set; } = string.Empty;
-    public string AccountHolderName { get; set; } = string.Empty;
-}
-
-public record SepayWebhookPayload
-{
-    [JsonPropertyName("id")]
-    public long TransactionId { get; init; }
-
-    [JsonPropertyName("transferAmount")]
-    public decimal Amount { get; init; }
-
-    [JsonPropertyName("transactionDate")]
-    public string TransactionDate { get; init; } = string.Empty;
-
-    [JsonPropertyName("content")]
-    public string Content { get; init; } = string.Empty;
 }

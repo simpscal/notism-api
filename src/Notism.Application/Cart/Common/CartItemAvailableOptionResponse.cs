@@ -2,7 +2,7 @@ using Notism.Domain.Food;
 
 namespace Notism.Application.Cart.Common;
 
-public record CartItemAvailableOptionResponse
+public sealed record CartItemAvailableOptionResponse
 {
     public Guid Id { get; set; }
     public required string Label { get; set; }

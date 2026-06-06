@@ -548,3 +548,113 @@ These files serve as canonical examples of each pattern. When implementing a new
 | **Specification (simple/inline)** | Uses `FilterSpecification<T>` directly in handler |
 
 Use these as templates: examine the full file structure, naming patterns, validation approach, and handler orchestration from these examples.
+
+---
+
+## Standardised Conventions
+
+These are the single, authoritative pattern for each concern. New code must
+conform; existing code is being brought into line incrementally. When two
+approaches previously coexisted, the option documented here is the one to keep.
+
+### Response Models
+
+- **One shape: `sealed record`.** Every response model is a `record`. It is
+  `sealed` unless it is a base type that other responses inherit (the only
+  permitted base records are `Food/Common/CategoryResponse` and
+  `Cart/Common/CartItemResponse`, both intentionally non-`sealed`).
+- **`FromDomain` factories.** Responses that project a domain entity expose a
+  `static FromDomain(...)` factory and are built only through it — never via ad
+  hoc object initialisers in handlers. Trivial responses that do not map a
+  domain entity (message acknowledgements, count DTOs, paginated wrappers,
+  pre-signed URLs) are constructed directly and do not need a factory.
+- **Nullability convention.** A property is declared nullable (`T?`) only when
+  the value is genuinely optional in the contract. Required reference values use
+  the `required` modifier. Do not paper over optionality with
+  `= string.Empty` defaults on conceptually-required fields.
+- **Pagination.** Paginated responses derive from
+  `Notism.Shared.Models.PagedResult<T>` (`{ TotalCount, Items }`). Do not
+  hand-roll a bare `List<T>` property for a paginated result.
+- **Frozen JSON contract.** System.Text.Json uses the default camelCase policy,
+  so the serialized field name is derived from the C# property name. Never
+  rename a response property (or change its `JsonPropertyName`) without treating
+  it as a breaking API change.
+
+### Specifications
+
+- **Reused or non-trivial queries live in named specification classes** placed
+  in the feature's `Common` folder (e.g. `Cart/Common/CartItemDetailSpecification`,
+  `Order/Common/OrderDetailSpecification`,
+  `Food/Common/FoodWithCustomisationsByIdSpecification`,
+  `Payment/Common/BankAccountSpecification`). A query whose include chain or
+  predicate appears in more than one handler must be a named class so it is
+  defined exactly once.
+- **`FilterSpecification<T>` remains valid for genuinely one-off, single-handler
+  filters** with no shared include chain.
+- **Includes:** prefer lambda includes (`.Include(f => f.Category!)`) for direct
+  navigation properties. Nested navigation through collections
+  (`Items.Food.Images`) currently uses string-based includes because the
+  specification base type lives in the Domain layer, which does not reference EF
+  Core and therefore cannot express `ThenInclude`. Such string includes must be
+  encapsulated inside a named specification, never scattered across handlers.
+- **No unbounded ad hoc fetches.** Do not write `FilterSpecification<T>(_ => true)`
+  inline in a handler to grab a single row. Use a named specification (a
+  `_ => true` predicate is acceptable only inside a named "single configured
+  row" specification such as `BankAccountSpecification`, where the repository's
+  `FirstOrDefault` semantics are intentional). A `_ => true` default branch
+  inside a paginated admin-list specification (return-all-when-no-filter) is
+  also acceptable because the result is always paged.
+
+### Endpoint Payloads
+
+- **No payload/request records inside endpoint files.** Each inbound payload is
+  a `record` in its own file under `src/Notism.Api/Models/Payloads/`, named after
+  the type (StyleCop SA1649: one public type per file, filename = type name).
+  Endpoint files contain only the static endpoint-mapping class.
+- **Naming:** the API-surface input record is a `*Payload`; the endpoint maps it
+  to the corresponding Application `*Request` before dispatching via `ISender`.
+
+### Validation
+
+- **Validation messages source from `IMessages`** (the localized message
+  provider) rather than hard-coded English string literals, so that validator
+  output matches the localization already used by handlers. New validators must
+  inject `IMessages` and reference message keys.
+- **`ValidationBehavior` throws a validation-specific exception**
+  (`Notism.Shared.Exceptions.ValidationException`), not `ResultFailureException`.
+  `ResultFailureMiddleware` maps it to HTTP 400. The serialized error body is
+  unchanged (joined message text under `message`).
+
+### Persistence Commit Policy
+
+- **Single commit point.** A handler that mutates state commits exactly once.
+  The target policy is to commit through `IUnitOfWork` and to keep
+  `SaveChangesAsync` off the handler-facing repository surface so a double-save
+  is impossible. Until the full migration lands, handlers must still issue at
+  most one commit per logical operation and must not call `SaveChangesAsync` on
+  more than one repository sharing the same `DbContext`.
+
+### Handler Logging
+
+- Inject `ILogger<THandler>` where a handler performs a meaningful state change
+  or a notable read, and log at `Information` for successful outcomes and
+  `Warning`/`Error` for handled failure branches. Keep message templates
+  structured (named placeholders), not interpolated strings.
+
+### Interface-Necessity Rule
+
+- An interface exists only when it **crosses a layer boundary** (e.g. an
+  Application-defined service implemented in Infrastructure) or **backs an
+  actively used test seam**. A same-layer type with a single implementation, a
+  single consumer, and no test double should be injected concretely. Following
+  this rule, `ICookieService` was removed and `CookieService` is injected
+  directly in `AuthEndpoints`.
+- Interfaces live in `Common/Interfaces` within their layer, or beside the
+  aggregate in the Domain layer (repository interfaces).
+
+### Dependency Injection
+
+- **MediatR is registered exactly once**, in
+  `Notism.Application.DependencyInjection.AddMediatR`, scanning the Application
+  assembly. The API assembly contains no handlers and must not re-register
+  MediatR.

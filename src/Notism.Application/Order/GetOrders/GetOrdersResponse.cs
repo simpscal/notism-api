@@ -4,7 +4,7 @@ using Notism.Shared.Extensions;
 
 namespace Notism.Application.Order.GetOrders;
 
-public class GetOrdersResponse
+public sealed record GetOrdersResponse
 {
     public List<GetOrdersOrderResponse> Orders { get; set; } = new();
 
@@ -19,7 +19,7 @@ public class GetOrdersResponse
     }
 }
 
-public class GetOrdersOrderResponse
+public sealed record GetOrdersOrderResponse
 {
     public Guid Id { get; set; }
     public string SlugId { get; set; } = string.Empty;

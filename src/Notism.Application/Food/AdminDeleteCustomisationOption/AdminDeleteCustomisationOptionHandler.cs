@@ -3,8 +3,8 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
+using Notism.Application.Food.Common;
 using Notism.Domain.Common.Interfaces;
-using Notism.Domain.Common.Specifications;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Food.AdminDeleteCustomisationOption;
@@ -27,8 +27,7 @@ public class AdminDeleteCustomisationOptionHandler : IRequestHandler<AdminDelete
 
     public async Task Handle(AdminDeleteCustomisationOptionRequest request, CancellationToken cancellationToken)
     {
-        var spec = new FilterSpecification<Domain.Food.Food>(f => f.Id == request.FoodId && !f.IsDeleted)
-            .Include("CustomisationGroups.Options");
+        var spec = new FoodWithCustomisationsByIdSpecification(request.FoodId);
         var food = await _foodRepository.FindByExpressionAsync(spec)
             ?? throw new NotFoundException(_messages.FoodNotFound);
 

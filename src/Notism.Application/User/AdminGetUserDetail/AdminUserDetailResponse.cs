@@ -2,7 +2,7 @@ using Notism.Shared.Extensions;
 
 namespace Notism.Application.User.AdminGetUserDetail;
 
-public class AdminUserDetailResponse
+public sealed record AdminUserDetailResponse
 {
     public Guid Id { get; set; }
     public string FirstName { get; set; } = string.Empty;

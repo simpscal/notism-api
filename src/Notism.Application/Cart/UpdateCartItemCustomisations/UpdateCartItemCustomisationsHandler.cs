@@ -2,6 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Cart.Common;
 using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Domain.Common.Interfaces;
@@ -34,12 +35,7 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
         UpdateCartItemCustomisationsRequest request,
         CancellationToken cancellationToken)
     {
-        var cartItemSpec = new FilterSpecification<CartItem>(c => c.Id == request.CartItemId)
-            .Include(c => c.Food)
-            .Include("Food.Category")
-            .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1))
-            .Include("Food.CustomisationGroups.Options")
-            .Include(c => c.Customisations);
+        var cartItemSpec = new CartItemDetailSpecification(c => c.Id == request.CartItemId);
         var cartItem = await _cartItemRepository.FindByExpressionAsync(cartItemSpec)
             ?? throw new NotFoundException(_messages.CartItemNotFound);
 

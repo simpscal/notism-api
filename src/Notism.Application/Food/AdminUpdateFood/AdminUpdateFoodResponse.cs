@@ -4,7 +4,7 @@ using Notism.Shared.Extensions;
 
 namespace Notism.Application.Food.AdminUpdateFood;
 
-public class AdminUpdateFoodResponse
+public sealed record AdminUpdateFoodResponse
 {
     public Guid Id { get; set; }
     public required string Name { get; set; }

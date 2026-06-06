@@ -3,9 +3,9 @@ using Notism.Shared.Models;
 
 namespace Notism.Application.User.AdminGetUsers;
 
-public record AdminGetUsersResponse : PagedResult<AdminGetUsersItemResponse>;
+public sealed record AdminGetUsersResponse : PagedResult<AdminGetUsersItemResponse>;
 
-public record AdminGetUsersItemResponse
+public sealed record AdminGetUsersItemResponse
 {
     public Guid Id { get; set; }
     public string FirstName { get; set; } = string.Empty;

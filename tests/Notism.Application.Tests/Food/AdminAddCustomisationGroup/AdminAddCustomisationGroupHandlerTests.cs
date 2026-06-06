@@ -47,7 +47,7 @@ public class AdminAddCustomisationGroupHandlerTests
             5);
 
         _foodRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Food.Food>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Food.Food>>())
             .Returns(food);
 
         var request = new AdminAddCustomisationGroupRequest
@@ -73,7 +73,7 @@ public class AdminAddCustomisationGroupHandlerTests
     public async Task Handle_WhenFoodNotFound_ThrowsNotFoundException()
     {
         _foodRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Food.Food>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Food.Food>>())
             .Returns((Domain.Food.Food?)null);
 
         var request = new AdminAddCustomisationGroupRequest

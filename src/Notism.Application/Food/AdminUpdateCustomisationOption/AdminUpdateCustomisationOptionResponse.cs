@@ -2,7 +2,7 @@ using Notism.Domain.Food;
 
 namespace Notism.Application.Food.AdminUpdateCustomisationOption;
 
-public class AdminUpdateCustomisationOptionResponse
+public sealed record AdminUpdateCustomisationOptionResponse
 {
     public Guid Id { get; set; }
     public Guid GroupId { get; set; }

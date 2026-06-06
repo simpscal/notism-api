@@ -2,7 +2,7 @@ using Notism.Shared.Extensions;
 
 namespace Notism.Application.Order.CreateOrder;
 
-public class CreateOrderResponse
+public sealed record CreateOrderResponse
 {
     public Guid OrderId { get; set; }
     public string SlugId { get; set; } = string.Empty;

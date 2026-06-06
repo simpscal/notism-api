@@ -2,9 +2,9 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Cart.Common;
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.Cart;
-using Notism.Domain.Common.Specifications;
 
 namespace Notism.Application.Cart.GetCartItems;
 
@@ -37,12 +37,7 @@ public class GetCartItemsHandler : IRequestHandler<GetCartItemsRequest, GetCartI
 
     private async Task<List<CartItem>> FetchCartItemsAsync(Guid userId)
     {
-        var specification = new FilterSpecification<CartItem>(c => c.UserId == userId)
-            .Include(c => c.Food)
-            .Include("Food.Category")
-            .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1))
-            .Include("Food.CustomisationGroups.Options")
-            .Include(c => c.Customisations);
+        var specification = new CartItemDetailSpecification(c => c.UserId == userId);
         return (await _cartItemRepository.FilterByExpressionAsync(specification)).ToList();
     }
 }

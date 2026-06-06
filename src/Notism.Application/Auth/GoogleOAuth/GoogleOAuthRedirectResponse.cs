@@ -2,7 +2,7 @@ using Notism.Application.Common.Interfaces;
 
 namespace Notism.Application.Auth.GoogleOAuth;
 
-public class GoogleOAuthRedirectResponse
+public sealed record GoogleOAuthRedirectResponse
 {
     public required string RedirectUrl { get; set; }
     public required string State { get; set; }

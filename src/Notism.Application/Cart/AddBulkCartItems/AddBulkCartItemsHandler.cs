@@ -69,7 +69,7 @@ public class AddBulkCartItemsHandler : IRequestHandler<AddBulkCartItemsRequest, 
     {
         var foodIds = _request!.Items.Select(i => i.FoodId).Distinct().ToList();
         var foodSpecification = new FilterSpecification<Domain.Food.Food>(f => foodIds.Contains(f.Id))
-            .Include("Category")
+            .Include(f => f.Category!)
             .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1));
         var foods = await _foodRepository.FilterByExpressionAsync(foodSpecification);
 

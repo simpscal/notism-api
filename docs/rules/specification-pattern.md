@@ -91,9 +91,16 @@ var specification = new FilterSpecification<Order>(o => o.UserId == userId)
     .Include(o => o.StatusHistory);  // Direct navigation property
 ```
 
-**✅ DO: Use String-Based Includes for Nested Navigation Properties**
+**✅ DO: Use String-Based Includes for Nested Navigation Properties — but only inside a named specification**
 
-For nested navigation properties (especially through collections), use string-based includes with dot notation:
+For nested navigation properties (especially through collections), string-based
+includes with dot notation are still required because the specification base type
+lives in the Domain layer, which does not reference EF Core and therefore cannot
+express `ThenInclude`. Such string includes **must be encapsulated inside a named
+specification class** (e.g. `OrderDetailSpecification`,
+`CartItemDetailSpecification`, `FoodWithCustomisationsByIdSpecification`) and must
+never be scattered inline across handlers. Prefer lambda includes for direct
+navigation properties.
 
 ```csharp
 // Application/Order/GetOrders/GetOrdersHandler.cs

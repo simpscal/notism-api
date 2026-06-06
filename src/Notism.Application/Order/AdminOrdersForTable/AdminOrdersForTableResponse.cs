@@ -3,9 +3,9 @@ using Notism.Shared.Models;
 
 namespace Notism.Application.Order.AdminOrdersForTable;
 
-public record AdminOrdersForTableResponse : PagedResult<AdminOrdersForTableOrderResponse>;
+public sealed record AdminOrdersForTableResponse : PagedResult<AdminOrdersForTableOrderResponse>;
 
-public class AdminOrdersForTableOrderResponse
+public sealed record AdminOrdersForTableOrderResponse
 {
     public Guid Id { get; set; }
     public string SlugId { get; set; } = string.Empty;

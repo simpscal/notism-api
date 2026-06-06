@@ -1,6 +1,6 @@
 namespace Notism.Application.Order.Common;
 
-public class PaymentQrResponse
+public sealed record PaymentQrResponse
 {
     public string BankCode { get; set; } = string.Empty;
     public string AccountNumber { get; set; } = string.Empty;

@@ -5,9 +5,9 @@ using Notism.Shared.Models;
 
 namespace Notism.Application.Food.GetFoods;
 
-public record GetFoodsResponse : PagedResult<FoodItemResponse>;
+public sealed record GetFoodsResponse : PagedResult<FoodItemResponse>;
 
-public record FoodItemResponse
+public sealed record FoodItemResponse
 {
     public Guid Id { get; set; }
     public required string Name { get; set; }

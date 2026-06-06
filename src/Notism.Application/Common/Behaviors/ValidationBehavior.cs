@@ -36,7 +36,7 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
             if (failures.Any())
             {
                 var errorMessage = string.Join("; ", failures.Select(f => f.ErrorMessage));
-                throw new ResultFailureException(errorMessage);
+                throw new Notism.Shared.Exceptions.ValidationException(errorMessage);
             }
         }
 

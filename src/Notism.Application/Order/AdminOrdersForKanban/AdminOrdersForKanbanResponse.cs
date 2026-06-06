@@ -3,9 +3,9 @@ using Notism.Shared.Models;
 
 namespace Notism.Application.Order.AdminOrdersForKanban;
 
-public record AdminOrdersForKanbanResponse : PagedResult<AdminOrdersForKanbanOrderResponse>;
+public sealed record AdminOrdersForKanbanResponse : PagedResult<AdminOrdersForKanbanOrderResponse>;
 
-public class AdminOrdersForKanbanOrderResponse
+public sealed record AdminOrdersForKanbanOrderResponse
 {
     public Guid Id { get; set; }
     public string SlugId { get; set; } = string.Empty;

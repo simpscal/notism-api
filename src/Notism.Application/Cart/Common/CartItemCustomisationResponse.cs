@@ -3,7 +3,7 @@ using Notism.Domain.Food;
 
 namespace Notism.Application.Cart.Common;
 
-public record CartItemCustomisationResponse
+public sealed record CartItemCustomisationResponse
 {
     public Guid? GroupId { get; set; }
     public required string GroupLabel { get; set; }

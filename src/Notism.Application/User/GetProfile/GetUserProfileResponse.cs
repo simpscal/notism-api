@@ -2,7 +2,7 @@ using Notism.Shared.Extensions;
 
 namespace Notism.Application.User.GetProfile;
 
-public class GetUserProfileResponse
+public sealed record GetUserProfileResponse
 {
     public Guid Id { get; set; }
     public string? FirstName { get; set; }

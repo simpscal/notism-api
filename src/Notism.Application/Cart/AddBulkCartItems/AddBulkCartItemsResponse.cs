@@ -5,7 +5,7 @@ using Notism.Domain.Cart;
 
 namespace Notism.Application.Cart.AddBulkCartItems;
 
-public record AddBulkCartItemsResponse
+public sealed record AddBulkCartItemsResponse
 {
     public required List<CartItemResponse> Items { get; set; }
 

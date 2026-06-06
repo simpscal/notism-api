@@ -1,7 +1,5 @@
 using System.Text;
 
-using MediatR;
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Localization;
 using Microsoft.IdentityModel.Tokens;
@@ -32,14 +30,12 @@ public static class DependencyInjection
 
         services.AddProblemDetails();
 
-        services.AddScoped<ICookieService, CookieService>();
+        services.AddScoped<CookieService>();
         services.AddScoped<INotificationService, SignalRNotificationService>();
 
-        services.AddMediatR(options =>
-        {
-            options.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
-        });
-
+        // MediatR is registered exactly once in the Application layer
+        // (Notism.Application.DependencyInjection.AddMediatR). The API assembly
+        // contains no handlers, so no additional registration is required here.
         return services;
     }
 

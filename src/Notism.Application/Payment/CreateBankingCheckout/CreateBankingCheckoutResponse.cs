@@ -2,7 +2,7 @@ using Notism.Domain.Payment;
 
 namespace Notism.Application.Payment.CreateBankingCheckout;
 
-public class CreateBankingCheckoutResponse
+public sealed record CreateBankingCheckoutResponse
 {
     public Guid CheckoutId { get; set; }
 

@@ -127,10 +127,3 @@ public static class OrderEndpoints
         return Results.Ok();
     }
 }
-
-public record CreateOrderPayload
-{
-    public string PaymentMethod { get; set; } = string.Empty;
-    public List<Guid> CartItemIds { get; set; } = new();
-    public string? DeliveryNotes { get; set; }
-}

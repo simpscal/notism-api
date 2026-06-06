@@ -5,7 +5,7 @@ using Notism.Shared.Exceptions;
 
 namespace Notism.Api.Services;
 
-public class CookieService : ICookieService
+public class CookieService
 {
     private readonly IAntiforgery _antiforgery;
     private readonly IWebHostEnvironment _environment;
