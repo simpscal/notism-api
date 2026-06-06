@@ -1,6 +1,6 @@
-namespace Notism.Application.Order.Models;
+namespace Notism.Domain.Order;
 
-public class DeliveryStatusTimingResponse
+public class DeliveryStatusTiming
 {
     public DateTime? OrderPlacedCompletedAt { get; set; }
     public DateTime? PreparingCompletedAt { get; set; }

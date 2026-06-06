@@ -6,7 +6,6 @@ using Notism.Application.Common.Services;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
 using Notism.Shared.Exceptions;
-using Notism.Shared.Extensions;
 
 namespace Notism.Application.User.AdminGetUserDetail;
 
@@ -36,21 +35,6 @@ public class AdminGetUserDetailHandler : IRequestHandler<AdminGetUserDetailReque
 
         _logger.LogInformation("Admin retrieved detail for user {UserId}", request.UserId);
 
-        return MapToResponse(user);
-    }
-
-    internal static AdminUserDetailResponse MapToResponse(Domain.User.User user)
-    {
-        return new AdminUserDetailResponse
-        {
-            Id = user.Id,
-            FirstName = user.FirstName ?? string.Empty,
-            LastName = user.LastName ?? string.Empty,
-            Email = user.Email.Value,
-            Role = user.Role.ToCamelCase(),
-            PhoneNumber = null,
-            Location = null,
-            CreatedAt = user.CreatedAt,
-        };
+        return AdminUserDetailResponse.FromDomain(user);
     }
 }

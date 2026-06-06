@@ -4,7 +4,6 @@
   </PropertyGroup>
   <ItemGroup>
     <!-- ASP.NET -->
-    <PackageVersion Include="AutoMapper" Version="13.0.1" />
     <PackageVersion Include="AWSSDK.S3" Version="3.7.412.2" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="11.5.2" />
     <PackageVersion Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" />

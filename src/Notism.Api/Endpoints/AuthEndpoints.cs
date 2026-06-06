@@ -5,7 +5,6 @@ using Notism.Api.Models;
 using Notism.Api.Services;
 using Notism.Application.Auth.GoogleOAuth;
 using Notism.Application.Auth.Login;
-using Notism.Application.Auth.Models;
 using Notism.Application.Auth.RefreshToken;
 using Notism.Application.Auth.Register;
 using Notism.Application.Auth.RequestPasswordReset;
@@ -29,7 +28,7 @@ public static class AuthEndpoints
             .WithSummary("Authenticate user and return JWT token")
             .WithDescription("Authenticates a user with email and password, returns JWT token and user information")
             .AllowAnonymous()
-            .Produces<AuthenticationResponse>(StatusCodes.Status200OK)
+            .Produces<LoginResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
 
         group.MapPost("/register", RegisterAsync)
@@ -37,7 +36,7 @@ public static class AuthEndpoints
             .WithSummary("Register a new user and return JWT token")
             .WithDescription("Creates a new user account and returns JWT token and user information")
             .AllowAnonymous()
-            .Produces<AuthenticationResponse>(StatusCodes.Status200OK)
+            .Produces<RegisterResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
 
         group.MapPost("/refresh", RefreshTokenAsync)
@@ -89,7 +88,7 @@ public static class AuthEndpoints
             .WithSummary("Handle Google OAuth callback")
             .WithDescription("Receives code and state from Google OAuth, verifies the user, and returns the same response as login API")
             .AllowAnonymous()
-            .Produces<AuthenticationResponse>(StatusCodes.Status200OK)
+            .Produces<GoogleOAuthCallbackResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
     }
 

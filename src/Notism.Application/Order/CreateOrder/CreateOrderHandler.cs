@@ -55,15 +55,7 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
                 cartItems.Count(),
                 order.TotalAmount);
 
-            return new CreateOrderResponse
-            {
-                OrderId = order.Id,
-                SlugId = order.SlugId,
-                TotalAmount = order.TotalAmount,
-                PaymentMethod = order.PaymentMethod.GetStringValue(),
-                DeliveryStatus = order.DeliveryStatus.GetStringValue(),
-                CreatedAt = order.CreatedAt,
-            };
+            return CreateOrderResponse.FromDomain(order);
         });
     }
 

@@ -3,7 +3,6 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Interfaces;
-using Notism.Application.Order.Mappers;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
@@ -45,16 +44,12 @@ public class GetOrdersHandler : IRequestHandler<GetOrdersRequest, GetOrdersRespo
             orders = orders.Where(o => o.PaymentStatus == paymentStatusFilter).ToList();
         }
 
-        var orderResponses = orders
+        var orderedOrders = orders
             .OrderByDescending(o => o.CreatedAt)
-            .Select(order => OrderMapper.ToResponse(order, _storageService))
             .ToList();
 
-        _logger.LogInformation("Retrieved {Count} orders for user {UserId}", orderResponses.Count, request.UserId);
+        _logger.LogInformation("Retrieved {Count} orders for user {UserId}", orderedOrders.Count, request.UserId);
 
-        return new GetOrdersResponse
-        {
-            Orders = orderResponses,
-        };
+        return GetOrdersResponse.FromDomain(orderedOrders, _storageService);
     }
 }

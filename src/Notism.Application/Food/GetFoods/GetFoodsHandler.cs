@@ -2,10 +2,8 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.Food;
-using Notism.Shared.Extensions;
 
 namespace Notism.Application.Food.GetFoods;
 
@@ -41,36 +39,25 @@ public class GetFoodsHandler : IRequestHandler<GetFoodsRequest, GetFoodsResponse
         var pagedResult = await _foodRepository.FilterPagedByExpressionAsync(
             specification,
             request,
-            f => new
+            f => new FoodListProjection
             {
-                f.Id,
-                f.Name,
-                f.Description,
-                f.Price,
-                f.DiscountPrice,
+                Id = f.Id,
+                Name = f.Name,
+                Description = f.Description,
+                Price = f.Price,
+                DiscountPrice = f.DiscountPrice,
                 CategoryName = f.Category != null ? f.Category.Name : string.Empty,
-                f.IsAvailable,
-                f.QuantityUnit,
-                f.StockQuantity,
+                IsAvailable = f.IsAvailable,
+                QuantityUnit = f.QuantityUnit,
+                StockQuantity = f.StockQuantity,
                 ImageKeys = f.Images
                     .OrderBy(i => i.DisplayOrder)
                     .Select(i => new ImageKeyOrder(i.FileKey, i.DisplayOrder))
                     .ToList(),
             });
 
-        var items = pagedResult.Items.Select(proj => new FoodItemResponse
-        {
-            Id = proj.Id,
-            Name = proj.Name,
-            Description = proj.Description,
-            Price = proj.Price,
-            DiscountPrice = proj.DiscountPrice,
-            ImageUrl = GetImageUrlFromKeys(proj.ImageKeys, _storageService),
-            Category = proj.CategoryName,
-            IsAvailable = proj.IsAvailable,
-            QuantityUnit = proj.QuantityUnit.GetStringValue(),
-            StockQuantity = proj.StockQuantity,
-        });
+        var items = pagedResult.Items
+            .Select(proj => FoodItemResponse.FromProjection(proj, _storageService));
 
         _logger.LogInformation("Retrieved {Count} foods", pagedResult.Items.Count());
 
@@ -80,12 +67,4 @@ public class GetFoodsHandler : IRequestHandler<GetFoodsRequest, GetFoodsResponse
             Items = items,
         };
     }
-
-    private static string GetImageUrlFromKeys(IEnumerable<ImageKeyOrder> imageKeys, IStorageService storageService)
-    {
-        var first = imageKeys.OrderBy(k => k.DisplayOrder).FirstOrDefault();
-        return first == null ? string.Empty : storageService.GetPublicUrl(first.FileKey, StorageTypeConstants.Food);
-    }
 }
-
-internal record ImageKeyOrder(string FileKey, int DisplayOrder);

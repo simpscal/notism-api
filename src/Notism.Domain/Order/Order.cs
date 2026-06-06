@@ -112,6 +112,47 @@ public class Order : AggregateRoot
         AddDomainEvent(new OrderPaymentFailedEvent(Id, UserId));
     }
 
+    public DeliveryStatusTiming GetDeliveryStatusTiming()
+    {
+        var history = _statusHistory
+            .OrderBy(h => h.StatusChangedAt)
+            .ToList();
+
+        var timing = new DeliveryStatusTiming();
+
+        var orderPlacedAt = history.FirstOrDefault(h => h.Status == DeliveryStatus.OrderPlaced)?.StatusChangedAt;
+        var preparingAt = history.FirstOrDefault(h => h.Status == DeliveryStatus.Preparing)?.StatusChangedAt;
+        var onTheWayAt = history.FirstOrDefault(h => h.Status == DeliveryStatus.OnTheWay)?.StatusChangedAt;
+        var deliveredAt = history.FirstOrDefault(h => h.Status == DeliveryStatus.Delivered)?.StatusChangedAt;
+
+        if (orderPlacedAt.HasValue)
+        {
+            timing.OrderPlacedCompletedAt = orderPlacedAt.Value;
+        }
+
+        if (preparingAt.HasValue)
+        {
+            timing.OrderPlacedCompletedAt = preparingAt.Value;
+        }
+
+        if (onTheWayAt.HasValue)
+        {
+            timing.PreparingCompletedAt = onTheWayAt.Value;
+        }
+
+        if (deliveredAt.HasValue)
+        {
+            timing.OnTheWayCompletedAt = deliveredAt.Value;
+        }
+
+        if (deliveredAt.HasValue && DeliveryStatus == DeliveryStatus.Delivered)
+        {
+            timing.DeliveredCompletedAt = deliveredAt.Value;
+        }
+
+        return timing;
+    }
+
     private void RecalculateTotal()
     {
         TotalAmount = _items.Sum(item => item.TotalPrice);

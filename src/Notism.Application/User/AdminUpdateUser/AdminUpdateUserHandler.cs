@@ -8,7 +8,6 @@ using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
 using Notism.Domain.User.Enums;
 using Notism.Shared.Exceptions;
-using Notism.Shared.Extensions;
 
 namespace Notism.Application.User.AdminUpdateUser;
 
@@ -51,6 +50,6 @@ public class AdminUpdateUserHandler : IRequestHandler<AdminUpdateUserRequest, Ad
 
         _logger.LogInformation("Admin updated user {TargetUserId}", request.TargetUserId);
 
-        return AdminGetUserDetailHandler.MapToResponse(user);
+        return AdminUserDetailResponse.FromDomain(user);
     }
 }

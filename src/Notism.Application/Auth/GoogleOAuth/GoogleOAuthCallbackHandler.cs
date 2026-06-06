@@ -1,10 +1,7 @@
 using System.Security.Cryptography;
 
-using AutoMapper;
-
 using MediatR;
 
-using Notism.Application.Auth.Models;
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Domain.Common.Specifications;
@@ -15,12 +12,11 @@ using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Auth.GoogleOAuth;
 
-public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackRequest, (AuthenticationResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
+public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackRequest, (GoogleOAuthCallbackResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
 {
     private readonly IUserRepository _userRepository;
     private readonly ITokenService _tokenService;
     private readonly IPasswordService _passwordService;
-    private readonly IMapper _mapper;
     private readonly IGoogleOAuthService _googleOAuthService;
     private readonly IMessages _messages;
 
@@ -28,19 +24,17 @@ public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackReq
         IUserRepository userRepository,
         ITokenService tokenService,
         IPasswordService passwordService,
-        IMapper mapper,
         IGoogleOAuthService googleOAuthService,
         IMessages messages)
     {
         _userRepository = userRepository;
         _tokenService = tokenService;
         _passwordService = passwordService;
-        _mapper = mapper;
         _googleOAuthService = googleOAuthService;
         _messages = messages;
     }
 
-    public async Task<(AuthenticationResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)> Handle(
+    public async Task<(GoogleOAuthCallbackResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)> Handle(
         GoogleOAuthCallbackRequest request,
         CancellationToken cancellationToken)
     {
@@ -79,9 +73,7 @@ public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackReq
 
         var token = await _tokenService.GenerateTokenAsync(user);
 
-        var response = _mapper.Map<AuthenticationResponse>(user);
-        response.Token = token.Token;
-        response.ExpiresAt = token.ExpiresAt;
+        var response = GoogleOAuthCallbackResponse.FromDomain(user, token);
 
         return (response, token.RefreshToken, token.RefreshTokenExpiresAt);
     }

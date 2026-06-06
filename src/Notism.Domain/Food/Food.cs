@@ -19,6 +19,8 @@ public class Food : AggregateRoot
     private readonly List<FoodImage> _images = new();
     public IReadOnlyCollection<FoodImage> Images => _images.AsReadOnly();
 
+    public FoodImage? PrimaryImage => _images.OrderBy(image => image.DisplayOrder).FirstOrDefault();
+
     private readonly List<FoodCustomisationGroup> _customisationGroups = new();
     public IReadOnlyCollection<FoodCustomisationGroup> CustomisationGroups => _customisationGroups.AsReadOnly();
 

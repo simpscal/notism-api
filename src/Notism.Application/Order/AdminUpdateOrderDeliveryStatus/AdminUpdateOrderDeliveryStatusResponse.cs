@@ -1,24 +1,39 @@
-using Notism.Application.Order.Models;
+using Notism.Shared.Extensions;
 
 namespace Notism.Application.Order.AdminUpdateOrderDeliveryStatus;
 
-public class AdminUpdateOrderDeliveryStatusResponse : AdminOrderResponse
+public class AdminUpdateOrderDeliveryStatusResponse
 {
-    public AdminUpdateOrderDeliveryStatusResponse()
-    {
-    }
+    public Guid Id { get; set; }
+    public string SlugId { get; set; } = string.Empty;
+    public Guid UserId { get; set; }
+    public string UserEmail { get; set; } = string.Empty;
+    public string UserName { get; set; } = string.Empty;
+    public decimal TotalAmount { get; set; }
+    public string DeliveryStatus { get; set; } = string.Empty;
+    public string PaymentStatus { get; set; } = string.Empty;
+    public DateTime? PaidAt { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public int TotalItems { get; set; }
+    public string? DeliveryNotes { get; set; }
 
-    public AdminUpdateOrderDeliveryStatusResponse(AdminOrderResponse source)
+    public static AdminUpdateOrderDeliveryStatusResponse FromDomain(Domain.Order.Order order)
     {
-        Id = source.Id;
-        SlugId = source.SlugId;
-        UserId = source.UserId;
-        UserEmail = source.UserEmail;
-        UserName = source.UserName;
-        TotalAmount = source.TotalAmount;
-        DeliveryStatus = source.DeliveryStatus;
-        CreatedAt = source.CreatedAt;
-        UpdatedAt = source.UpdatedAt;
-        TotalItems = source.TotalItems;
+        var user = order.User;
+
+        return new AdminUpdateOrderDeliveryStatusResponse
+        {
+            Id = order.Id,
+            SlugId = order.SlugId,
+            UserId = order.UserId,
+            UserEmail = user?.Email.Value ?? string.Empty,
+            UserName = user?.FullName ?? string.Empty,
+            TotalAmount = order.TotalAmount,
+            DeliveryStatus = order.DeliveryStatus.GetStringValue(),
+            CreatedAt = order.CreatedAt,
+            UpdatedAt = order.UpdatedAt,
+            TotalItems = order.Items.Count,
+        };
     }
 }

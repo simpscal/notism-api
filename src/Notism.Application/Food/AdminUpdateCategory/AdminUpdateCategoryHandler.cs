@@ -48,10 +48,6 @@ public class AdminUpdateCategoryHandler : IRequestHandler<AdminUpdateCategoryReq
 
         _logger.LogInformation("Updated category {CategoryId} to name {Name}", category.Id, category.Name);
 
-        return new AdminUpdateCategoryResponse
-        {
-            Id = category.Id,
-            Name = category.Name,
-        };
+        return AdminUpdateCategoryResponse.FromDomain(category);
     }
 }

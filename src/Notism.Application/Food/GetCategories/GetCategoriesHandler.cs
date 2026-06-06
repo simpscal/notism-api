@@ -1,7 +1,7 @@
 using MediatR;
 
 using Notism.Application.Food.AdminGetCategories;
-using Notism.Application.Food.Models;
+using Notism.Application.Food.Common;
 using Notism.Domain.Food;
 
 namespace Notism.Application.Food.GetCategories;
@@ -22,7 +22,7 @@ public class GetCategoriesHandler : IRequestHandler<GetCategoriesRequest, GetCat
         var specification = new AdminGetCategoriesSpecification();
         var categories = await _categoryRepository.FilterByExpressionAsync(specification);
         var items = categories
-            .Select(c => new CategoryResponse { Id = c.Id, Name = c.Name })
+            .Select(CategoryResponse.FromDomain)
             .ToList();
 
         return new GetCategoriesResponse

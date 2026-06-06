@@ -49,13 +49,6 @@ public class AdminAddCustomisationGroupHandler : IRequestHandler<AdminAddCustomi
             group.Id,
             food.Id);
 
-        return new AdminAddCustomisationGroupResponse
-        {
-            Id = group.Id,
-            FoodId = group.FoodId,
-            Label = group.Label,
-            IsRequired = group.IsRequired,
-            DisplayOrder = group.DisplayOrder,
-        };
+        return AdminAddCustomisationGroupResponse.FromDomain(group);
     }
 }

@@ -45,13 +45,6 @@ public class AdminUpdateCustomisationGroupHandler : IRequestHandler<AdminUpdateC
             group.Id,
             food.Id);
 
-        return new AdminUpdateCustomisationGroupResponse
-        {
-            Id = group.Id,
-            FoodId = group.FoodId,
-            Label = group.Label,
-            IsRequired = group.IsRequired,
-            DisplayOrder = group.DisplayOrder,
-        };
+        return AdminUpdateCustomisationGroupResponse.FromDomain(group);
     }
 }

@@ -2,12 +2,9 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Cart.Models;
-using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
 using Notism.Domain.Cart;
 using Notism.Domain.Common.Specifications;
-using Notism.Shared.Extensions;
 
 namespace Notism.Application.Cart.GetCartItems;
 
@@ -16,7 +13,6 @@ public class GetCartItemsHandler : IRequestHandler<GetCartItemsRequest, GetCartI
     private readonly ICartItemRepository _cartItemRepository;
     private readonly IStorageService _storageService;
     private readonly ILogger<GetCartItemsHandler> _logger;
-    private GetCartItemsRequest? _request;
 
     public GetCartItemsHandler(
         ICartItemRepository cartItemRepository,
@@ -32,84 +28,21 @@ public class GetCartItemsHandler : IRequestHandler<GetCartItemsRequest, GetCartI
         GetCartItemsRequest request,
         CancellationToken cancellationToken)
     {
-        _request = request;
+        var cartItems = await FetchCartItemsAsync(request.UserId);
 
-        var cartItems = await FetchCartItemsAsync();
-        var items = MapToResponse(cartItems);
+        _logger.LogInformation("Retrieved {Count} cart items for user {UserId}", cartItems.Count, request.UserId);
 
-        _logger.LogInformation("Retrieved {Count} cart items for user {UserId}", items.Count, _request.UserId);
-
-        return new GetCartItemsResponse
-        {
-            Items = items,
-        };
+        return GetCartItemsResponse.FromDomain(cartItems, _storageService);
     }
 
-    private async Task<IEnumerable<CartItem>> FetchCartItemsAsync()
+    private async Task<List<CartItem>> FetchCartItemsAsync(Guid userId)
     {
-        var specification = new FilterSpecification<CartItem>(c => c.UserId == _request!.UserId)
+        var specification = new FilterSpecification<CartItem>(c => c.UserId == userId)
             .Include(c => c.Food)
             .Include("Food.Category")
             .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1))
             .Include("Food.CustomisationGroups.Options")
             .Include(c => c.Customisations);
-        return await _cartItemRepository.FilterByExpressionAsync(specification);
-    }
-
-    private List<CartItemResponse> MapToResponse(IEnumerable<CartItem> cartItems)
-    {
-        return cartItems.Select(cartItem =>
-        {
-            var customisations = cartItem.Customisations.Select(c =>
-            {
-                var group = cartItem.Food.CustomisationGroups
-                    .FirstOrDefault(g => g.Id == c.CustomisationGroupId);
-
-                var availableOptions = group?.Options
-                    .Select(o => new CartItemAvailableOptionResponse
-                    {
-                        Id = o.Id,
-                        Label = o.Label,
-                        Surcharge = o.Surcharge,
-                    })
-                    .ToList() ?? new List<CartItemAvailableOptionResponse>();
-
-                // Orphan check: if stored option no longer exists in the food's group
-                var optionStillExists = group?.Options.Any(o => o.Id == c.CustomisationOptionId) ?? false;
-
-                return new CartItemCustomisationResponse
-                {
-                    GroupId = c.CustomisationGroupId,
-                    GroupLabel = c.GroupLabel,
-                    OptionId = optionStillExists ? c.CustomisationOptionId : null,
-                    OptionLabel = optionStillExists ? c.OptionLabel : "Option no longer available",
-                    Surcharge = optionStillExists ? c.Surcharge : null,
-                    AvailableOptions = availableOptions,
-                };
-            }).ToList();
-
-            return new CartItemResponse
-            {
-                Id = cartItem.Id,
-                FoodId = cartItem.FoodId,
-                Name = cartItem.Food.Name,
-                Description = cartItem.Food.Description,
-                Price = cartItem.Food.Price,
-                DiscountPrice = cartItem.Food.DiscountPrice,
-                ImageUrl = GetImageUrl(cartItem.Food.Images),
-                Category = cartItem.Food.Category?.Name ?? string.Empty,
-                Quantity = cartItem.Quantity,
-                StockQuantity = cartItem.Food.StockQuantity,
-                QuantityUnit = cartItem.Food.QuantityUnit.GetStringValue(),
-                Customisations = customisations,
-                TotalSurcharge = cartItem.TotalSurcharge,
-            };
-        }).ToList();
-    }
-
-    private string GetImageUrl(IReadOnlyCollection<Domain.Food.FoodImage> images)
-    {
-        var firstImage = images.FirstOrDefault();
-        return firstImage == null ? string.Empty : _storageService.GetPublicUrl(firstImage.FileKey, StorageTypeConstants.Food);
+        return (await _cartItemRepository.FilterByExpressionAsync(specification)).ToList();
     }
 }

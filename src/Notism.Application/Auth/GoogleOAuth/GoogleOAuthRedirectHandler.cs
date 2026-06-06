@@ -17,11 +17,7 @@ public class GoogleOAuthRedirectHandler : IRequestHandler<GoogleOAuthRedirectReq
     {
         var result = _googleOAuthService.GetRedirectUrl();
 
-        var response = new GoogleOAuthRedirectResponse
-        {
-            RedirectUrl = result.RedirectUrl,
-            State = result.State,
-        };
+        var response = GoogleOAuthRedirectResponse.FromDomain(result);
 
         return Task.FromResult(response);
     }

@@ -3,7 +3,6 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
-using Notism.Application.Order.Mappers;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
 using Notism.Shared.Exceptions;
@@ -45,7 +44,6 @@ public class AdminUpdateOrderDeliveryStatusHandler : IRequestHandler<AdminUpdate
             request.OrderId,
             request.DeliveryStatus);
 
-        var adminOrder = AdminOrderMapper.ToAdminOrderResponse(order, order.User);
-        return new AdminUpdateOrderDeliveryStatusResponse(adminOrder);
+        return AdminUpdateOrderDeliveryStatusResponse.FromDomain(order);
     }
 }

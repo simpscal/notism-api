@@ -67,6 +67,6 @@ public class UpdateCartItemQuantityHandler : IRequestHandler<UpdateCartItemQuant
             request.Quantity,
             request.UserId);
 
-        return new UpdateCartItemQuantityResponse { Id = cartItem.Id };
+        return UpdateCartItemQuantityResponse.FromDomain(cartItem);
     }
 }

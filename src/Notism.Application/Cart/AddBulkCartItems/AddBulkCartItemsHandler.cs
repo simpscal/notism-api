@@ -2,15 +2,12 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Cart.Models;
-using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
 using Notism.Shared.Exceptions;
-using Notism.Shared.Extensions;
 
 namespace Notism.Application.Cart.AddBulkCartItems;
 
@@ -52,17 +49,13 @@ public class AddBulkCartItemsHandler : IRequestHandler<AddBulkCartItemsRequest, 
 
             var foodDictionary = await FetchFoodsAsync();
             var addedCartItems = AddCartItems(foodDictionary);
-            var items = MapToResponse(addedCartItems);
 
             _logger.LogInformation(
                 "Bulk add cart items completed for user {UserId}: {Count} items added",
                 _request.UserId,
-                items.Count);
+                addedCartItems.Count);
 
-            return new AddBulkCartItemsResponse
-            {
-                Items = items,
-            };
+            return AddBulkCartItemsResponse.FromDomain(addedCartItems, _storageService);
         });
     }
 
@@ -131,36 +124,5 @@ public class AddBulkCartItemsHandler : IRequestHandler<AddBulkCartItemsRequest, 
         _cartItemRepository.Add(cartItem);
 
         return (cartItem, food);
-    }
-
-    private List<CartItemResponse> MapToResponse(List<(CartItem CartItem, Domain.Food.Food Food)> addedCartItems)
-    {
-        return addedCartItems
-            .Select(aci => ToCartItemResponse(aci.CartItem, aci.Food))
-            .ToList();
-    }
-
-    private CartItemResponse ToCartItemResponse(CartItem cartItem, Domain.Food.Food food)
-    {
-        return new CartItemResponse
-        {
-            Id = cartItem.Id,
-            FoodId = cartItem.FoodId,
-            Name = food.Name,
-            Description = food.Description,
-            Price = food.Price,
-            DiscountPrice = food.DiscountPrice,
-            ImageUrl = GetImageUrl(food.Images),
-            Category = food.Category?.Name ?? string.Empty,
-            Quantity = cartItem.Quantity,
-            StockQuantity = food.StockQuantity,
-            QuantityUnit = food.QuantityUnit.GetStringValue(),
-        };
-    }
-
-    private string GetImageUrl(IReadOnlyCollection<Domain.Food.FoodImage> images)
-    {
-        var firstImage = images.OrderBy(img => img.DisplayOrder).FirstOrDefault();
-        return firstImage == null ? string.Empty : _storageService.GetPublicUrl(firstImage.FileKey, StorageTypeConstants.Food);
     }
 }

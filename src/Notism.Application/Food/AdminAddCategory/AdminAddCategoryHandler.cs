@@ -45,10 +45,6 @@ public class AdminAddCategoryHandler : IRequestHandler<AdminAddCategoryRequest, 
 
         _logger.LogInformation("Added category {CategoryId} with name {Name}", category.Id, category.Name);
 
-        return new AdminAddCategoryResponse
-        {
-            Id = category.Id,
-            Name = category.Name,
-        };
+        return AdminAddCategoryResponse.FromDomain(category);
     }
 }

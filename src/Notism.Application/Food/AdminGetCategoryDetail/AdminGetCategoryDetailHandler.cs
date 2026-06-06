@@ -29,10 +29,6 @@ public class AdminGetCategoryDetailHandler : IRequestHandler<AdminGetCategoryDet
         var category = await _categoryRepository.FindByExpressionAsync(specification)
             ?? throw new NotFoundException(_messages.CategoryNotFound);
 
-        return new AdminGetCategoryDetailResponse
-        {
-            Id = category.Id,
-            Name = category.Name,
-        };
+        return AdminGetCategoryDetailResponse.FromDomain(category);
     }
 }

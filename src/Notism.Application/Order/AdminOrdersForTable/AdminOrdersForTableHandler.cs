@@ -2,9 +2,6 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Common.Interfaces;
-using Notism.Application.Order.Mappers;
-using Notism.Application.Order.Models;
 using Notism.Domain.Order;
 using Notism.Domain.Payment.Enums;
 using Notism.Shared.Extensions;
@@ -42,7 +39,7 @@ public class AdminOrdersForTableHandler : IRequestHandler<AdminOrdersForTableReq
             paymentStatus);
 
         var pagedResult = await _orderRepository.FilterPagedByExpressionAsync(specification, request);
-        var items = pagedResult.Items.Select(order => AdminOrderMapper.ToAdminOrderResponse(order, order.User)).ToList();
+        var items = pagedResult.Items.Select(AdminOrdersForTableOrderResponse.FromDomain).ToList();
 
         _logger.LogInformation("Retrieved {Count} orders for table view", items.Count);
 

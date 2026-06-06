@@ -1,8 +1,5 @@
-using AutoMapper;
-
 using MediatR;
 
-using Notism.Application.Auth.Models;
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Domain.Common.Specifications;
@@ -12,29 +9,26 @@ using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Auth.Login;
 
-public class LoginHandler : IRequestHandler<LoginRequest, (AuthenticationResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
+public class LoginHandler : IRequestHandler<LoginRequest, (LoginResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
 {
     private readonly IUserRepository _userRepository;
     private readonly ITokenService _tokenService;
     private readonly IPasswordService _passwordService;
-    private readonly IMapper _mapper;
     private readonly IMessages _messages;
 
     public LoginHandler(
         IUserRepository userRepository,
         ITokenService tokenService,
         IPasswordService passwordService,
-        IMapper mapper,
         IMessages messages)
     {
         _userRepository = userRepository;
         _tokenService = tokenService;
         _passwordService = passwordService;
-        _mapper = mapper;
         _messages = messages;
     }
 
-    public async Task<(AuthenticationResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)> Handle(LoginRequest request, CancellationToken cancellationToken)
+    public async Task<(LoginResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)> Handle(LoginRequest request, CancellationToken cancellationToken)
     {
         // 1. Find user by email
         var email = Email.Create(request.Email);
@@ -51,10 +45,8 @@ public class LoginHandler : IRequestHandler<LoginRequest, (AuthenticationRespons
         // 3. Generate JWT token
         var token = await _tokenService.GenerateTokenAsync(user);
 
-        // 4. Map to response using AutoMapper
-        var response = _mapper.Map<AuthenticationResponse>(user);
-        response.Token = token.Token;
-        response.ExpiresAt = token.ExpiresAt;
+        // 4. Map to response
+        var response = LoginResponse.FromDomain(user, token);
 
         return (response, token.RefreshToken, token.RefreshTokenExpiresAt);
     }
