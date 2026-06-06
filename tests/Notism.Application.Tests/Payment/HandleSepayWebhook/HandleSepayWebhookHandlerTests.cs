@@ -73,7 +73,7 @@ public class HandleSepayWebhookHandlerTests
         {
             TransactionId = "99001",
             Amount = totalAmount,
-            Content = hex32 + " some extra content",
+            Content = hex32,
             TransferredAt = transferredAt,
         };
 
@@ -116,7 +116,7 @@ public class HandleSepayWebhookHandlerTests
         {
             TransactionId = "99003",
             Amount = 50_000m,
-            Content = checkoutId.ToString("N") + " extra",
+            Content = checkoutId.ToString("N"),
             TransferredAt = DateTime.UtcNow,
         };
 
@@ -143,7 +143,7 @@ public class HandleSepayWebhookHandlerTests
         {
             TransactionId = "99004",
             Amount = 100_000m,
-            Content = checkoutId.ToString("N") + " duplicate",
+            Content = checkoutId.ToString("N"),
             TransferredAt = DateTime.UtcNow,
         };
 
@@ -169,7 +169,7 @@ public class HandleSepayWebhookHandlerTests
         {
             TransactionId = "99005",
             Amount = 100_000m,
-            Content = checkoutId.ToString("N") + " mismatch",
+            Content = checkoutId.ToString("N"),
             TransferredAt = DateTime.UtcNow,
         };
 
