@@ -1,3 +1,4 @@
+using Notism.Shared.Extensions;
 using Notism.Shared.Models;
 
 namespace Notism.Application.Order.AdminOrdersForTable;
@@ -19,4 +20,26 @@ public class AdminOrdersForTableOrderResponse
     public DateTime UpdatedAt { get; set; }
     public int TotalItems { get; set; }
     public string? DeliveryNotes { get; set; }
+
+    public static AdminOrdersForTableOrderResponse FromDomain(Domain.Order.Order order)
+    {
+        var user = order.User;
+
+        return new AdminOrdersForTableOrderResponse
+        {
+            Id = order.Id,
+            SlugId = order.SlugId,
+            UserId = order.UserId,
+            UserEmail = user?.Email.Value ?? string.Empty,
+            UserName = user?.FullName ?? string.Empty,
+            TotalAmount = order.TotalAmount,
+            DeliveryStatus = order.DeliveryStatus.GetStringValue(),
+            PaymentStatus = order.PaymentStatus.GetStringValue(),
+            PaidAt = order.PaidAt,
+            CreatedAt = order.CreatedAt,
+            UpdatedAt = order.UpdatedAt,
+            TotalItems = order.Items.Count,
+            DeliveryNotes = order.DeliveryNotes,
+        };
+    }
 }

@@ -48,13 +48,6 @@ public class AdminAddCustomisationOptionHandler : IRequestHandler<AdminAddCustom
             group.Id,
             food.Id);
 
-        return new AdminAddCustomisationOptionResponse
-        {
-            Id = option.Id,
-            GroupId = option.GroupId,
-            Label = option.Label,
-            Surcharge = option.Surcharge,
-            DisplayOrder = option.DisplayOrder,
-        };
+        return AdminAddCustomisationOptionResponse.FromDomain(option);
     }
 }

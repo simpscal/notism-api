@@ -2,7 +2,6 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Domain.Common.Specifications;
@@ -79,28 +78,6 @@ public class AdminAddFoodHandler : IRequestHandler<AdminAddFoodRequest, AdminAdd
 
         _logger.LogInformation("Added food {FoodId} with name {Name}", food.Id, food.Name);
 
-        return new AdminAddFoodResponse
-        {
-            Id = food.Id,
-            Name = food.Name,
-            Description = food.Description,
-            Price = food.Price,
-            DiscountPrice = food.DiscountPrice,
-            ImageUrls = GetImageUrls(food.Images),
-            Category = category.Name,
-            IsAvailable = food.IsAvailable,
-            QuantityUnit = food.QuantityUnit.GetStringValue(),
-            StockQuantity = food.StockQuantity,
-            CreatedAt = food.CreatedAt,
-            UpdatedAt = food.UpdatedAt,
-        };
-    }
-
-    private List<string> GetImageUrls(IReadOnlyCollection<FoodImage> images)
-    {
-        return images
-            .OrderBy(img => img.DisplayOrder)
-            .Select(img => _storageService.GetPublicUrl(img.FileKey, StorageTypeConstants.Food))
-            .ToList();
+        return AdminAddFoodResponse.FromDomain(food, category.Name, _storageService);
     }
 }

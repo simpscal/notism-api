@@ -2,7 +2,6 @@ using System.Security.Cryptography;
 
 using MediatR;
 
-using Notism.Application.Auth.Common;
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Domain.Common.Specifications;
@@ -74,12 +73,7 @@ public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackReq
 
         var token = await _tokenService.GenerateTokenAsync(user);
 
-        var response = new GoogleOAuthCallbackResponse
-        {
-            User = AuthenticationUserInfoResponse.FromDomain(user),
-            Token = token.Token,
-            ExpiresAt = token.ExpiresAt,
-        };
+        var response = GoogleOAuthCallbackResponse.FromDomain(user, token);
 
         return (response, token.RefreshToken, token.RefreshTokenExpiresAt);
     }

@@ -2,16 +2,12 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Cart.Common;
-using Notism.Application.Common.Constants;
-using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Shared.Exceptions;
-using Notism.Shared.Extensions;
 
 namespace Notism.Application.Cart.UpdateCartItemCustomisations;
 
@@ -89,50 +85,6 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
             cartItem.Id,
             request.UserId);
 
-        return MapToResponse(cartItem);
-    }
-
-    private static UpdateCartItemCustomisationsResponse MapToResponse(CartItem cartItem)
-    {
-        var customisations = cartItem.Customisations.Select(c =>
-        {
-            // Find the group from food's customisation groups to build available options
-            var group = cartItem.Food.CustomisationGroups
-                .FirstOrDefault(g => g.Id == c.CustomisationGroupId);
-
-            var availableOptions = group?.Options
-                .Select(CartItemAvailableOptionResponse.FromDomain)
-                .ToList() ?? new List<CartItemAvailableOptionResponse>();
-
-            // Orphan check: if stored option no longer exists
-            var optionStillExists = group?.Options.Any(o => o.Id == c.CustomisationOptionId) ?? false;
-
-            return new CartItemCustomisationResponse
-            {
-                GroupId = c.CustomisationGroupId,
-                GroupLabel = c.GroupLabel,
-                OptionId = optionStillExists ? c.CustomisationOptionId : null,
-                OptionLabel = optionStillExists ? c.OptionLabel : "Option no longer available",
-                Surcharge = optionStillExists ? c.Surcharge : null,
-                AvailableOptions = availableOptions,
-            };
-        }).ToList();
-
-        return new UpdateCartItemCustomisationsResponse
-        {
-            Id = cartItem.Id,
-            FoodId = cartItem.FoodId,
-            Name = cartItem.Food.Name,
-            Description = cartItem.Food.Description,
-            Price = cartItem.Food.Price,
-            DiscountPrice = cartItem.Food.DiscountPrice,
-            ImageUrl = cartItem.Food.Images.FirstOrDefault()?.FileKey ?? string.Empty,
-            Category = cartItem.Food.Category?.Name ?? string.Empty,
-            Quantity = cartItem.Quantity,
-            StockQuantity = cartItem.Food.StockQuantity,
-            QuantityUnit = cartItem.Food.QuantityUnit.GetStringValue(),
-            Customisations = customisations,
-            TotalSurcharge = cartItem.TotalSurcharge,
-        };
+        return UpdateCartItemCustomisationsResponse.FromDomain(cartItem);
     }
 }

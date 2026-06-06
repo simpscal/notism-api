@@ -42,4 +42,21 @@ public record CartItemResponse
             TotalSurcharge = cartItem.TotalSurcharge,
         };
     }
+
+    public static CartItemResponse FromDomain(
+        CartItem cartItem,
+        Domain.Food.Food food,
+        string imageUrl)
+    {
+        var customisations = cartItem.Customisations
+            .Select(c =>
+            {
+                var group = food.CustomisationGroups
+                    .FirstOrDefault(g => g.Id == c.CustomisationGroupId);
+                return CartItemCustomisationResponse.FromDomain(c, group);
+            })
+            .ToList();
+
+        return FromDomain(cartItem, food, imageUrl, customisations);
+    }
 }

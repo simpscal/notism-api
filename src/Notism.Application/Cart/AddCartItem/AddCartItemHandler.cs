@@ -2,8 +2,6 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Cart.Common;
-using Notism.Application.Common.Constants;
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
@@ -11,7 +9,6 @@ using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Shared.Exceptions;
-using Notism.Shared.Extensions;
 
 namespace Notism.Application.Cart.AddCartItem;
 
@@ -145,7 +142,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             newQuantity,
             existingCartItem.UserId);
 
-        return BuildResponse(existingCartItem, existingCartItem.Food, food);
+        return AddCartItemResponse.FromDomain(existingCartItem, existingCartItem.Food, food);
     }
 
     private async Task<AddCartItemResponse> CreateNewCartItemAsync(Domain.Food.Food food)
@@ -175,35 +172,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             cartItem.Id,
             _request.UserId);
 
-        return BuildResponse(cartItem, food, food);
-    }
-
-    private static AddCartItemResponse BuildResponse(CartItem cartItem, Domain.Food.Food cartFood, Domain.Food.Food fullFood)
-    {
-        return new AddCartItemResponse
-        {
-            Id = cartItem.Id,
-            FoodId = cartItem.FoodId,
-            Name = cartFood.Name,
-            Description = cartFood.Description,
-            Price = cartFood.Price,
-            DiscountPrice = cartFood.DiscountPrice,
-            ImageUrl = cartFood.Images.FirstOrDefault()?.FileKey ?? string.Empty,
-            Category = cartFood.Category?.Name ?? string.Empty,
-            Quantity = cartItem.Quantity,
-            StockQuantity = cartFood.StockQuantity,
-            QuantityUnit = cartFood.QuantityUnit.GetStringValue(),
-            Customisations = cartItem.Customisations.Select(c =>
-            {
-                var group = fullFood.CustomisationGroups.FirstOrDefault(g => g.Id == c.CustomisationGroupId);
-                var availableOptions = group?.Options
-                    .OrderBy(o => o.DisplayOrder)
-                    .Select(CartItemAvailableOptionResponse.FromDomain)
-                    .ToList() ?? new List<CartItemAvailableOptionResponse>();
-                return CartItemCustomisationResponse.FromDomain(c, availableOptions);
-            }).ToList(),
-            TotalSurcharge = cartItem.TotalSurcharge,
-        };
+        return AddCartItemResponse.FromDomain(cartItem, food, food);
     }
 
     private static IEnumerable<FoodCustomisationOption> GetRequiredGroupDefaults(

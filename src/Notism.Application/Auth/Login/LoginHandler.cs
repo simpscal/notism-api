@@ -1,6 +1,5 @@
 using MediatR;
 
-using Notism.Application.Auth.Common;
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Domain.Common.Specifications;
@@ -47,12 +46,7 @@ public class LoginHandler : IRequestHandler<LoginRequest, (LoginResponse Respons
         var token = await _tokenService.GenerateTokenAsync(user);
 
         // 4. Map to response
-        var response = new LoginResponse
-        {
-            User = AuthenticationUserInfoResponse.FromDomain(user),
-            Token = token.Token,
-            ExpiresAt = token.ExpiresAt,
-        };
+        var response = LoginResponse.FromDomain(user, token);
 
         return (response, token.RefreshToken, token.RefreshTokenExpiresAt);
     }

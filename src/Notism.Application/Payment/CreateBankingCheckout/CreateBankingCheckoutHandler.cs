@@ -22,6 +22,6 @@ public class CreateBankingCheckoutHandler : IRequestHandler<CreateBankingCheckou
         await _bankingCheckoutRepository.AddAsync(checkout);
         await _bankingCheckoutRepository.SaveChangesAsync();
 
-        return new CreateBankingCheckoutResponse { CheckoutId = checkout.Id };
+        return CreateBankingCheckoutResponse.FromDomain(checkout);
     }
 }

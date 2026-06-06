@@ -65,21 +65,6 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
             paymentQr = PaymentQrResponse.FromDomain(payment!, order.TotalAmount, order.SlugId);
         }
 
-        return new GetOrderByIdResponse
-        {
-            Id = order.Id,
-            SlugId = order.SlugId,
-            TotalAmount = order.TotalAmount,
-            PaymentMethod = order.PaymentMethod.GetStringValue(),
-            DeliveryStatus = order.DeliveryStatus.GetStringValue(),
-            CreatedAt = order.CreatedAt,
-            UpdatedAt = order.UpdatedAt,
-            Items = order.Items.Select(item => OrderItemResponse.FromDomain(item, _storageService)).ToList(),
-            DeliveryStatusTiming = DeliveryStatusTimingResponse.FromDomain(order.GetDeliveryStatusTiming()),
-            PaymentStatus = order.PaymentStatus.GetStringValue(),
-            PaidAt = order.PaidAt,
-            PaymentQr = paymentQr,
-            DeliveryNotes = order.DeliveryNotes,
-        };
+        return GetOrderByIdResponse.FromDomain(order, _storageService, paymentQr);
     }
 }

@@ -24,11 +24,6 @@ public class GetBankAccountHandler : IRequestHandler<GetBankAccountRequest, GetB
             return null;
         }
 
-        return new GetBankAccountResponse
-        {
-            BankCode = payment.BankCode,
-            AccountNumber = payment.AccountNumber,
-            AccountHolderName = payment.AccountHolderName,
-        };
+        return GetBankAccountResponse.FromDomain(payment);
     }
 }

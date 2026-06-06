@@ -6,7 +6,6 @@ using Notism.Application.Common.Services;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
 using Notism.Shared.Exceptions;
-using Notism.Shared.Extensions;
 
 namespace Notism.Application.User.UpdateProfile;
 
@@ -44,16 +43,6 @@ public class UpdateUserProfileHandler : IRequestHandler<UpdateUserProfileRequest
 
         _logger.LogInformation("User profile updated successfully for user {UserId}", request.UserId);
 
-        return new UpdateUserProfileResponse
-        {
-            UserId = user.Id,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Email = user.Email?.Value ?? string.Empty,
-            Role = user.Role.ToCamelCase(),
-            AvatarUrl = user.AvatarUrl,
-            Location = user.Location,
-            Message = "User profile updated successfully",
-        };
+        return UpdateUserProfileResponse.FromDomain(user, "User profile updated successfully");
     }
 }

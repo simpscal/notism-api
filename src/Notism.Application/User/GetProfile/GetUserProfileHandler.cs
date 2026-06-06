@@ -47,15 +47,6 @@ public class GetUserProfileHandler : IRequestHandler<GetUserProfileRequest, GetU
 
         _logger.LogInformation("User profile retrieved successfully for user {UserId}", request.UserId);
 
-        return new GetUserProfileResponse
-        {
-            Id = user.Id,
-            FirstName = user.FirstName,
-            LastName = user.LastName,
-            Email = user.Email,
-            Role = user.Role.ToCamelCase(),
-            AvatarUrl = avatarUrl,
-            Location = user.Location,
-        };
+        return GetUserProfileResponse.FromDomain(user, avatarUrl);
     }
 }

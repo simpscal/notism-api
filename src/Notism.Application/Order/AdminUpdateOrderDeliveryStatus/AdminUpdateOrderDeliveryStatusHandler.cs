@@ -44,20 +44,6 @@ public class AdminUpdateOrderDeliveryStatusHandler : IRequestHandler<AdminUpdate
             request.OrderId,
             request.DeliveryStatus);
 
-        var user = order.User;
-
-        return new AdminUpdateOrderDeliveryStatusResponse
-        {
-            Id = order.Id,
-            SlugId = order.SlugId,
-            UserId = order.UserId,
-            UserEmail = user?.Email.Value ?? string.Empty,
-            UserName = user?.FullName ?? string.Empty,
-            TotalAmount = order.TotalAmount,
-            DeliveryStatus = order.DeliveryStatus.GetStringValue(),
-            CreatedAt = order.CreatedAt,
-            UpdatedAt = order.UpdatedAt,
-            TotalItems = order.Items.Count,
-        };
+        return AdminUpdateOrderDeliveryStatusResponse.FromDomain(order);
     }
 }

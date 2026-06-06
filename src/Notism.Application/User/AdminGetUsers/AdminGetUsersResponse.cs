@@ -1,3 +1,4 @@
+using Notism.Shared.Extensions;
 using Notism.Shared.Models;
 
 namespace Notism.Application.User.AdminGetUsers;
@@ -15,4 +16,20 @@ public record AdminGetUsersItemResponse
     public string? Location { get; set; }
     public string AuthType { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; }
+
+    public static AdminGetUsersItemResponse FromDomain(Domain.User.User user)
+    {
+        return new AdminGetUsersItemResponse
+        {
+            Id = user.Id,
+            FirstName = user.FirstName ?? string.Empty,
+            LastName = user.LastName ?? string.Empty,
+            Email = user.Email.Value,
+            Role = user.Role.ToCamelCase(),
+            PhoneNumber = null,
+            Location = null,
+            AuthType = "email",
+            CreatedAt = user.CreatedAt,
+        };
+    }
 }

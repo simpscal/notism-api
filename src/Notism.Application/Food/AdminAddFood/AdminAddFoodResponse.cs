@@ -1,3 +1,7 @@
+using Notism.Application.Common.Constants;
+using Notism.Application.Common.Interfaces;
+using Notism.Shared.Extensions;
+
 namespace Notism.Application.Food.AdminAddFood;
 
 public class AdminAddFoodResponse
@@ -14,4 +18,29 @@ public class AdminAddFoodResponse
     public int StockQuantity { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime? UpdatedAt { get; set; }
+
+    public static AdminAddFoodResponse FromDomain(
+        Domain.Food.Food food,
+        string categoryName,
+        IStorageService storageService)
+    {
+        return new AdminAddFoodResponse
+        {
+            Id = food.Id,
+            Name = food.Name,
+            Description = food.Description,
+            Price = food.Price,
+            DiscountPrice = food.DiscountPrice,
+            ImageUrls = food.Images
+                .OrderBy(img => img.DisplayOrder)
+                .Select(img => storageService.GetPublicUrl(img.FileKey, StorageTypeConstants.Food))
+                .ToList(),
+            Category = categoryName,
+            IsAvailable = food.IsAvailable,
+            QuantityUnit = food.QuantityUnit.GetStringValue(),
+            StockQuantity = food.StockQuantity,
+            CreatedAt = food.CreatedAt,
+            UpdatedAt = food.UpdatedAt,
+        };
+    }
 }
