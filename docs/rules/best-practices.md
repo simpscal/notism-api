@@ -18,8 +18,8 @@ Inject `ILogger<THandler>` where a handler performs a meaningful state change or
 
 ```csharp
 // ✅ Structured template with named placeholder
-_logger.LogInformation("Cleared existing cart items for user {UserId}", userId);
+_logger.LogInformation("Cleared existing items for user {UserId}", userId);
 
 // ❌ Interpolated string
-_logger.LogInformation($"Cleared existing cart items for user {userId}");
+_logger.LogInformation($"Cleared existing items for user {userId}");
 ```

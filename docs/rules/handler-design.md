@@ -371,14 +371,14 @@ Handlers map domain entities to dedicated response models. These models follow a
 
 **✅ DO: Declare Every Response as a `sealed record`**
 
-Every response model is a `record`, and it is `sealed` unless it is a base type that other responses inherit. The only permitted non-`sealed` base records are `Food/Common/CategoryResponse` and `Cart/Common/CartItemResponse`, both intentionally left open for inheritance.
+Every response model is a `record`, and it is `sealed` unless it is a shared base type that other responses inherit. A response record is left non-`sealed` only when it is deliberately intended as a base for derived responses.
 
 **✅ DO: Build Projecting Responses Through a `FromDomain` Factory**
 
 Responses that project a domain entity expose a `static FromDomain(...)` factory and are built only through it — never via ad hoc object initialisers in handlers:
 
 ```csharp
-return CartItemResponse.FromDomain(cartItem, food);
+return EntityResponse.FromDomain(entity, relatedEntity);
 ```
 
 Trivial responses that do not map a domain entity (message acknowledgements, count DTOs, paginated wrappers, pre-signed URLs) are constructed directly and do not need a factory.

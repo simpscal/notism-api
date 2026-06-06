@@ -24,7 +24,7 @@ public async Task<GetOrderByIdResponse> Handle(...)
 
 **✅ DO: Create Specific Specification Classes for Reused or Non-Trivial Queries**
 
-Reused or non-trivial queries live in named specification classes placed in the feature's `Common` folder (e.g. `Cart/Common/CartItemDetailSpecification`, `Order/Common/OrderDetailSpecification`, `Food/Common/FoodWithCustomisationsByIdSpecification`, `Payment/Common/BankAccountSpecification`). A query whose include chain or predicate appears in more than one handler **must** be a named class so it is defined exactly once.
+Reused or non-trivial queries live in named specification classes placed in the feature's `Common` folder (e.g. `<Feature>/Common/<Entity>DetailSpecification`). A query whose include chain or predicate appears in more than one handler **must** be a named class so it is defined exactly once.
 
 `FilterSpecification<T>` remains valid for genuinely one-off, single-handler filters with no shared include chain.
 
@@ -213,7 +213,7 @@ var specification = new FilterSpecification<CartItem>(c => c.UserId == request.U
 
 Do not write `FilterSpecification<T>(_ => true)` inline in a handler to grab a single row. Use a named specification instead.
 
-A `_ => true` predicate is acceptable only inside a named "single configured row" specification such as `BankAccountSpecification`, where the repository's `FirstOrDefault` semantics are intentional. A `_ => true` default branch inside a paginated admin-list specification (return-all-when-no-filter) is also acceptable because the result is always paged.
+A `_ => true` predicate is acceptable only inside a named single-configured-row specification, where the repository's `FirstOrDefault` semantics are intentional. A `_ => true` default branch inside a paginated admin-list specification (return-all-when-no-filter) is also acceptable because the result is always paged.
 
 **✅ DO: Use Specifications with Repository Methods**
 

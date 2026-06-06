@@ -53,13 +53,13 @@ public static CartItem Create(Guid userId, Guid foodId, int quantity)
 Validation messages source from `IMessages` (the localized message provider) rather than hard-coded English string literals, so that validator output matches the localization already used by handlers. New validators must inject `IMessages` and reference message keys:
 
 ```csharp
-public class AddCartItemRequestValidator : AbstractValidator<AddCartItemRequest>
+public class CreateEntityRequestValidator : AbstractValidator<CreateEntityRequest>
 {
-    public AddCartItemRequestValidator(IMessages messages)
+    public CreateEntityRequestValidator(IMessages messages)
     {
         RuleFor(x => x.Quantity)
             .GreaterThan(0)
-            .WithMessage(messages.QuantityMustBePositive);
+            .WithMessage(messages.ValueMustBePositive);
     }
 }
 ```

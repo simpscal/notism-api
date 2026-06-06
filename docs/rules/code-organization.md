@@ -90,7 +90,7 @@ The API-surface input record is a `*Payload`; the endpoint maps it to the corres
 
 **✅ DO: Introduce an Interface Only When It Earns Its Keep**
 
-An interface exists only when it **crosses a layer boundary** (e.g. an Application-defined service implemented in Infrastructure) or **backs an actively used test seam**. A same-layer type with a single implementation, a single consumer, and no test double should be injected concretely. Following this rule, `ICookieService` was removed and `CookieService` is injected directly in `AuthEndpoints`.
+An interface exists only when it **crosses a layer boundary** (e.g. an Application-defined service implemented in Infrastructure) or **backs an actively used test seam**. A same-layer service with a single implementation, a single consumer, and no test double should be injected concretely rather than behind a redundant interface.
 
 **✅ DO: Place Interfaces by Their Role**
 
