@@ -33,9 +33,6 @@ public static class DependencyInjection
         services.AddScoped<CookieService>();
         services.AddScoped<INotificationService, SignalRNotificationService>();
 
-        // MediatR is registered exactly once in the Application layer
-        // (Notism.Application.DependencyInjection.AddMediatR). The API assembly
-        // contains no handlers, so no additional registration is required here.
         return services;
     }
 
