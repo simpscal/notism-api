@@ -3,7 +3,7 @@ using Notism.Domain.Food;
 
 namespace Notism.Application.Food.AdminUpdateCategory;
 
-public record AdminUpdateCategoryResponse : CategoryResponse
+public sealed record AdminUpdateCategoryResponse : CategoryResponse
 {
     public static new AdminUpdateCategoryResponse FromDomain(Category category)
     {

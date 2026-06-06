@@ -246,37 +246,3 @@ public static class CartEndpoints
         return Results.Ok();
     }
 }
-
-public record AddCartItemPayload
-{
-    public Guid FoodId { get; set; }
-    public int Quantity { get; set; }
-    public List<CartItemCustomisationSelectionPayload>? Customisations { get; set; }
-}
-
-public record UpdateCartItemQuantityPayload
-{
-    public int Quantity { get; set; }
-}
-
-public record AddBulkCartItemsPayload
-{
-    public List<CartItemPayload> Items { get; set; } = new();
-}
-
-public record CartItemPayload
-{
-    public Guid FoodId { get; set; }
-    public int Quantity { get; set; }
-}
-
-public record UpdateCartItemCustomisationsPayload
-{
-    public List<CartItemCustomisationSelectionPayload> Customisations { get; set; } = new();
-}
-
-public record CartItemCustomisationSelectionPayload
-{
-    public Guid GroupId { get; set; }
-    public Guid OptionId { get; set; }
-}

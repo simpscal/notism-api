@@ -2,7 +2,7 @@ using Notism.Domain.Order;
 
 namespace Notism.Application.Order.Common;
 
-public class DeliveryStatusTimingResponse
+public sealed record DeliveryStatusTimingResponse
 {
     public DateTime? OrderPlacedCompletedAt { get; set; }
     public DateTime? PreparingCompletedAt { get; set; }

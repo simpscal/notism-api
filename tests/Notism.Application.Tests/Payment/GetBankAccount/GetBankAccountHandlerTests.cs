@@ -1,6 +1,7 @@
 using FluentAssertions;
 
 using Notism.Application.Payment.GetBankAccount;
+using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Payment;
 
@@ -26,7 +27,7 @@ public class GetBankAccountHandlerTests
         var payment = Domain.Payment.Payment.Create(storerId, "Vietcombank", "123456789", "Nguyen Van A");
 
         _paymentRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Payment.Payment>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Payment.Payment>>())
             .Returns(payment);
 
         var result = await _handler.Handle(new GetBankAccountRequest(), CancellationToken.None);
@@ -41,7 +42,7 @@ public class GetBankAccountHandlerTests
     public async Task Handle_WhenNoPayment_ReturnsNull()
     {
         _paymentRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Payment.Payment>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Payment.Payment>>())
             .Returns((Domain.Payment.Payment?)null);
 
         var result = await _handler.Handle(new GetBankAccountRequest(), CancellationToken.None);

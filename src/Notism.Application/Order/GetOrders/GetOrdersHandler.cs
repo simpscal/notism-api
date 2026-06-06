@@ -3,7 +3,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Interfaces;
-using Notism.Domain.Common.Specifications;
+using Notism.Application.Order.Common;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
 using Notism.Domain.Payment.Enums;
@@ -31,10 +31,8 @@ public class GetOrdersHandler : IRequestHandler<GetOrdersRequest, GetOrdersRespo
         GetOrdersRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new FilterSpecification<Domain.Order.Order>(
-                o => o.UserId == request.UserId && o.DeliveryStatus != DeliveryStatus.Cancelled)
-            .Include("Items.Food.Images")
-            .Include(o => o.StatusHistory);
+        var specification = new OrderDetailSpecification(
+            o => o.UserId == request.UserId && o.DeliveryStatus != DeliveryStatus.Cancelled);
         var orders = await _orderRepository.FilterByExpressionAsync(specification);
 
         if (!string.IsNullOrWhiteSpace(request.PaymentStatus) &&

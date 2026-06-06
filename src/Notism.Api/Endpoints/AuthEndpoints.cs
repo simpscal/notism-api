@@ -95,7 +95,7 @@ public static class AuthEndpoints
     private static async Task<IResult> LoginAsync(
         LoginRequest request,
         IMediator mediator,
-        ICookieService cookieService,
+        CookieService cookieService,
         HttpContext httpContext)
     {
         var result = await mediator.Send(request);
@@ -113,7 +113,7 @@ public static class AuthEndpoints
     private static async Task<IResult> RegisterAsync(
         RegisterRequest request,
         IMediator mediator,
-        ICookieService cookieService,
+        CookieService cookieService,
         HttpContext httpContext)
     {
         var result = await mediator.Send(request);
@@ -130,7 +130,7 @@ public static class AuthEndpoints
 
     private static async Task<IResult> RefreshTokenAsync(
         IMediator mediator,
-        ICookieService cookieService,
+        CookieService cookieService,
         HttpContext httpContext)
     {
         await cookieService.ValidateAntiForgeryTokenAsync(httpContext);
@@ -148,7 +148,7 @@ public static class AuthEndpoints
     }
 
     private static async Task<IResult> LogoutAsync(
-        ICookieService cookieService,
+        CookieService cookieService,
         IRefreshTokenRepository refreshTokenRepository,
         HttpContext httpContext)
     {
@@ -200,7 +200,7 @@ public static class AuthEndpoints
     private static async Task<IResult> GoogleOAuthCallbackAsync(
         GoogleOAuthCallbackRequest request,
         IMediator mediator,
-        ICookieService cookieService,
+        CookieService cookieService,
         HttpContext httpContext)
     {
         var result = await mediator.Send(request);

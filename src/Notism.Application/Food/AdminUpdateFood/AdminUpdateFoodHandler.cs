@@ -40,7 +40,7 @@ public class AdminUpdateFoodHandler : IRequestHandler<AdminUpdateFoodRequest, Ad
     {
         var specification = new FilterSpecification<Notism.Domain.Food.Food>(f => f.Id == request.FoodId && !f.IsDeleted)
             .Include(f => f.Images)
-            .Include("Category");
+            .Include(f => f.Category!);
         var food = await _foodRepository.FindByExpressionAsync(specification);
         if (food == null)
         {

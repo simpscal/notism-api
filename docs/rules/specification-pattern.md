@@ -22,7 +22,11 @@ public async Task<GetOrderByIdResponse> Handle(...)
 }
 ```
 
-**✅ DO: Create Specific Specification Classes for Complex Logic**
+**✅ DO: Create Specific Specification Classes for Reused or Non-Trivial Queries**
+
+Reused or non-trivial queries live in named specification classes placed in the feature's `Common` folder (e.g. `<Feature>/Common/<Entity>DetailSpecification`). A query whose include chain or predicate appears in more than one handler **must** be a named class so it is defined exactly once.
+
+`FilterSpecification<T>` remains valid for genuinely one-off, single-handler filters with no shared include chain.
 
 Create dedicated specification classes when you need:
 - Complex filtering logic with multiple conditions
@@ -91,9 +95,15 @@ var specification = new FilterSpecification<Order>(o => o.UserId == userId)
     .Include(o => o.StatusHistory);  // Direct navigation property
 ```
 
-**✅ DO: Use String-Based Includes for Nested Navigation Properties**
+**✅ DO: Use String-Based Includes for Nested Navigation Properties — but only inside a named specification**
 
-For nested navigation properties (especially through collections), use string-based includes with dot notation:
+For nested navigation properties (especially through collections), string-based
+includes with dot notation are still required because the specification base type
+lives in the Domain layer, which does not reference EF Core and therefore cannot
+express `ThenInclude`. Such string includes **must be encapsulated inside a named
+specification class** and must
+never be scattered inline across handlers. Prefer lambda includes for direct
+navigation properties.
 
 ```csharp
 // Application/Order/GetOrders/GetOrdersHandler.cs
@@ -199,6 +209,12 @@ var specification = new FilterSpecification<CartItem>(c => c.UserId == request.U
     .Include(c => c.Food);
 ```
 
+**❌ DON'T: Write Unbounded Ad Hoc Fetches Inline**
+
+Do not write `FilterSpecification<T>(_ => true)` inline in a handler to grab a single row. Use a named specification instead.
+
+A `_ => true` predicate is acceptable only inside a named single-configured-row specification, where the repository's `FirstOrDefault` semantics are intentional. A `_ => true` default branch inside a paginated admin-list specification (return-all-when-no-filter) is also acceptable because the result is always paged.
+
 **✅ DO: Use Specifications with Repository Methods**
 
 ```csharp
@@ -253,12 +269,13 @@ Create dedicated specification classes when:
 
 ### Summary
 
-- **Use `FilterSpecification<T>`** for simple, ad-hoc filters
-- **Create specific classes** for complex logic, custom ordering, or reusable queries
-- **Use string-based includes** for nested navigation through collections
+- **Use `FilterSpecification<T>`** for genuinely one-off, single-handler filters
+- **Create named classes** for reused or non-trivial queries, placed in the feature's `Common` folder so they are defined exactly once
+- **Never write unbounded `_ => true` fetches inline** — reserve `_ => true` for named single-row or paginated admin-list specifications
+- **Use string-based includes** for nested navigation through collections, encapsulated inside a named specification
 - **Use expression-based includes** for direct navigation properties
 - **Compose specifications** using `And()`, `Or()`, and `Not()` for complex queries
-- **Keep specifications in Application layer** in the same feature folder as the handler that uses them
+- **Keep specifications in Application layer** in the feature folder (or its `Common` subfolder for reused specifications)
 
 ---
 

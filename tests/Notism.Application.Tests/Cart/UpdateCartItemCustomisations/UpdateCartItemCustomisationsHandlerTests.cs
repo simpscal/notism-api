@@ -56,7 +56,7 @@ public class UpdateCartItemCustomisationsHandlerTests
         var option = group.Options.First();
 
         _cartItemRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<CartItem>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<CartItem>>())
             .Returns(cartItem);
 
         _optionRepository
@@ -87,7 +87,7 @@ public class UpdateCartItemCustomisationsHandlerTests
     public async Task Handle_WhenCartItemNotFound_ThrowsNotFoundException()
     {
         _cartItemRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<CartItem>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<CartItem>>())
             .Returns((CartItem?)null);
 
         var request = new UpdateCartItemCustomisationsRequest
@@ -112,7 +112,7 @@ public class UpdateCartItemCustomisationsHandlerTests
         var cartItem = CreateCartItem(Guid.NewGuid(), foodId);
 
         _cartItemRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<CartItem>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<CartItem>>())
             .Returns(cartItem);
 
         var request = new UpdateCartItemCustomisationsRequest
@@ -137,7 +137,7 @@ public class UpdateCartItemCustomisationsHandlerTests
         var cartItem = CreateCartItem(userId, Guid.NewGuid());
 
         _cartItemRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<CartItem>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<CartItem>>())
             .Returns(cartItem);
 
         _optionRepository

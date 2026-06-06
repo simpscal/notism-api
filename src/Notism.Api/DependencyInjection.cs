@@ -1,7 +1,5 @@
 using System.Text;
 
-using MediatR;
-
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Localization;
 using Microsoft.IdentityModel.Tokens;
@@ -32,13 +30,8 @@ public static class DependencyInjection
 
         services.AddProblemDetails();
 
-        services.AddScoped<ICookieService, CookieService>();
+        services.AddScoped<CookieService>();
         services.AddScoped<INotificationService, SignalRNotificationService>();
-
-        services.AddMediatR(options =>
-        {
-            options.RegisterServicesFromAssembly(typeof(DependencyInjection).Assembly);
-        });
 
         return services;
     }

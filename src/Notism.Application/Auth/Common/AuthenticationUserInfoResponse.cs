@@ -2,7 +2,7 @@ using Notism.Shared.Extensions;
 
 namespace Notism.Application.Auth.Common;
 
-public class AuthenticationUserInfoResponse
+public sealed record AuthenticationUserInfoResponse
 {
     public Guid Id { get; set; }
     public required string Email { get; set; }

@@ -4,7 +4,7 @@ using Notism.Domain.Order;
 
 namespace Notism.Application.Order.Common;
 
-public class OrderItemResponse
+public sealed record OrderItemResponse
 {
     public Guid Id { get; set; }
     public Guid FoodId { get; set; }

@@ -62,13 +62,13 @@
 
 #### Guidelines
 
-| Do | Don't |
-|---|---|
+| Do                                              | Don't                                             |
+| ----------------------------------------------- | ------------------------------------------------- |
 | Encapsulate business rules in aggregate methods | Expose setters or allow direct state modification |
-| Use private constructors with factory methods | Allow invalid aggregate creation |
-| Validate in value object constructors | Perform validation in application layer |
-| Keep aggregates focused on one concept | Create large aggregates with many entities |
-| Reference other aggregates by ID only | Include references to other aggregate roots |
+| Use private constructors with factory methods   | Allow invalid aggregate creation                  |
+| Validate in value object constructors           | Perform validation in application layer           |
+| Keep aggregates focused on one concept          | Create large aggregates with many entities        |
+| Reference other aggregates by ID only           | Include references to other aggregate roots       |
 
 ---
 
@@ -110,13 +110,13 @@ Request → Validator → Handler → Domain Operations → Repository → Respo
 
 #### Guidelines
 
-| Do | Don't |
-|---|---|
-| Keep handlers thin and focused | Put business logic in handlers |
-| Use specifications for queries | Write raw query logic in handlers |
-| Throw `ResultFailureException` for business violations | Return error codes or null |
-| Map domain entities to DTOs | Return domain entities directly |
-| Use `EnumConverter` for string↔enum conversion | Hard-code enum string values |
+| Do                                                     | Don't                             |
+| ------------------------------------------------------ | --------------------------------- |
+| Keep handlers thin and focused                         | Put business logic in handlers    |
+| Use specifications for queries                         | Write raw query logic in handlers |
+| Throw `ResultFailureException` for business violations | Return error codes or null        |
+| Map domain entities to DTOs                            | Return domain entities directly   |
+| Use `EnumConverter` for string↔enum conversion         | Hard-code enum string values      |
 
 ---
 
@@ -154,13 +154,13 @@ HTTP Request → Middleware → Endpoint → MediatR → Handler → Response
 
 #### Guidelines
 
-| Do | Don't |
-|---|---|
-| Keep endpoints thin - just HTTP translation | Put business logic in endpoints |
-| Use `ISender` from MediatR | Inject repositories directly |
-| Apply authorization attributes | Check roles manually in endpoint code |
-| Return appropriate HTTP status codes | Always return 200 |
-| Document with OpenAPI attributes | Skip API documentation |
+| Do                                          | Don't                                 |
+| ------------------------------------------- | ------------------------------------- |
+| Keep endpoints thin - just HTTP translation | Put business logic in endpoints       |
+| Use `ISender` from MediatR                  | Inject repositories directly          |
+| Apply authorization attributes              | Check roles manually in endpoint code |
+| Return appropriate HTTP status codes        | Always return 200                     |
+| Document with OpenAPI attributes            | Skip API documentation                |
 
 ---
 
@@ -198,13 +198,13 @@ Handler → Repository Interface (Domain) → Repository Implementation (Infrast
 
 #### Guidelines
 
-| Do | Don't |
-|---|---|
-| Load aggregates with all their entities | Return partial aggregates |
-| Use `Include()` for aggregate children | Lazy load across aggregate boundaries |
-| Dispatch events after successful save | Fire events before persistence |
-| One repository per aggregate root | Create repositories for entities |
-| Use specifications for query logic | Duplicate query logic across repositories |
+| Do                                      | Don't                                     |
+| --------------------------------------- | ----------------------------------------- |
+| Load aggregates with all their entities | Return partial aggregates                 |
+| Use `Include()` for aggregate children  | Lazy load across aggregate boundaries     |
+| Dispatch events after successful save   | Fire events before persistence            |
+| One repository per aggregate root       | Create repositories for entities          |
+| Use specifications for query logic      | Duplicate query logic across repositories |
 
 ---
 
@@ -230,12 +230,12 @@ Handler → Repository Interface (Domain) → Repository Implementation (Infrast
 
 #### Guidelines
 
-| Do | Don't |
-|---|---|
-| Put truly cross-cutting concerns here | Put domain-specific logic here |
-| Use for Result pattern, Pagination | Put entity definitions here |
-| Keep dependencies minimal | Reference Domain or Application |
-| Make utilities generic and reusable | Create single-use helpers |
+| Do                                    | Don't                           |
+| ------------------------------------- | ------------------------------- |
+| Put truly cross-cutting concerns here | Put domain-specific logic here  |
+| Use for Result pattern, Pagination    | Put entity definitions here     |
+| Keep dependencies minimal             | Reference Domain or Application |
+| Make utilities generic and reusable   | Create single-use helpers       |
 
 ---
 
@@ -271,21 +271,21 @@ Handler → Repository Interface (Domain) → Repository Implementation (Infrast
 
 ### Error Handling Strategy
 
-| Layer | Error Type | Approach |
-|-------|-----------|----------|
-| Domain | Business Rule Violation | Throw domain exception or return failure |
-| Application | Validation/Business | Throw `ResultFailureException` |
-| Infrastructure | External Service | Wrap in domain-meaningful exception |
-| API | HTTP | `ResultFailureMiddleware` converts to 400 |
+| Layer          | Error Type              | Approach                                  |
+| -------------- | ----------------------- | ----------------------------------------- |
+| Domain         | Business Rule Violation | Throw domain exception or return failure  |
+| Application    | Validation/Business     | Throw `ResultFailureException`            |
+| Infrastructure | External Service        | Wrap in domain-meaningful exception       |
+| API            | HTTP                    | `ResultFailureMiddleware` converts to 400 |
 
 ### Testing Strategy
 
-| Layer | Test Focus | Examples |
-|-------|-----------|----------|
-| Domain | Business rules, invariants | Aggregate creation, state transitions |
-| Application | Handler orchestration | Mock repositories, verify flow |
-| Infrastructure | Data access | Integration tests with test DB |
-| API | HTTP contracts | Integration tests with test server |
+| Layer          | Test Focus                 | Examples                              |
+| -------------- | -------------------------- | ------------------------------------- |
+| Domain         | Business rules, invariants | Aggregate creation, state transitions |
+| Application    | Handler orchestration      | Mock repositories, verify flow        |
+| Infrastructure | Data access                | Integration tests with test DB        |
+| API            | HTTP contracts             | Integration tests with test server    |
 
 ---
 
@@ -534,17 +534,17 @@ This structure demonstrates clean architecture principles with proper separation
 
 These files serve as canonical examples of each pattern. When implementing a new feature, follow these as templates:
 
-| Pattern | Reference File(s) |
-|---|---|
-| **CQRS Command (create)** | `src/Notism.Application/Auth/Register/` |
-| **CQRS Command (update)** | `src/Notism.Application/User/UpdateProfile/` |
-| **CQRS Query (filtered, paginated)** | `src/Notism.Application/Food/GetFoods/` |
-| **Domain Aggregate** | `src/Notism.Domain/User/User.cs` |
-| **Value Object** | `src/Notism.Domain/User/ValueObjects/Email.cs` |
-| **Domain Event** | `src/Notism.Domain/User/Events/UserCreatedEvent.cs` |
-| **Repository** | `src/Notism.Infrastructure/Users/UserRepository.cs` |
-| **API Endpoint Group** | `src/Notism.Api/Endpoints/AuthEndpoints.cs` |
-| **Specification (complex)** | `src/Notism.Application/Food/GetFoods/GetFoodsSpecification.cs` |
-| **Specification (simple/inline)** | Uses `FilterSpecification<T>` directly in handler |
+| Pattern                              | Reference File(s)                                               |
+| ------------------------------------ | --------------------------------------------------------------- |
+| **CQRS Command (create)**            | `src/Notism.Application/Auth/Register/`                         |
+| **CQRS Command (update)**            | `src/Notism.Application/User/UpdateProfile/`                    |
+| **CQRS Query (filtered, paginated)** | `src/Notism.Application/Food/GetFoods/`                         |
+| **Domain Aggregate**                 | `src/Notism.Domain/User/User.cs`                                |
+| **Value Object**                     | `src/Notism.Domain/User/ValueObjects/Email.cs`                  |
+| **Domain Event**                     | `src/Notism.Domain/User/Events/UserCreatedEvent.cs`             |
+| **Repository**                       | `src/Notism.Infrastructure/Users/UserRepository.cs`             |
+| **API Endpoint Group**               | `src/Notism.Api/Endpoints/AuthEndpoints.cs`                     |
+| **Specification (complex)**          | `src/Notism.Application/Food/GetFoods/GetFoodsSpecification.cs` |
+| **Specification (simple/inline)**    | Uses `FilterSpecification<T>` directly in handler               |
 
 Use these as templates: examine the full file structure, naming patterns, validation approach, and handler orchestration from these examples.

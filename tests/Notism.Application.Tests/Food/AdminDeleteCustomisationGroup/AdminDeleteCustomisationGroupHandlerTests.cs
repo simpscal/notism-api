@@ -51,7 +51,7 @@ public class AdminDeleteCustomisationGroupHandlerTests
         food.AddCustomisationGroup(group);
 
         _foodRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Food.Food>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Food.Food>>())
             .Returns(food);
 
         var request = new AdminDeleteCustomisationGroupRequest
@@ -70,7 +70,7 @@ public class AdminDeleteCustomisationGroupHandlerTests
     public async Task Handle_WhenFoodNotFound_ThrowsNotFoundException()
     {
         _foodRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Food.Food>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Food.Food>>())
             .Returns((Domain.Food.Food?)null);
 
         var request = new AdminDeleteCustomisationGroupRequest
@@ -101,7 +101,7 @@ public class AdminDeleteCustomisationGroupHandlerTests
         var group = FoodCustomisationGroup.Create(otherFoodId, "Toppings", isRequired: false, displayOrder: 1);
 
         _foodRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Food.Food>>())
+            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Food.Food>>())
             .Returns(food);
 
         var request = new AdminDeleteCustomisationGroupRequest

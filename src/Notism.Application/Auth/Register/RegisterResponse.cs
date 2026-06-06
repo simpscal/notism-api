@@ -3,7 +3,7 @@ using Notism.Application.Common.Interfaces;
 
 namespace Notism.Application.Auth.Register;
 
-public class RegisterResponse
+public sealed record RegisterResponse
 {
     public required AuthenticationUserInfoResponse User { get; set; }
     public required string Token { get; set; }

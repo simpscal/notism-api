@@ -3,7 +3,7 @@ using Notism.Application.Common.Interfaces;
 
 namespace Notism.Application.Auth.Login;
 
-public class LoginResponse
+public sealed record LoginResponse
 {
     public required AuthenticationUserInfoResponse User { get; set; }
     public required string Token { get; set; }

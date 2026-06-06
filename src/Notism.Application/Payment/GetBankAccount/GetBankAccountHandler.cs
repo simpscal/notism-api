@@ -1,6 +1,6 @@
 using MediatR;
 
-using Notism.Domain.Common.Specifications;
+using Notism.Application.Payment.Common;
 using Notism.Domain.Payment;
 
 namespace Notism.Application.Payment.GetBankAccount;
@@ -16,8 +16,7 @@ public class GetBankAccountHandler : IRequestHandler<GetBankAccountRequest, GetB
 
     public async Task<GetBankAccountResponse?> Handle(GetBankAccountRequest request, CancellationToken cancellationToken)
     {
-        var payment = await _paymentRepository.FindByExpressionAsync(
-            new FilterSpecification<Domain.Payment.Payment>(_ => true));
+        var payment = await _paymentRepository.FindByExpressionAsync(new BankAccountSpecification());
 
         if (payment is null)
         {

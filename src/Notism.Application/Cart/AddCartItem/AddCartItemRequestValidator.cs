@@ -1,21 +1,23 @@
 using FluentValidation;
 
+using Notism.Application.Common.Services;
+
 namespace Notism.Application.Cart.AddCartItem;
 
 public class AddCartItemRequestValidator : AbstractValidator<AddCartItemRequest>
 {
-    public AddCartItemRequestValidator()
+    public AddCartItemRequestValidator(IMessages messages)
     {
         RuleFor(x => x.UserId)
             .NotEmpty()
-            .WithMessage("UserId is required");
+            .WithMessage(messages.UserIdRequired);
 
         RuleFor(x => x.FoodId)
             .NotEmpty()
-            .WithMessage("FoodId is required");
+            .WithMessage(messages.FoodIdRequired);
 
         RuleFor(x => x.Quantity)
             .GreaterThan(0)
-            .WithMessage("Quantity must be greater than zero");
+            .WithMessage(messages.QuantityMustBeGreaterThanZero);
     }
 }

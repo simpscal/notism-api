@@ -2,7 +2,7 @@ using Notism.Shared.Extensions;
 
 namespace Notism.Application.Order.AdminUpdateOrderDeliveryStatus;
 
-public class AdminUpdateOrderDeliveryStatusResponse
+public sealed record AdminUpdateOrderDeliveryStatusResponse
 {
     public Guid Id { get; set; }
     public string SlugId { get; set; } = string.Empty;

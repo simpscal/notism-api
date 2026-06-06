@@ -5,7 +5,7 @@ using Notism.Shared.Extensions;
 
 namespace Notism.Application.Food.GetFoodById;
 
-public class GetFoodByIdResponse
+public sealed record GetFoodByIdResponse
 {
     public Guid Id { get; set; }
     public required string Name { get; set; }
@@ -59,7 +59,7 @@ public class GetFoodByIdResponse
     }
 }
 
-public class FoodImageResponse
+public sealed record FoodImageResponse
 {
     public required string FileKey { get; set; }
     public int DisplayOrder { get; set; }
@@ -78,7 +78,7 @@ public class FoodImageResponse
     }
 }
 
-public class FoodCustomisationGroupResponse
+public sealed record FoodCustomisationGroupResponse
 {
     public Guid Id { get; set; }
     public required string Label { get; set; }
@@ -100,7 +100,7 @@ public class FoodCustomisationGroupResponse
     }
 }
 
-public class FoodCustomisationOptionResponse
+public sealed record FoodCustomisationOptionResponse
 {
     public Guid Value { get; set; }
     public required string Label { get; set; }

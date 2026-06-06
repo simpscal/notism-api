@@ -58,7 +58,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
     private async Task<Domain.Food.Food> ValidateAndFetchFoodAsync()
     {
         var foodSpecification = new FilterSpecification<Domain.Food.Food>(f => f.Id == _request!.FoodId)
-            .Include("Category")
+            .Include(f => f.Category!)
             .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1))
             .Include("CustomisationGroups.Options");
         var food = await _foodRepository.FindByExpressionAsync(foodSpecification)

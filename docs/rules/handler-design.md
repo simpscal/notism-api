@@ -365,6 +365,36 @@ if (existingCartItem != null)
 }
 ```
 
+### Response Models
+
+Handlers map domain entities to dedicated response models. These models follow a single, authoritative shape.
+
+**✅ DO: Declare Every Response as a `sealed record`**
+
+Every response model is a `record`, and it is `sealed` unless it is a shared base type that other responses inherit. A response record is left non-`sealed` only when it is deliberately intended as a base for derived responses.
+
+**✅ DO: Build Projecting Responses Through a `FromDomain` Factory**
+
+Responses that project a domain entity expose a `static FromDomain(...)` factory and are built only through it — never via ad hoc object initialisers in handlers:
+
+```csharp
+return EntityResponse.FromDomain(entity, relatedEntity);
+```
+
+Trivial responses that do not map a domain entity (message acknowledgements, count DTOs, paginated wrappers, pre-signed URLs) are constructed directly and do not need a factory.
+
+**✅ DO: Use `required`, Reserve Nullable for Genuinely Optional Values**
+
+A property is declared nullable (`T?`) only when the value is genuinely optional in the contract. Required reference values use the `required` modifier. Do not paper over optionality with `= string.Empty` defaults on conceptually-required fields.
+
+**✅ DO: Derive Paginated Responses from `PagedResult<T>`**
+
+Paginated responses derive from `Notism.Shared.Models.PagedResult<T>` (`{ TotalCount, Items }`). Do not hand-roll a bare `List<T>` property for a paginated result.
+
+**❌ DON'T: Rename a Response Property Without Treating It as a Breaking Change**
+
+System.Text.Json uses the default camelCase policy, so the serialized field name is derived from the C# property name. Never rename a response property (or change its `JsonPropertyName`) without treating it as a breaking API change.
+
 ### Summary
 
 - **Break down large handlers** into smaller, focused methods
@@ -375,6 +405,7 @@ if (existingCartItem != null)
 - **Wrap multi-table operations** in transactions using UnitOfWork
 - **Inline simple mappings**, extract complex or reusable logic
 - **Write self-documenting code** without redundant comments
+- **Model responses as `sealed record`s** built through `FromDomain` factories, using `required` over nullable defaults
 
 ---
 

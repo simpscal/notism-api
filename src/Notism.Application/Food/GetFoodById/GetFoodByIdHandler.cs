@@ -35,7 +35,7 @@ public class GetFoodByIdHandler : IRequestHandler<GetFoodByIdRequest, GetFoodByI
     {
         var specification = new FilterSpecification<Domain.Food.Food>(f => f.Id == request.FoodId && !f.IsDeleted)
             .Include(f => f.Images)
-            .Include("Category")
+            .Include(f => f.Category!)
             .Include("CustomisationGroups.Options");
         var food = await _foodRepository.FindByExpressionAsync(specification);
         if (food == null)

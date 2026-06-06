@@ -4,7 +4,7 @@ using Notism.Shared.Extensions;
 
 namespace Notism.Application.Order.GetOrderById;
 
-public class GetOrderByIdResponse
+public sealed record GetOrderByIdResponse
 {
     public Guid Id { get; set; }
     public string SlugId { get; set; } = string.Empty;
