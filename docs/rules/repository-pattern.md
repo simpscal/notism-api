@@ -53,5 +53,11 @@ public interface ICartItemRepository : IRepository<CartItem>
 5. **Flexibility**: Easy to combine specifications using `And()`, `Or()`, `Not()` methods
 6. **Maintainability**: Query logic is centralized in specification classes, not scattered in repository methods
 
+### Persistence Commit Policy
+
+**Single commit point.** A handler that mutates state commits exactly once. The target policy is to commit through `IUnitOfWork` and to keep `SaveChangesAsync` off the handler-facing repository surface so a double-save is impossible.
+
+Until the full migration lands, handlers must still issue at most one commit per logical operation and must not call `SaveChangesAsync` on more than one repository sharing the same `DbContext`.
+
 ---
 

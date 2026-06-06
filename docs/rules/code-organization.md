@@ -76,5 +76,25 @@ public static class CartEndpoints
 }
 ```
 
+### Endpoint Payloads
+
+**✅ DO: Define Each Inbound Payload in Its Own File**
+
+No payload/request records live inside endpoint files. Each inbound payload is a `record` in its own file under `src/Notism.Api/Models/Payloads/`, named after the type (StyleCop SA1649: one public type per file, filename = type name). Endpoint files contain only the static endpoint-mapping class.
+
+**✅ DO: Name the API-Surface Input `*Payload`**
+
+The API-surface input record is a `*Payload`; the endpoint maps it to the corresponding Application `*Request` before dispatching via `ISender`.
+
+### Interface-Necessity Rule
+
+**✅ DO: Introduce an Interface Only When It Earns Its Keep**
+
+An interface exists only when it **crosses a layer boundary** (e.g. an Application-defined service implemented in Infrastructure) or **backs an actively used test seam**. A same-layer type with a single implementation, a single consumer, and no test double should be injected concretely. Following this rule, `ICookieService` was removed and `CookieService` is injected directly in `AuthEndpoints`.
+
+**✅ DO: Place Interfaces by Their Role**
+
+Interfaces live in `Common/Interfaces` within their layer, or beside the aggregate in the Domain layer (repository interfaces).
+
 ---
 
