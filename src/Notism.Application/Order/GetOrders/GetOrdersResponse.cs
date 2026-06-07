@@ -1,20 +1,22 @@
 using Notism.Application.Common.Interfaces;
 using Notism.Application.Order.Common;
 using Notism.Shared.Extensions;
+using Notism.Shared.Models;
 
 namespace Notism.Application.Order.GetOrders;
 
-public sealed record GetOrdersResponse
+public sealed record GetOrdersResponse : PagedResult<GetOrdersOrderResponse>
 {
-    public List<GetOrdersOrderResponse> Orders { get; set; } = new();
-
     public static GetOrdersResponse FromDomain(
-        IEnumerable<Domain.Order.Order> orders,
+        PagedResult<Domain.Order.Order> pagedOrders,
         IStorageService storageService)
     {
         return new GetOrdersResponse
         {
-            Orders = orders.Select(order => GetOrdersOrderResponse.FromDomain(order, storageService)).ToList(),
+            TotalCount = pagedOrders.TotalCount,
+            Items = pagedOrders.Items
+                .Select(order => GetOrdersOrderResponse.FromDomain(order, storageService))
+                .ToList(),
         };
     }
 }
