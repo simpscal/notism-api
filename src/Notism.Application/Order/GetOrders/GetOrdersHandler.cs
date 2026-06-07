@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+
 using MediatR;
 
 using Microsoft.Extensions.Logging;
@@ -8,6 +10,8 @@ using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
 using Notism.Domain.Payment.Enums;
 using Notism.Shared.Extensions;
+
+using DomainOrder = Notism.Domain.Order.Order;
 
 namespace Notism.Application.Order.GetOrders;
 
@@ -31,23 +35,28 @@ public class GetOrdersHandler : IRequestHandler<GetOrdersRequest, GetOrdersRespo
         GetOrdersRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new OrderDetailSpecification(
-            o => o.UserId == request.UserId && o.DeliveryStatus != DeliveryStatus.Cancelled);
-        var orders = await _orderRepository.FilterByExpressionAsync(specification);
+        Expression<Func<DomainOrder, bool>> filter =
+            o => o.UserId == request.UserId && o.DeliveryStatus != DeliveryStatus.Cancelled;
 
         if (!string.IsNullOrWhiteSpace(request.PaymentStatus) &&
             request.PaymentStatus.ExistInEnum<PaymentStatus>())
         {
-            var paymentStatusFilter = request.PaymentStatus.ToEnum<PaymentStatus>();
-            orders = orders.Where(o => o.PaymentStatus == paymentStatusFilter).ToList();
+            var paymentStatus = request.PaymentStatus.ToEnum<PaymentStatus>();
+            filter = o => o.UserId == request.UserId &&
+                          o.DeliveryStatus != DeliveryStatus.Cancelled &&
+                          o.PaymentStatus == paymentStatus;
         }
 
-        var orderedOrders = orders
-            .OrderByDescending(o => o.CreatedAt)
-            .ToList();
+        var specification = new OrderDetailSpecification(filter);
 
-        _logger.LogInformation("Retrieved {Count} orders for user {UserId}", orderedOrders.Count, request.UserId);
+        var pagedResult = await _orderRepository.FilterPagedByExpressionAsync(specification, request);
 
-        return GetOrdersResponse.FromDomain(orderedOrders, _storageService);
+        _logger.LogInformation(
+            "Retrieved {Count} of {TotalCount} orders for user {UserId}",
+            pagedResult.Items.Count(),
+            pagedResult.TotalCount,
+            request.UserId);
+
+        return GetOrdersResponse.FromDomain(pagedResult, _storageService);
     }
 }
