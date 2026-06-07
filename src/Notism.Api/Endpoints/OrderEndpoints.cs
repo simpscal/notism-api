@@ -29,8 +29,9 @@ public static class OrderEndpoints
         group.MapGet("/", GetOrdersAsync)
             .WithName("GetOrders")
             .WithSummary("Get orders")
-            .WithDescription("Retrieves all orders for the authenticated user.")
+            .WithDescription("Retrieves a page of orders for the authenticated user, most recent first.")
             .Produces<GetOrdersResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized);
 
         group.MapGet("/{slugId}", GetOrderByIdAsync)
@@ -77,11 +78,19 @@ public static class OrderEndpoints
         HttpContext httpContext,
         IMediator mediator,
         string? paymentStatus,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        int skip = 0,
+        int take = 25)
     {
         var userId = httpContext.User.GetUserId();
 
-        var request = new GetOrdersRequest { UserId = userId, PaymentStatus = paymentStatus };
+        var request = new GetOrdersRequest
+        {
+            UserId = userId,
+            PaymentStatus = paymentStatus,
+            Skip = skip,
+            Take = take,
+        };
         var result = await mediator.Send(request, cancellationToken);
 
         return Results.Ok(result);
