@@ -57,6 +57,8 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.HasPostgresExtension("pg_trgm");
+
         ConfigureUser(modelBuilder);
         ConfigureRefreshToken(modelBuilder);
         ConfigurePasswordResetToken(modelBuilder);
