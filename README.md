@@ -11,6 +11,7 @@ A modern, clean architecture-based REST API built with .NET 9, implementing Doma
 - [Getting Started](#getting-started)
 - [Running the Application](#running-the-application)
 - [Docker Deployment](#docker-deployment)
+- [AWS Deployment (CI/CD)](#aws-deployment-cicd)
 - [Configuration](#configuration)
 
 ## Overview
@@ -41,7 +42,6 @@ Detailed documentation is available in the `docs/` directory:
 | `docs/rules/additional-practices.md` | Aggregate roots, value objects, private constructors |
 | `docs/flows/image-resizing.md` | Image upload and resizing flow |
 | `docs/flows/secure-authentication-cookies.md` | Auth cookie security flow |
-| `docs/flows/ci-cd-deploy.md` | CI/CD deploy pipeline and GitHub Actions OIDC |
 
 ## Technologies
 
@@ -225,6 +225,63 @@ Set the following environment variables for production:
 - `ConnectionStrings__DefaultConnection=<your-connection-string>`
 - `JwtSettings__Secret=<your-jwt-secret>`
 - `Resend__ApiKey=<your-resend-api-key>`
+
+## AWS Deployment (CI/CD)
+
+The API is deployed to AWS EC2 from GitHub Actions on push to `main`. The pipeline authenticates to AWS with **OpenID Connect (OIDC)** — no long-lived access keys — and is self-healing: it auto-starts a stopped EC2 instance before deploying. All IAM/OIDC resources are managed in Terraform under `terraform/github_oidc.tf`.
+
+### Flow
+
+```
+GitHub Actions (push to main)
+  → request OIDC token (token.actions.githubusercontent.com)
+  → assume notism-api-deploy-role via AssumeRoleWithWebIdentity
+  → ensure EC2 running (start-instances + wait instance-running)
+  → build & push image to ECR
+  → SSH to EC2 (Elastic IP) → pull image → restart container
+```
+
+### OIDC provider and deploy roles
+
+A single account-level OIDC provider (`token.actions.githubusercontent.com`, audience `sts.amazonaws.com`) is shared by both deploy roles. Each role is scoped by the token's `sub` claim so only its repo can assume it.
+
+| Role | Assumed by (`sub`) | Managed policies |
+|------|--------------------|------------------|
+| `notism-api-deploy-role` | `repo:simpscal/notism-api:*` | `CloudFrontFullAccess`, `AmazonEC2ContainerRegistryPowerUser`, `AmazonECS_FullAccess` |
+| `notism-web-deploy` | `repo:simpscal/notism-web:*` | `CloudFrontFullAccess`, `AmazonS3FullAccess` |
+
+### EC2 auto-start permission
+
+The `deploy-ec2` job starts the instance if it is stopped, so a stopped instance never blocks CI. This is granted by the inline policy `notism-api-deploy-ec2-start` on `notism-api-deploy-role`:
+
+- `ec2:StartInstances` — scoped to the API instance ARN (`aws_instance.api`).
+- `ec2:DescribeInstances`, `ec2:DescribeInstanceStatus` — on `Resource = "*"` (these describe actions do not support resource-level scoping).
+
+### Node.js 24 runtime
+
+`deploy.yml` and the `build-push-ecr` composite action set `FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true` to opt JavaScript actions onto the Node.js 24 runtime ahead of the GitHub Node.js 20 deprecation. Composite actions do not inherit the top-level `env`, so the flag is set on the composite steps directly.
+
+### Required GitHub Actions secrets
+
+| Secret | Value / purpose |
+|--------|-----------------|
+| `AWS_ROLE_TO_ASSUME` | ARN of `notism-api-deploy-role` |
+| `EC2_INSTANCE_ID` | EC2 instance id (auto-start target) |
+| `EC2_HOST` | Elastic IP (stable, Terraform-managed) |
+| `EC2_USER`, `EC2_SSH_PRIVATE_KEY` | SSH access to the instance |
+| `ECR_REPOSITORY` | Target ECR repository |
+
+### Managing the IAM / OIDC resources with Terraform
+
+These resources were originally created by hand in the AWS console and are now defined in `terraform/github_oidc.tf`, adopted into state via config-driven `import` blocks (Terraform ≥ 1.5). State is **local** (`terraform/terraform.tfstate`, gitignored — it holds sensitive outputs), so apply from a workstation with AWS credentials:
+
+```bash
+cd terraform
+terraform plan    # imports reconcile existing resources; only intended changes shown
+terraform apply
+```
+
+On first apply the import blocks reconcile the existing provider, roles, and managed-policy attachments into state (no recreate); subsequent `terraform plan` runs report no changes. Managed-policy attachments are replicated exactly as they exist in AWS — changing them alters live deploy permissions.
 
 ## Configuration
 
