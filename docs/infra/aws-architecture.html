@@ -224,8 +224,11 @@
   <tr><td>Elastic IP</td><td><code>notism-api-eip</code></td><td>Stable public IP for the API.</td></tr>
   <tr><td><strong>Database</strong></td><td>PostgreSQL (Supabase)</td><td><code>db.vqwfgdsazmalixzmvfok.supabase.co</code></td><td>Managed PostgreSQL 17 hosted on Supabase. Connection string stored in <code>CONNECTION_STRING</code> GitHub secret.</td></tr>
   <tr><td><strong>Security</strong></td><td>EC2 security group</td><td><code>notism-ec2-sg</code></td><td>Inbound: 22, 80, 443. Outbound: all.</td></tr>
-  <tr><td rowspan="2"><strong>IAM</strong></td><td>Instance profile</td><td><code>notism-ec2-profile</code></td><td>Attached to EC2; allows S3 and ECR pull.</td></tr>
+  <tr><td rowspan="5"><strong>IAM</strong></td><td>Instance profile</td><td><code>notism-ec2-profile</code></td><td>Attached to EC2; allows S3 and ECR pull.</td></tr>
   <tr><td>Role</td><td><code>notism-ec2-role</code></td><td>Assumed by EC2; no long-lived keys in app config.</td></tr>
+  <tr><td>OIDC provider</td><td><code>token.actions.githubusercontent.com</code></td><td>Lets GitHub Actions assume deploy roles via OIDC (audience <code>sts.amazonaws.com</code>); no stored AWS keys. Shared by both deploy roles.</td></tr>
+  <tr><td>Deploy role</td><td><code>notism-api-deploy-role</code></td><td>Assumed by <code>simpscal/notism-api</code> CI. ECR push, CloudFront, ECS; plus inline <code>ec2:StartInstances</code>/<code>Describe*</code> to auto-start the API instance during deploy.</td></tr>
+  <tr><td>Deploy role</td><td><code>notism-web-deploy</code></td><td>Assumed by <code>simpscal/notism-web</code> CI. S3 + CloudFront for frontend deploys.</td></tr>
   <tr><td><strong>Container registry</strong></td><td>ECR repository</td><td><code>notism-api</code></td><td>Stores Docker image for the API; CI pushes, EC2 pulls.</td></tr>
   <tr><td rowspan="3"><strong>Storage</strong></td><td>S3 bucket</td><td><code>private-notism-storage</code></td><td>Private file storage for the API (CORS, referer-based policy).</td></tr>
   <tr><td>S3 bucket</td><td><code>public-notism-storage</code></td><td>Public file storage (public-read policy).</td></tr>
@@ -268,24 +271,29 @@ sudo docker compose down            # stop everything
 sudo docker compose up -d           # start everything</code></pre>
 
 <h2 id="cicd">CI/CD pipeline</h2>
-<p>Deployment is triggered by pushes to <code>main</code> or <code>dev</code> via <code>.github/workflows/deploy.yml</code>.</p>
+<p>Deployment is triggered by pushes to <code>main</code> or <code>dev</code> via <code>.github/workflows/deploy.yml</code>. The workflow authenticates to AWS via <strong>OIDC</strong> — it assumes <code>notism-api-deploy-role</code> through the GitHub Actions OIDC provider, with no stored AWS keys.</p>
 
 <div class="diagram">  git push ──▶ Determine env ──▶ Build + push ECR ──▶ Deploy to EC2
                                                           │
                                                           ▼
                        ┌──────────────────────────────────────────────┐
-                       │ 1. Prepare .env + .env.api                   │
-                       │ 2. SCP files to EC2                          │
-                       │ 3. docker login to ECR                       │
-                       │ 4. docker compose up -d                      │
-                       │ 5. docker image prune                        │
+                       │ 1. Ensure EC2 running (start + wait)         │
+                       │ 2. Prepare .env + .env.api                   │
+                       │ 3. SCP files to EC2                          │
+                       │ 4. docker login to ECR                       │
+                       │ 5. docker compose up -d                      │
+                       │ 6. docker image prune                        │
                        └──────────────────────────────────────────────┘
+</div>
+<div class="callout info">
+  <strong>Self-healing deploy:</strong> the <code>deploy-ec2</code> job runs <code>aws ec2 start-instances</code> + <code>aws ec2 wait instance-running</code> (using the <code>EC2_INSTANCE_ID</code> secret) before SSH, so a stopped instance no longer blocks CI. This requires the <code>ec2:StartInstances</code>/<code>Describe*</code> permissions on <code>notism-api-deploy-role</code> (see <a href="terraform-architecture.html#oidc">github_oidc.tf</a>).
 </div>
 
 <h3>GitHub secrets and variables</h3>
 <table>
   <tr><th>Name</th><th>Type</th><th>Purpose</th></tr>
-  <tr><td><code>AWS_ROLE_TO_ASSUME</code></td><td>Secret</td><td>IAM role ARN for OIDC authentication.</td></tr>
+  <tr><td><code>AWS_ROLE_TO_ASSUME</code></td><td>Secret</td><td>ARN of <code>notism-api-deploy-role</code>, assumed via OIDC.</td></tr>
+  <tr><td><code>EC2_INSTANCE_ID</code></td><td>Secret</td><td>API EC2 instance id; target of the deploy auto-start step.</td></tr>
   <tr><td><code>CONNECTION_STRING</code></td><td>Secret</td><td>Npgsql connection string for Supabase PostgreSQL.</td></tr>
   <tr><td><code>JWT_SECRET</code></td><td>Secret</td><td>JWT signing key.</td></tr>
   <tr><td><code>MAILERSEND_API_KEY</code></td><td>Secret</td><td>MailerSend email API key.</td></tr>
@@ -327,6 +335,8 @@ sudo docker compose up -d           # start everything</code></pre>
 <ul>
   <li>EC2 uses the <strong>notism-ec2-profile</strong> instance profile (role <strong>notism-ec2-role</strong>).</li>
   <li>The role has Amazon S3 full access and Amazon ECR read-only access so the app can use S3 buckets and pull images without storing access keys.</li>
+  <li>GitHub Actions authenticates via the <strong>token.actions.githubusercontent.com</strong> OIDC provider and assumes a per-repo deploy role (<strong>notism-api-deploy-role</strong>, <strong>notism-web-deploy</strong>) scoped by the token's <code>sub</code> claim — no long-lived CI keys.</li>
+  <li><strong>notism-api-deploy-role</strong> additionally holds an inline policy granting <code>ec2:StartInstances</code> (scoped to the API instance) and <code>ec2:DescribeInstances</code>/<code>ec2:DescribeInstanceStatus</code> (<code>*</code>) for the deploy auto-start step.</li>
 </ul>
 
 <h3>Secrets</h3>
