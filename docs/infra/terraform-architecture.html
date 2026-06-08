@@ -259,8 +259,8 @@
             <span><strong>AWS Account:</strong> 249550149516</span>
             <span><strong>Region:</strong> ap-northeast-1</span>
             <span><strong>Provider:</strong> hashicorp/aws ~&gt; 5.0</span>
-            <span><strong>Terraform:</strong> &gt;= 1.0</span>
-            <span><strong>Files:</strong> 12 .tf, 664 lines</span>
+            <span><strong>Terraform:</strong> &gt;= 1.5</span>
+            <span><strong>Files:</strong> 13 .tf</span>
         </div>
 
         <div class="toc">
@@ -277,6 +277,7 @@
                 <li><a href="#eip">eip.tf</a></li>
                 <li><a href="#ecr">ecr.tf</a></li>
                 <li><a href="#iam">iam.tf</a></li>
+                <li><a href="#oidc">github_oidc.tf</a></li>
                 <li><a href="#lambda">lambda.tf</a></li>
                 <li><a href="#s3">s3.tf</a></li>
                 <li><a href="#cf">cloudfront.tf</a></li>
@@ -347,6 +348,7 @@
             <li>eip.tf</li>
             <li>ecr.tf</li>
             <li>iam.tf</li>
+            <li>github_oidc.tf</li>
             <li>lambda.tf</li>
             <li>s3.tf</li>
             <li>cloudfront.tf</li>
@@ -354,10 +356,11 @@
         </ul>
 
         <h3 id="versions"><code>versions.tf</code> <span class="badge regional">10 lines</span></h3>
-        <p>Pin Terraform <code>&gt;= 1.0</code> and AWS provider <code>~&gt; 5.0</code>. Ensures reproducible plans
-            across machines and CI.</p>
+        <p>Pin Terraform <code>&gt;= 1.5</code> and AWS provider <code>~&gt; 5.0</code>. Ensures reproducible plans
+            across machines and CI. <code>&gt;= 1.5</code> is required for the config-driven <code>import</code> blocks
+            in <code>github_oidc.tf</code>.</p>
         <pre><code>terraform {
-  required_version = "&gt;= 1.0"
+  required_version = "&gt;= 1.5"
   required_providers {
     aws = {
       source  = "hashicorp/aws"
@@ -540,6 +543,43 @@ chmod +x /usr/local/lib/docker/cli-plugins/docker-compose</code></pre>
             </tr>
         </table>
         <p>Result: app on EC2 calls AWS APIs using role credentials — no keys on disk.</p>
+
+        <h3 id="oidc"><code>github_oidc.tf</code> <span class="badge regional">CI auth</span></h3>
+        <p>GitHub Actions authenticates to AWS via <strong>OpenID Connect</strong> — no long-lived access keys. One
+            account-level OIDC provider is shared by both deploy roles; each role is scoped by the token's
+            <code>sub</code> claim so only its repository can assume it.</p>
+        <table>
+            <tr>
+                <th>Resource</th>
+                <th>Purpose</th>
+            </tr>
+            <tr>
+                <td><code>aws_iam_openid_connect_provider.github_actions</code></td>
+                <td>OIDC provider for <code>token.actions.githubusercontent.com</code>, audience <code>sts.amazonaws.com</code>. Shared by both deploy roles.</td>
+            </tr>
+            <tr>
+                <td><code>aws_iam_role.api_deploy</code> (<code>notism-api-deploy-role</code>)</td>
+                <td>Assumed by <code>repo:simpscal/notism-api:*</code> via <code>AssumeRoleWithWebIdentity</code>. Managed policies: <code>CloudFrontFullAccess</code>, <code>AmazonEC2ContainerRegistryPowerUser</code>, <code>AmazonECS_FullAccess</code>.</td>
+            </tr>
+            <tr>
+                <td><code>aws_iam_role_policy.api_deploy_ec2_start</code> (<code>notism-api-deploy-ec2-start</code>)</td>
+                <td>Inline: <code>ec2:StartInstances</code> scoped to the API instance ARN (<code>aws_instance.api</code>); <code>ec2:DescribeInstances</code> / <code>ec2:DescribeInstanceStatus</code> on <code>*</code> (describe actions do not support resource-level scoping). Lets the <code>deploy-ec2</code> job auto-start a stopped instance.</td>
+            </tr>
+            <tr>
+                <td><code>aws_iam_role.web_deploy</code> (<code>notism-web-deploy</code>)</td>
+                <td>Assumed by <code>repo:simpscal/notism-web:*</code>. Managed policies: <code>CloudFrontFullAccess</code>, <code>AmazonS3FullAccess</code>.</td>
+            </tr>
+        </table>
+        <p>The provider and both roles were originally created by hand in the AWS console. They are adopted into state
+            with config-driven <code>import</code> blocks (8 in total: provider + 2 roles + 5 managed-policy
+            attachments), so the first <code>terraform apply</code> reconciles them with no recreate and only the new
+            <code>ec2-start</code> inline policy is created.</p>
+        <div class="callout info">
+            <strong>Import-block ids must be literal strings</strong> (no variable/data interpolation), so the OIDC
+            provider import id inlines the account id. The runtime policy/trust ARNs still derive the account from
+            <code>aws_caller_identity</code>. The <code>import</code> blocks are one-time adoption helpers and may be
+            removed once the resources are confirmed in state.
+        </div>
 
         <h3 id="lambda"><code>lambda.tf</code> <span class="badge regional">140 lines</span></h3>
         <p>Three image-resizing Lambda functions deployed in <code>ap-northeast-1</code>. All share <code>notism-image-resizing-role</code> and the sharp layer (<code>arn:aws:lambda:${var.aws_region}:${account_id}:layer:sharp:1</code> — ARN constructed from locals, no hardcoded region).</p>
