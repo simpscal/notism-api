@@ -8,7 +8,9 @@
 --
 -- This script is IDEMPOTENT and safe to re-run:
 --   * DROP INDEX uses IF EXISTS.
---   * The __EFMigrationsHistory row is removed if present.
+--
+-- NOTE: The live database has NO "__EFMigrationsHistory" table (managed entirely by
+-- these hand-run SQL scripts), so this script does NOT touch it; it is pure DDL.
 --
 -- IMPORTANT: DROP INDEX CONCURRENTLY must run at the top level (NOT inside a
 -- transaction, function, or DO $$ block). Do NOT wrap this script in BEGIN/COMMIT.
@@ -16,6 +18,3 @@
 DROP INDEX CONCURRENTLY IF EXISTS "IX_Foods_Description";
 
 DROP INDEX CONCURRENTLY IF EXISTS "IX_Foods_Name";
-
-DELETE FROM "__EFMigrationsHistory"
-WHERE "MigrationId" = '20260608093555_AddFoodNameDescriptionTrigramIndexes';
