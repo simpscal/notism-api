@@ -8,6 +8,7 @@ on:
 env:
   DOTNET_VERSION: "9.0.x"
   IMAGE_TAG: ${{ github.sha }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   prepare:
@@ -63,6 +64,11 @@ jobs:
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_TO_ASSUME }}
           aws-region: ${{ vars.AWS_REGION }}
+
+      - name: Ensure EC2 is running
+        run: |
+          aws ec2 start-instances --region ap-northeast-1 --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
+          aws ec2 wait instance-running --region ap-northeast-1 --instance-ids ${{ secrets.EC2_INSTANCE_ID }}
 
       - name: Checkout compose file
         uses: actions/checkout@v5
