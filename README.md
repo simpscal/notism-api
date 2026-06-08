@@ -41,6 +41,7 @@ Detailed documentation is available in the `docs/` directory:
 | `docs/rules/additional-practices.md` | Aggregate roots, value objects, private constructors |
 | `docs/flows/image-resizing.md` | Image upload and resizing flow |
 | `docs/flows/secure-authentication-cookies.md` | Auth cookie security flow |
+| `docs/flows/ci-cd-deploy.md` | CI/CD deploy pipeline and GitHub Actions OIDC |
 
 ## Technologies
 
