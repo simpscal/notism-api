@@ -2,393 +2,619 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Notism AWS Infrastructure Architecture</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notism — AWS Architecture (Terraform-derived)</title>
 <style>
   :root {
     --bg: #0d1117;
     --panel: #161b22;
-    --border: #30363d;
-    --text: #c9d1d9;
-    --muted: #8b949e;
-    --accent: #58a6ff;
-    --warn: #d29922;
-    --danger: #f85149;
-    --ok: #3fb950;
-    --code-bg: #1f2428;
+    --panel-2: #1c2330;
+    --border: #2d3643;
+    --text: #e6edf3;
+    --muted: #9aa7b4;
+    --accent: #ff9900;      /* AWS orange */
+    --accent-2: #4f9cf9;    /* link blue */
+    --green: #3fb950;
+    --red: #f85149;
+    --purple: #bc8cff;
+    --teal: #39c5cf;
+    --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   }
   * { box-sizing: border-box; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
+    margin: 0;
     background: var(--bg);
     color: var(--text);
-    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     line-height: 1.6;
+    font-size: 15px;
   }
-  .container { max-width: 1100px; margin: 0 auto; padding: 40px 24px; }
-  h1 {
-    font-size: 2.2em;
-    border-bottom: 2px solid var(--border);
-    padding-bottom: 12px;
-    margin-bottom: 8px;
+  header.hero {
+    padding: 48px 32px 32px;
+    background: linear-gradient(135deg, #161b22 0%, #1c2330 100%);
+    border-bottom: 2px solid var(--accent);
   }
+  header.hero h1 { margin: 0 0 8px; font-size: 30px; }
+  header.hero p { margin: 4px 0; color: var(--muted); }
+  .badge {
+    display: inline-block; padding: 2px 10px; border-radius: 12px;
+    font-size: 12px; font-family: var(--mono); margin-right: 6px;
+    background: var(--panel-2); border: 1px solid var(--border); color: var(--accent);
+  }
+  main { max-width: 1180px; margin: 0 auto; padding: 32px; }
   h2 {
-    font-size: 1.5em;
-    margin-top: 48px;
-    color: var(--accent);
+    font-size: 22px; margin-top: 48px; padding-bottom: 8px;
     border-bottom: 1px solid var(--border);
-    padding-bottom: 6px;
   }
-  h3 {
-    font-size: 1.15em;
-    margin-top: 28px;
-    color: #e6edf3;
-  }
-  h4 { color: #e6edf3; margin-top: 20px; }
-  .subtitle { color: var(--muted); margin-bottom: 32px; }
+  h2 .num { color: var(--accent); font-family: var(--mono); margin-right: 8px; }
+  h3 { font-size: 17px; margin-top: 28px; color: var(--accent-2); }
+  p, li { color: var(--text); }
   code {
-    background: var(--code-bg);
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-family: "SF Mono", Menlo, Consolas, monospace;
-    font-size: 0.9em;
-    color: #e6edf3;
+    font-family: var(--mono); font-size: 13px;
+    background: var(--panel-2); padding: 1px 6px; border-radius: 4px;
+    color: var(--teal); border: 1px solid var(--border);
   }
   pre {
-    background: var(--code-bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 16px;
-    overflow-x: auto;
-    font-family: "SF Mono", Menlo, Consolas, monospace;
-    font-size: 0.85em;
-    line-height: 1.5;
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 8px; padding: 16px; overflow-x: auto;
+    font-family: var(--mono); font-size: 13px; line-height: 1.5;
   }
-  pre code { background: transparent; padding: 0; }
-  .diagram {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 20px;
-    font-family: "SF Mono", Menlo, Consolas, monospace;
-    font-size: 0.82em;
-    white-space: pre;
-    overflow-x: auto;
-    color: #e6edf3;
-  }
+  pre code { background: none; border: none; padding: 0; color: var(--text); }
   table {
-    width: 100%;
-    border-collapse: collapse;
-    margin: 16px 0;
-    font-size: 0.92em;
+    width: 100%; border-collapse: collapse; margin: 16px 0;
+    background: var(--panel); border-radius: 8px; overflow: hidden;
+    font-size: 14px;
   }
-  th, td {
-    text-align: left;
-    padding: 10px 12px;
-    border-bottom: 1px solid var(--border);
-    vertical-align: top;
+  th, td { text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: var(--panel-2); color: var(--accent); font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  td code { white-space: nowrap; }
+  .card {
+    background: var(--panel); border: 1px solid var(--border);
+    border-radius: 10px; padding: 20px 24px; margin: 16px 0;
   }
-  th {
-    background: var(--panel);
-    color: var(--accent);
-    font-weight: 600;
+  .card.accent { border-left: 3px solid var(--accent); }
+  .card.green  { border-left: 3px solid var(--green); }
+  .card.purple { border-left: 3px solid var(--purple); }
+  .card.teal   { border-left: 3px solid var(--teal); }
+  .card.red    { border-left: 3px solid var(--red); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .note { font-size: 13px; color: var(--muted); }
+  .tag { font-family: var(--mono); font-size: 11px; padding: 1px 7px; border-radius: 10px; }
+  .tag.region { background: #2a1a00; color: var(--accent); border: 1px solid #5a3a00; }
+  .tag.global { background: #1a0a2a; color: var(--purple); border: 1px solid #3a1a5a; }
+  .tag.ext    { background: #2a0a0a; color: var(--red); border: 1px solid #5a1a1a; }
+  ul.kv { list-style: none; padding: 0; margin: 8px 0; }
+  ul.kv li { padding: 3px 0; border-bottom: 1px dashed var(--border); }
+  ul.kv li:last-child { border: none; }
+  ul.kv .k { color: var(--muted); display: inline-block; min-width: 200px; font-family: var(--mono); font-size: 12px; }
+  a { color: var(--accent-2); }
+  .toc { columns: 2; column-gap: 32px; }
+  .toc a { display: block; padding: 3px 0; text-decoration: none; }
+  .toc a:hover { color: var(--accent); }
+
+  /* ASCII-ish diagram box */
+  .diagram {
+    background: #0a0e14; border: 1px solid var(--border); border-radius: 10px;
+    padding: 24px; overflow-x: auto; font-family: var(--mono); font-size: 12.5px;
+    line-height: 1.45; color: var(--text); white-space: pre;
   }
-  tr:hover td { background: rgba(88, 166, 255, 0.05); }
-  .callout {
-    border-left: 4px solid;
-    background: var(--panel);
-    padding: 12px 16px;
-    margin: 16px 0;
-    border-radius: 0 6px 6px 0;
-  }
-  .callout.warn { border-color: var(--warn); }
-  .callout.danger { border-color: var(--danger); }
-  .callout.info { border-color: var(--accent); }
-  .callout strong { color: #e6edf3; }
-  ul { padding-left: 20px; }
-  li { margin: 4px 0; }
-  ol { padding-left: 20px; }
-  ol li { margin: 6px 0; }
-  .meta {
-    display: flex;
-    gap: 24px;
-    flex-wrap: wrap;
-    color: var(--muted);
-    font-size: 0.9em;
-    margin-top: 8px;
-  }
-  .meta span strong { color: var(--text); }
-  hr { border: 0; border-top: 1px solid var(--border); margin: 32px 0; }
-  .toc {
-    background: var(--panel);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 16px 24px;
-    margin: 24px 0;
-  }
-  .toc a { color: var(--accent); text-decoration: none; }
-  .toc a:hover { text-decoration: underline; }
-  .toc ul { columns: 2; }
-  a { color: var(--accent); }
-  a:hover { text-decoration: underline; }
+  .diagram .o { color: var(--accent); }
+  .diagram .b { color: var(--accent-2); }
+  .diagram .g { color: var(--green); }
+  .diagram .p { color: var(--purple); }
+  .diagram .t { color: var(--teal); }
+  .diagram .m { color: var(--muted); }
+  .flow-arrow { color: var(--accent); }
+  .legend span { margin-right: 16px; font-size: 12px; }
+  .swatch { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: middle; }
 </style>
 </head>
 <body>
-<div class="container">
 
-<h1>Notism AWS Infrastructure Architecture</h1>
-<p class="subtitle">
-  AWS architecture used to run the Notism API. The API runs as a Docker container on a single EC2 instance managed by Docker Compose. PostgreSQL is hosted on Supabase. All AWS resources use the <strong>notism</strong> prefix and are provisioned via Terraform (<code>terraform/</code>).
-</p>
-<div class="meta">
-  <span><strong>AWS Account:</strong> 249550149516</span>
-  <span><strong>Region:</strong> ap-northeast-1</span>
-  <span><strong>AZ:</strong> ap-northeast-1a</span>
-  <span><strong>API Host:</strong> EC2 t4g.micro (AL2023 arm64)</span>
-  <span><strong>Database:</strong> Supabase PostgreSQL 17</span>
-</div>
+<header class="hero">
+  <h1>Notism — AWS Cloud Architecture</h1>
+  <p>Reverse-documented from the Terraform configuration in <code>terraform/</code>. Every terraformed resource mapped to its AWS service.</p>
+  <p style="margin-top:14px;">
+    <span class="badge">Provider: hashicorp/aws ~&gt; 5.0</span>
+    <span class="badge">Terraform &gt;= 1.5</span>
+    <span class="badge">Region: ap-northeast-1 (Tokyo)</span>
+    <span class="badge">Account: 249550149516</span>
+    <span class="badge">Env: prod</span>
+  </p>
+</header>
 
-<div class="toc">
-  <strong>Contents</strong>
+<main>
+
+<section>
+  <h2><span class="num">§</span>Table of Contents</h2>
+  <div class="card toc">
+    <a href="#overview">1. Overview &amp; default tags</a>
+    <a href="#diagram">2. Architecture diagram</a>
+    <a href="#networking">3. Networking — VPC, subnet, IGW, routing</a>
+    <a href="#compute">4. Compute — EC2 API host + EIP</a>
+    <a href="#security">5. Security groups</a>
+    <a href="#ecr">6. ECR — container registry</a>
+    <a href="#storage">7. Storage — 3× S3 buckets</a>
+    <a href="#cdn">8. CDN — CloudFront + OAC</a>
+    <a href="#lambda">9. Lambda — image resizing pipeline</a>
+    <a href="#events">10. S3 → Lambda event wiring</a>
+    <a href="#iam">11. IAM — roles &amp; policies</a>
+    <a href="#oidc">12. GitHub Actions OIDC + deploy roles</a>
+    <a href="#external">13. External dependencies (Supabase)</a>
+    <a href="#dataflows">14. End-to-end data flows</a>
+    <a href="#inventory">15. Full resource inventory</a>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<section id="overview">
+  <h2><span class="num">1</span>Overview &amp; Default Tags</h2>
+  <p>
+    Notism runs a small, cost-optimized stack: a single <strong>ARM EC2 host</strong> running the .NET API
+    in Docker Compose, fronted by an <strong>Elastic IP</strong>; a static <strong>SPA frontend</strong> served via
+    <strong>CloudFront + S3</strong>; an <strong>event-driven image-resizing pipeline</strong> on Lambda; and
+    container images in <strong>ECR</strong>. The PostgreSQL database is <strong>external (Supabase)</strong>, not AWS.
+    Deploys run from GitHub Actions via <strong>OIDC federation</strong> (no static AWS keys).
+  </p>
+
+  <div class="card accent">
+    <strong>Default tags</strong> (<code>provider.tf</code>) — applied to every resource that supports tagging:
+    <ul class="kv">
+      <li><span class="k">Project</span> <code>notism</code></li>
+      <li><span class="k">Environment</span> <code>prod</code> (var.environment)</li>
+      <li><span class="k">ManagedBy</span> <code>terraform</code></li>
+    </ul>
+  </div>
+
+  <div class="grid">
+    <div class="card"><strong>Region split</strong><br><span class="note">Almost everything lives in <span class="tag region">ap-northeast-1</span> (Tokyo). CloudFront and IAM are <span class="tag global">global</span>. Lambda was intentionally co-located with S3 in ap-northeast-1 to avoid cross-region S3 connection failures.</span></div>
+    <div class="card"><strong>Architecture</strong><br><span class="note">All compute is <code>arm64</code> / Graviton — EC2 <code>t4g.micro</code>, Lambda <code>arm64</code>, AL2023 ARM AMI, arm64 docker-compose binary.</span></div>
+    <div class="card"><strong>State note</strong><br><span class="note">OIDC provider and deploy roles use Terraform <code>import {}</code> blocks — they pre-existed in the console and were reconciled into state, not created fresh.</span></div>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<section id="diagram">
+  <h2><span class="num">2</span>Architecture Diagram</h2>
+  <div class="legend card" style="padding:12px 20px;">
+    <span><span class="swatch" style="background:#ff9900"></span>Compute / EC2</span>
+    <span><span class="swatch" style="background:#4f9cf9"></span>Network</span>
+    <span><span class="swatch" style="background:#3fb950"></span>Storage / S3</span>
+    <span><span class="swatch" style="background:#bc8cff"></span>Global (CloudFront/IAM)</span>
+    <span><span class="swatch" style="background:#39c5cf"></span>Serverless / Lambda</span>
+    <span><span class="swatch" style="background:#f85149"></span>External</span>
+  </div>
+  <div class="diagram">
+<span class="m">                       Internet  /  End Users  /  Angular SPA (localhost:4200)</span>
+                                            │
+            ┌───────────────────────────────┴───────────────────────────────┐
+            │ SPA delivery                                       API requests │
+            ▼                                                                 ▼
+<span class="p">┌────────────────────┐</span>                                          <span class="o">┌────────────────────┐</span>
+<span class="p">│  CloudFront   (G)  │</span>                                          <span class="o">│  Elastic IP        │</span>
+<span class="p">│  HTTP2 · TLS · IPv6│</span>                                          <span class="o">│  notism-api-eip    │</span>
+<span class="p">│  OAC sigv4         │</span>                                          <span class="o">└─────────┬──────────┘</span>
+<span class="p">│  403 → /index.html │</span>                                                    │ :22/:80/:443
+<span class="p">└─────────┬──────────┘</span>                                                    │
+          │ OAC GET                  <span class="b">╔═══════════════ VPC 10.0.0.0/16 ═════════╪══════════╗</span>
+          ▼                          <span class="b">║  ┌──────────── public subnet 10.0.1.0/24 ┼───────┐  ║</span>
+<span class="g">┌────────────────────┐</span>             <span class="b">║  │  Internet Gateway · rt 0.0.0.0/0→IGW  │       │  ║</span>
+<span class="g">│  notism-web-prod   │</span>             <span class="b">║  │                                       ▼       │  ║</span>
+<span class="g">│  S3 (private, OAC) │</span>             <span class="b">║  │            </span><span class="o">┌────────────────────────────┐</span><span class="b">   │  ║</span>
+<span class="g">└────────────────────┘</span>             <span class="b">║  │            </span><span class="o">│ EC2 t4g.micro (AL2023 ARM) │</span><span class="b">   │  ║</span>
+                                   <span class="b">║  │            </span><span class="o">│ Docker Compose (.NET API)  │</span><span class="b">   │  ║</span>
+                                   <span class="b">║  │            </span><span class="o">│ SG 22/80/443 in · all out  │</span><span class="b">   │  ║</span>
+                                   <span class="b">║  │            </span><span class="o">│ IAM ec2-role (S3 RW·ECR RO)│</span><span class="b">   │  ║</span>
+                                   <span class="b">║  │            </span><span class="o">└──────┬──────────────┬──────┘</span><span class="b">   │  ║</span>
+                                   <span class="b">║  └───────────────────┼──────────────┼──────────┘  ║</span>
+                                   <span class="b">╚══════════════════════┼══════════════┼═════════════╝</span>
+                                            │ pull image   │ data
+                                            ▼              ▼
+                                   <span class="p">┌──────────────┐</span>  <span class="r">┌─────────────────────────┐</span>
+                                   <span class="p">│ ECR          │</span>  <span class="r">│ Supabase PostgreSQL 5432│</span> <span class="m">(NOT AWS)</span>
+                                   <span class="p">│ notism-api   │</span>  <span class="r">└─────────────────────────┘</span>
+                                   <span class="p">│ scan_on_push │</span>
+                                   <span class="p">└──────────────┘</span>
+
+<span class="m">  ── Image pipeline (event-driven, ap-northeast-1) ─────────────────────────────────────────</span>
+
+   upload ──▶ <span class="g">┌─────────────────────┐</span>  ObjectCreated   <span class="t">┌──────────────────────┐</span>  resized
+              <span class="g">│ private-notism-     │</span> ───avatars/───▶  <span class="t">│ avatar-resizing 200² │</span> ───┐
+              <span class="g">│ storage             │</span> ───food/──────▶  <span class="t">│ food-resizing   400² │</span> ──┐│
+              <span class="g">└─────────────────────┘</span>                  <span class="t">└──────────┬───────────┘</span>   ││
+                                                      │ lambda:Invoke      ││
+                                            <span class="t">┌─────────▼────────────┐</span>   ││   <span class="g">┌──────────────────┐</span>
+                                            <span class="t">│ food-detail-rsz 800² │</span> ──┼┴──▶<span class="g">│ public-notism-   │</span>
+                                            <span class="t">└──────────────────────┘</span>   └────▶<span class="g">│ storage (public) │</span>
+                                                                          <span class="g">└──────────────────┘</span>
+
+<span class="m">  ── CI/CD (keyless, GitHub OIDC → sts:AssumeRoleWithWebIdentity) ───────────────────────────</span>
+
+   GitHub Actions ─┬─ notism-api ─▶ <span class="p">api_deploy</span> ─▶ ECR push · ECS · CloudFront inval · ec2:StartInstances
+                   └─ notism-web ─▶ <span class="p">web_deploy</span> ─▶ S3 sync (web-prod) · CloudFront inval
+  </div>
+  <p class="note">Note: the <code>api_deploy</code> role carries <code>AmazonECS_FullAccess</code> (the worker deploy target per CLAUDE.md is ECS), but no ECS cluster/service/task-def is defined in this Terraform — that infra lives outside these files or is created by CI. Only the IAM permission is terraformed.</p>
+</section>
+
+<!-- ===================================================== -->
+<section id="networking">
+  <h2><span class="num">3</span>Networking — VPC, Subnet, IGW, Routing</h2>
+  <p>Source: <code>vpc.tf</code>, <code>variables.tf</code>. A minimal single-AZ public-only network.</p>
+  <table>
+    <tr><th>Terraform resource</th><th>AWS resource</th><th>Config</th></tr>
+    <tr><td><code>aws_vpc.main</code></td><td>VPC <code>notism-vpc</code></td><td>CIDR <code>10.0.0.0/16</code>; DNS hostnames + DNS support enabled</td></tr>
+    <tr><td><code>aws_internet_gateway.main</code></td><td>Internet Gateway <code>notism-igw</code></td><td>Attached to the VPC; gives the public subnet inbound/outbound internet</td></tr>
+    <tr><td><code>aws_subnet.public</code></td><td>Public subnet <code>notism-public-subnet</code></td><td>CIDR <code>10.0.1.0/24</code>; AZ = first available AZ (<code>azs[0]</code>); <code>map_public_ip_on_launch = true</code></td></tr>
+    <tr><td><code>aws_route_table.public</code></td><td>Route table <code>notism-public-rt</code></td><td>Route <code>0.0.0.0/0 → IGW</code></td></tr>
+    <tr><td><code>aws_route_table_association.public</code></td><td>RT association</td><td>Binds the public subnet to the public route table</td></tr>
+    <tr><td><code>data.aws_availability_zones.available</code></td><td>AZ lookup</td><td>Picks <code>names[0]</code> as the single deploy AZ</td></tr>
+  </table>
+  <div class="card red">
+    <strong>Topology characteristics</strong>
+    <ul>
+      <li><strong>Single AZ, single subnet, public only.</strong> No private subnets, no NAT gateway, no second AZ — minimizes cost, sacrifices HA.</li>
+      <li>EC2 sits directly in the public subnet with a public IP (then an EIP overrides it).</li>
+      <li>No VPC endpoints — S3/ECR access from EC2 goes out via the IGW (public AWS endpoints).</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<section id="compute">
+  <h2><span class="num">4</span>Compute — EC2 API Host + Elastic IP</h2>
+  <p>Source: <code>ec2.tf</code>, <code>eip.tf</code>. One instance runs the entire .NET API via Docker Compose.</p>
+
+  <div class="card accent">
+    <h3 style="margin-top:0">EC2 instance — <code>aws_instance.api</code> (<code>notism-api</code>)</h3>
+    <ul class="kv">
+      <li><span class="k">Instance type</span> <code>t4g.micro</code> (Graviton2 ARM, burstable, 2 vCPU / 1 GiB)</li>
+      <li><span class="k">AMI</span> Amazon Linux 2023 ARM64, kernel 6.1 (<code>most_recent</code> data lookup, owner amazon)</li>
+      <li><span class="k">Subnet</span> public subnet (<code>aws_subnet.public</code>)</li>
+      <li><span class="k">Security group</span> <code>notism-ec2-sg</code></li>
+      <li><span class="k">Instance profile</span> <code>notism-ec2-profile</code> → <code>notism-ec2-role</code></li>
+      <li><span class="k">Key pair</span> <code>notism-api</code> (var.key_name)</li>
+      <li><span class="k">Root volume</span> 16 GiB <code>gp3</code> EBS, tagged prod/notism/terraform</li>
+      <li><span class="k">lifecycle</span> <code>ignore_changes = [ami]</code> — new AMI publish won't force replace</li>
+    </ul>
+    <p class="note"><strong>user_data bootstrap:</strong> <code>yum update</code>, install + enable Docker, then install the <code>docker compose</code> CLI plugin (aarch64 binary) into <code>/usr/local/lib/docker/cli-plugins</code>. The API container itself is pulled from ECR and run by CI/CD, not user_data.</p>
+  </div>
+
+  <div class="card accent">
+    <h3 style="margin-top:0">Elastic IP — <code>aws_eip.api</code> + <code>aws_eip_association.api</code></h3>
+    <ul class="kv">
+      <li><span class="k">aws_eip.api</span> VPC-domain EIP <code>notism-api-eip</code> — stable public IP</li>
+      <li><span class="k">aws_eip_association.api</span> binds the EIP to the EC2 instance</li>
+    </ul>
+    <p class="note">Outputs expose <code>ec2_public_ip</code> and <code>api_url = http://&lt;eip&gt;:5000</code>. API listens on port 5000 (note: SG opens 80/443, not 5000 — see security note below).</p>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<section id="security">
+  <h2><span class="num">5</span>Security Groups</h2>
+  <p>Source: <code>security_groups.tf</code>. One SG for the EC2 host.</p>
+  <table>
+    <tr><th>Direction</th><th>Port</th><th>Proto</th><th>Source / Dest</th><th>Purpose</th></tr>
+    <tr><td>Ingress</td><td>22</td><td>tcp</td><td><code>0.0.0.0/0</code></td><td>SSH</td></tr>
+    <tr><td>Ingress</td><td>80</td><td>tcp</td><td><code>0.0.0.0/0</code></td><td>HTTP</td></tr>
+    <tr><td>Ingress</td><td>443</td><td>tcp</td><td><code>0.0.0.0/0</code></td><td>HTTPS</td></tr>
+    <tr><td>Egress</td><td>all</td><td>all</td><td><code>0.0.0.0/0</code></td><td>Outbound (ECR pull, S3, Supabase, updates)</td></tr>
+  </table>
+  <div class="card red">
+    <strong>Observations</strong>
+    <ul>
+      <li>SSH open to the world (<code>0.0.0.0/0</code>) — broad; consider restricting to known IPs.</li>
+      <li>API advertised on <code>:5000</code> in outputs, but SG ingress only opens 22/80/443. A reverse proxy (80/443 → 5000) on the host, or a compose port-map to 80, is implied — not in Terraform.</li>
+    </ul>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<section id="ecr">
+  <h2><span class="num">6</span>ECR — Container Registry</h2>
+  <p>Source: <code>ecr.tf</code>.</p>
+  <table>
+    <tr><th>Resource</th><th>AWS</th><th>Config</th></tr>
+    <tr><td><code>aws_ecr_repository.api</code></td><td>ECR repo <code>notism-api</code></td><td><code>image_tag_mutability = MUTABLE</code>; <code>scan_on_push = true</code> (vuln scan each push)</td></tr>
+  </table>
+  <p class="note">Output <code>ecr_repository_url</code> is consumed by CI/CD to push, and by the EC2 host (via <code>AmazonEC2ContainerRegistryReadOnly</code>) to pull the API image.</p>
+</section>
+
+<!-- ===================================================== -->
+<section id="storage">
+  <h2><span class="num">7</span>Storage — Three S3 Buckets</h2>
+  <p>Source: <code>s3.tf</code>. Three buckets with distinct access models. All use <code>AES256</code> SSE with bucket keys, and <code>BucketOwnerEnforced</code> ownership (ACLs disabled).</p>
+
+  <div class="grid">
+    <div class="card green">
+      <h3 style="margin-top:0">private-notism-storage</h3>
+      <p class="note">Upload landing zone + image-pipeline source.</p>
+      <ul class="kv">
+        <li><span class="k">Encryption</span> AES256 + bucket key</li>
+        <li><span class="k">Public access block</span> ALL OFF (false)</li>
+        <li><span class="k">CORS</span> PUT/GET/DELETE/HEAD from localhost:4200 + CloudFront domain</li>
+        <li><span class="k">Policy</span> Allow Get/Put/Delete to <code>*</code> <em>gated by <code>aws:Referer</code></em> (localhost + CF domain)</li>
+        <li><span class="k">Notifications</span> ObjectCreated → Lambda (avatars/, food/)</li>
+      </ul>
+    </div>
+    <div class="card green">
+      <h3 style="margin-top:0">public-notism-storage</h3>
+      <p class="note">Resized-image output, publicly readable.</p>
+      <ul class="kv">
+        <li><span class="k">Encryption</span> AES256 + bucket key</li>
+        <li><span class="k">Public access block</span> ALL OFF (false)</li>
+        <li><span class="k">CORS</span> PUT/GET/DELETE/HEAD from localhost:4200 only</li>
+        <li><span class="k">Policy</span> <code>PublicReadGetObject</code> — anyone <code>s3:GetObject</code></li>
+      </ul>
+    </div>
+    <div class="card green">
+      <h3 style="margin-top:0">notism-web-prod</h3>
+      <p class="note">SPA static hosting origin, locked to CloudFront.</p>
+      <ul class="kv">
+        <li><span class="k">Encryption</span> AES256 + bucket key</li>
+        <li><span class="k">Public access block</span> ALL ON (true) — fully private</li>
+        <li><span class="k">CORS</span> none</li>
+        <li><span class="k">Policy</span> Allow <code>s3:GetObject</code> to CloudFront service principal, scoped by <code>AWS:SourceArn</code> = the distribution ARN (OAC)</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card red">
+    <strong>Security note:</strong> the two storage buckets disable all public-access-block protections and grant <code>Principal: "*"</code>. <code>private-notism-storage</code> relies only on an <code>aws:Referer</code> header condition — a weak gate (Referer is client-spoofable). <code>public-notism-storage</code> is genuinely world-readable. Only <code>notism-web-prod</code> is properly locked down (OAC + full PAB).
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<section id="cdn">
+  <h2><span class="num">8</span>CDN — CloudFront + Origin Access Control</h2>
+  <p>Source: <code>cloudfront.tf</code>. <span class="tag global">global</span> distribution serving the SPA from the private <code>notism-web-prod</code> bucket.</p>
+
+  <table>
+    <tr><th>Resource</th><th>AWS</th><th>Config</th></tr>
+    <tr><td><code>aws_cloudfront_origin_access_control.web_prod</code></td><td>OAC</td><td>type <code>s3</code>, signing <code>always</code> / <code>sigv4</code> — lets CloudFront sign S3 requests so the bucket stays private</td></tr>
+    <tr><td><code>aws_cloudfront_distribution.web_prod</code></td><td>Distribution <code>notism-web-prod</code></td><td>see below</td></tr>
+    <tr><td><code>data.aws_cloudfront_cache_policy.caching_optimized</code></td><td>Managed cache policy</td><td><code>Managed-CachingOptimized</code></td></tr>
+  </table>
+
+  <div class="card purple">
+    <ul class="kv">
+      <li><span class="k">Origin</span> <code>notism-web-prod</code> S3 regional domain, via OAC</li>
+      <li><span class="k">Default root object</span> <code>index.html</code></li>
+      <li><span class="k">Protocols</span> HTTP/2, IPv6 enabled</li>
+      <li><span class="k">Viewer policy</span> <code>redirect-to-https</code>, compression on</li>
+      <li><span class="k">Methods</span> GET, HEAD (cached: GET, HEAD)</li>
+      <li><span class="k">Cache policy</span> Managed-CachingOptimized</li>
+      <li><span class="k">SPA fallback</span> <code>403 → 200 /index.html</code> (min TTL 10s) — client-side routing</li>
+      <li><span class="k">Price class</span> <code>PriceClass_All</code> (all edge locations)</li>
+      <li><span class="k">Certificate</span> default CloudFront cert, min TLS <code>TLSv1</code></li>
+      <li><span class="k">Geo restriction</span> none</li>
+    </ul>
+  </div>
+  <p class="note">The distribution domain name feeds back into the S3 CORS rules and the <code>private-notism-storage</code> Referer policy. Outputs: <code>cloudfront_web_prod_domain_name</code>, <code>cloudfront_web_prod_distribution_id</code>.</p>
+</section>
+
+<!-- ===================================================== -->
+<section id="lambda">
+  <h2><span class="num">9</span>Lambda — Image Resizing Pipeline</h2>
+  <p>Source: <code>lambda.tf</code>. Three Node.js <code>arm64</code> functions sharing one execution role and a <code>sharp</code> layer. Co-located in ap-northeast-1 with the S3 buckets.</p>
+
+  <table>
+    <tr><th>Function</th><th>Trigger</th><th>Mem / Timeout</th><th>Key env</th></tr>
+    <tr>
+      <td><code>notism-avatar-resizing</code></td>
+      <td>S3 <code>avatars/</code> ObjectCreated</td>
+      <td>128 MB / 3 s</td>
+      <td>DESTINATION_BUCKET=public-notism-storage, 200×200</td>
+    </tr>
+    <tr>
+      <td><code>notism-food-resizing</code></td>
+      <td>S3 <code>food/</code> ObjectCreated</td>
+      <td>256 MB / 30 s</td>
+      <td>dest=public, 400×400, INVOKE_NEXT_FUNCTION=food-detail</td>
+    </tr>
+    <tr>
+      <td><code>notism-food-detail-resizing</code></td>
+      <td>Invoked by food-resizing (chain)</td>
+      <td>256 MB / 30 s</td>
+      <td>dest=public, prefix=food-detail, 800×800</td>
+    </tr>
+  </table>
+
+  <div class="card teal">
+    <strong>Common config</strong>
+    <ul>
+      <li>Runtime declared <code>nodejs22.x</code> in TF, but actual runtime is <code>nodejs24.x</code> — <code>ignore_changes = [runtime]</code> because provider 5.100.0 schema doesn't yet enumerate nodejs24.</li>
+      <li>Handler <code>index.handler</code>, architecture <code>arm64</code>.</li>
+      <li>Layer: <code>sharp:1</code> (account-published layer ARN, built from <code>aws_caller_identity</code>).</li>
+      <li>Code deployed by CI/CD — <code>ignore_changes = [filename, source_code_hash, layers, runtime]</code>. Terraform owns only config (env, role, mem, timeout).</li>
+      <li><code>REGION</code> env passed to Node AWS SDK so S3 clients target ap-northeast-1.</li>
+    </ul>
+  </div>
+  <p class="note">Pipeline shape: <strong>avatar</strong> is a single resize (200²). <strong>food</strong> is a two-stage chain — <code>food-resizing</code> (400²) writes output then directly invokes <code>food-detail-resizing</code> (800²) via <code>lambda:InvokeFunction</code>.</p>
+</section>
+
+<!-- ===================================================== -->
+<section id="events">
+  <h2><span class="num">10</span>S3 → Lambda Event Wiring</h2>
+  <p>Source: <code>s3.tf</code> (notification) + <code>lambda.tf</code> (permissions).</p>
+  <table>
+    <tr><th>Resource</th><th>What it wires</th></tr>
+    <tr><td><code>aws_s3_bucket_notification.private_storage</code></td><td>On <code>private-notism-storage</code>: <code>s3:ObjectCreated:*</code> with <code>filter_prefix=avatars/</code> → avatar-resizing; <code>food/</code> → food-resizing</td></tr>
+    <tr><td><code>aws_lambda_permission.s3_invoke_avatar_resizing</code></td><td>Resource policy: principal <code>s3.amazonaws.com</code>, source = private bucket ARN + account guard</td></tr>
+    <tr><td><code>aws_lambda_permission.s3_invoke_food_resizing</code></td><td>Same, for food-resizing. Notification <code>depends_on</code> both permissions.</td></tr>
+  </table>
+  <div class="diagram">
+upload → <span class="g">private-notism-storage</span>
+            ├── <span class="m">avatars/*</span>  ──ObjectCreated──▶ <span class="t">avatar-resizing</span> ──200²──▶ <span class="g">public-notism-storage</span>
+            └── <span class="m">food/*</span>     ──ObjectCreated──▶ <span class="t">food-resizing</span>  ──400²──▶ <span class="g">public-notism-storage</span>
+                                                       │ lambda:InvokeFunction
+                                                       ▼
+                                              <span class="t">food-detail-resizing</span> ──800²──▶ <span class="g">public-notism-storage/food-detail</span>
+  </div>
+</section>
+
+<!-- ===================================================== -->
+<section id="iam">
+  <h2><span class="num">11</span>IAM — Roles &amp; Policies</h2>
+  <p>Source: <code>iam.tf</code>. <span class="tag global">global</span></p>
+
+  <h3>Lambda execution role — <code>notism-image-resizing-role</code></h3>
   <ul>
-    <li><a href="#diagram">High-level diagram</a></li>
-    <li><a href="#components">Components</a></li>
-    <li><a href="#docker">Docker Compose deployment</a></li>
-    <li><a href="#cicd">CI/CD pipeline</a></li>
-    <li><a href="#network">Network design</a></li>
-    <li><a href="#security">Security</a></li>
-    <li><a href="#dataflow">Data flow</a></li>
-    <li><a href="#migrations">Database migrations</a></li>
-    <li><a href="#scaling">Scalability and future changes</a></li>
-    <li><a href="#related">Related docs</a></li>
+    <li>Trust: <code>lambda.amazonaws.com</code> assume role.</li>
+    <li>Inline <code>notism-s3-actions</code>: <code>s3:GetObject/PutObject/DeleteObject</code> on both storage buckets (<code>/*</code>); <code>lambda:InvokeFunction</code> on <code>food-detail-resizing</code> (the chain hop).</li>
+    <li>Managed: <code>AWSLambdaBasicExecutionRole</code> (CloudWatch Logs).</li>
   </ul>
-</div>
 
-<h2 id="diagram">High-level diagram</h2>
-<div class="diagram">                                  Internet
-                    ┌────────────────────┴────────────────────┐
-                    │                                         │
-                Web User                                  API Client
-                    │                                         │
-                    ▼                                         ▼
-        ┌──────────────────────┐                    ┌──────────────────┐
-        │     CloudFront       │                    │   notism-igw     │
-        │  ┌────────────────┐  │                    │ Internet Gateway │
-        │  │ Prod (CFProd)  │  │                    └────────┬─────────┘
-        │  │ d2rtuiaa37...  │  │                             │
-        │  └───────┬────────┘  │                             ▼
-        └──────────┼───────────┘                    ┌──────────────────┐
-                   │ OAC                            │  notism-api-eip  │
-                   ▼                                │   Elastic IP     │
-        ┌────────────────────┐                      └────────┬─────────┘
-        │ notism-web-prod    │                               │
-        └────────────────────┘                               ▼
-                                         ┌─────────────────────────────────────┐
-                                         │       notism-vpc 10.0.0.0/16        │
-                                         │  ┌───────────────────────────────┐  │
-                                         │  │ notism-public-subnet          │  │
-                                         │  │ 10.0.1.0/24                   │  │
-                                         │  │  ┌─────────────────────────┐  │  │
-                                         │  │  │ notism-api EC2          │  │  │
-                                         │  │  │ t4g.micro arm64         │  │  │
-                                         │  │  │ ┌─────────────────────┐ │  │  │
-                                         │  │  │ │ Caddy   :80 / :443  │ │  │  │
-                                         │  │  │ │   ↓ reverse proxy   │ │  │  │
-                                         │  │  │ │ api     :5000       │ │  │  │
-                                         │  │  │ └─────────────────────┘ │  │  │
-                                         │  │  └────────────┬────────────┘  │  │
-                                         │  └───────────────┼───────────────┘  │
-                                         └──────────────────┼──────────────────┘
-                                                            │
-                       ┌──────────────────┬─────────────────┼─────────────────┐
-                       │ S3 API           │ S3 API          │ pull image      │ SSL :5432
-                       ▼                  ▼                 ▼                 ▼
-            ┌────────────────────┐ ┌──────────────────┐ ┌───────────┐ ┌────────────────┐
-            │ private-notism-    │ │ public-notism-   │ │ ECR:      │ │ Supabase       │
-            │ storage            │ │ storage          │ │ notism-api│ │ PostgreSQL     │
-            └────────────────────┘ └──────────────────┘ └─────▲─────┘ └────────────────┘
-                                                              │ push
-                                                       ┌──────┴───────┐
-                                                       │ GitHub       │
-                                                       │ Actions CI   │
-                                                       └──────────────┘
-</div>
+  <h3>EC2 role — <code>notism-ec2-role</code> (profile <code>notism-ec2-profile</code>)</h3>
+  <ul>
+    <li>Trust: <code>ec2.amazonaws.com</code>.</li>
+    <li>Inline <code>notism-ec2-s3-access</code>: <code>s3:GetObject/PutObject/DeleteObject/ListBucket</code> on both storage buckets (bucket + <code>/*</code>).</li>
+    <li>Managed: <code>AmazonEC2ContainerRegistryReadOnly</code> (pull API image from ECR).</li>
+  </ul>
 
-<h2 id="components">Components</h2>
-<table>
-  <tr><th>Layer</th><th>Component</th><th>Name / ID</th><th>Purpose</th></tr>
-  <tr><td rowspan="4"><strong>Network</strong></td><td>VPC</td><td><code>notism-vpc</code></td><td>Isolated network (10.0.0.0/16).</td></tr>
-  <tr><td>Internet Gateway</td><td><code>notism-igw</code></td><td>Connects VPC to the internet; used by the public subnet.</td></tr>
-  <tr><td>Public subnet</td><td><code>notism-public-subnet</code></td><td>Hosts EC2; route to IGW (0.0.0.0/0). AZ: ap-northeast-1a.</td></tr>
-  <tr><td>Public route table</td><td><code>notism-public-rt</code></td><td>0.0.0.0/0 → IGW; ::/0 → IGW (IPv6); associated with public subnet.</td></tr>
-  <tr><td rowspan="2"><strong>Compute</strong></td><td>EC2</td><td><code>notism-api</code> (Name tag)</td><td>Runs Docker Compose with the API container; t4g.micro, Amazon Linux 2023.</td></tr>
-  <tr><td>Elastic IP</td><td><code>notism-api-eip</code></td><td>Stable public IP for the API.</td></tr>
-  <tr><td><strong>Database</strong></td><td>PostgreSQL (Supabase)</td><td><code>db.vqwfgdsazmalixzmvfok.supabase.co</code></td><td>Managed PostgreSQL 17 hosted on Supabase. Connection string stored in <code>CONNECTION_STRING</code> GitHub secret.</td></tr>
-  <tr><td><strong>Security</strong></td><td>EC2 security group</td><td><code>notism-ec2-sg</code></td><td>Inbound: 22, 80, 443. Outbound: all.</td></tr>
-  <tr><td rowspan="5"><strong>IAM</strong></td><td>Instance profile</td><td><code>notism-ec2-profile</code></td><td>Attached to EC2; allows S3 and ECR pull.</td></tr>
-  <tr><td>Role</td><td><code>notism-ec2-role</code></td><td>Assumed by EC2; no long-lived keys in app config.</td></tr>
-  <tr><td>OIDC provider</td><td><code>token.actions.githubusercontent.com</code></td><td>Lets GitHub Actions assume deploy roles via OIDC (audience <code>sts.amazonaws.com</code>); no stored AWS keys. Shared by both deploy roles.</td></tr>
-  <tr><td>Deploy role</td><td><code>notism-api-deploy-role</code></td><td>Assumed by <code>simpscal/notism-api</code> CI. ECR push, CloudFront, ECS; plus inline <code>ec2:StartInstances</code>/<code>Describe*</code> to auto-start the API instance during deploy.</td></tr>
-  <tr><td>Deploy role</td><td><code>notism-web-deploy</code></td><td>Assumed by <code>simpscal/notism-web</code> CI. S3 + CloudFront for frontend deploys.</td></tr>
-  <tr><td><strong>Container registry</strong></td><td>ECR repository</td><td><code>notism-api</code></td><td>Stores Docker image for the API; CI pushes, EC2 pulls.</td></tr>
-  <tr><td rowspan="3"><strong>Storage</strong></td><td>S3 bucket</td><td><code>private-notism-storage</code></td><td>Private file storage for the API (CORS, referer-based policy).</td></tr>
-  <tr><td>S3 bucket</td><td><code>public-notism-storage</code></td><td>Public file storage (public-read policy).</td></tr>
-  <tr><td>S3 bucket</td><td><code>notism-web-prod</code></td><td>Prod frontend static hosting (served via CloudFront).</td></tr>
-  <tr><td rowspan="2"><strong>CDN</strong></td><td>CloudFront distribution</td><td><code>E3B3TRUPIAA1TW</code></td><td>Prod frontend CDN (origin: notism-web-prod, OAC).</td></tr>
-  <tr><td>Origin Access Control</td><td><code>oac-notism-web-prod</code></td><td>Allows CloudFront to read from notism-web-prod bucket.</td></tr>
-</table>
+  <table>
+    <tr><th>Role</th><th>Trusted principal</th><th>Grants</th></tr>
+    <tr><td><code>notism-image-resizing-role</code></td><td>Lambda</td><td>S3 RW (both storage buckets), invoke food-detail, CW Logs</td></tr>
+    <tr><td><code>notism-ec2-role</code></td><td>EC2</td><td>S3 RW+List (storage buckets), ECR pull (read-only)</td></tr>
+  </table>
+</section>
 
-<h2 id="docker">Docker Compose deployment</h2>
-<p>The API runs as a single container managed by Docker Compose on the EC2 instance. PostgreSQL is external (Supabase) — no database container on EC2.</p>
+<!-- ===================================================== -->
+<section id="oidc">
+  <h2><span class="num">12</span>GitHub Actions OIDC + Deploy Roles</h2>
+  <p>Source: <code>github_oidc.tf</code>. <span class="tag global">global</span>. Keyless CI/CD via web-identity federation. These resources were created by hand and <code>import</code>-ed into Terraform (one intended new create: the EC2-start inline policy).</p>
 
-<h3>File layout on EC2</h3>
-<pre><code>/opt/notism/
-  docker-compose.yml   # service definition (api only)
-  .env                 # compose-level variables (API_IMAGE)
-  .env.api             # API app config (connection string, JWT, etc.)</code></pre>
+  <h3>OIDC provider — <code>aws_iam_openid_connect_provider.github_actions</code></h3>
+  <ul class="kv">
+    <li><span class="k">URL</span> <code>https://token.actions.githubusercontent.com</code></li>
+    <li><span class="k">client_id (aud)</span> <code>sts.amazonaws.com</code></li>
+    <li><span class="k">thumbprint</span> <code>2b18947a6a9fc7764fd8b5fb18a863b0c6dac24f</code></li>
+  </ul>
 
-<h3>Services</h3>
-<table>
-  <tr><th>Service</th><th>Image</th><th>Container name</th><th>Purpose</th></tr>
-  <tr>
-    <td><code>api</code></td>
-    <td>ECR image (variable <code>${API_IMAGE}</code>)</td>
-    <td><code>notism-api</code></td>
-    <td>.NET 9 API. Reads config from <code>.env.api</code>. Connects to Supabase via <code>CONNECTION_STRING</code>.</td>
-  </tr>
-</table>
+  <h3>API deploy role — <code>notism-api-deploy-role</code></h3>
+  <ul>
+    <li>Trust: <code>sts:AssumeRoleWithWebIdentity</code> from the OIDC provider, where <code>aud = sts.amazonaws.com</code> and <code>sub LIKE repo:simpscal/notism-api:*</code>.</li>
+    <li>Managed: <code>CloudFrontFullAccess</code>, <code>AmazonEC2ContainerRegistryPowerUser</code>, <code>AmazonECS_FullAccess</code>.</li>
+    <li>Inline <code>notism-api-deploy-ec2-start</code> (the one new create): <code>ec2:StartInstances</code> scoped to the API instance ARN; <code>ec2:DescribeInstances/DescribeInstanceStatus</code> on <code>*</code> (no resource-level scoping available). Powers the deploy auto-start of a stopped instance.</li>
+  </ul>
 
-<h3>Connection string</h3>
-<p>The API connects to Supabase PostgreSQL using SSL:</p>
-<pre><code>Host=db.vqwfgdsazmalixzmvfok.supabase.co;Database=postgres;Username=postgres;Password=&lt;from CONNECTION_STRING secret&gt;;Port=5432;SSL Mode=Require;Trust Server Certificate=true</code></pre>
+  <h3>Web deploy role — <code>notism-web-deploy</code></h3>
+  <ul>
+    <li>Trust: same OIDC, <code>sub LIKE repo:simpscal/notism-web:*</code>.</li>
+    <li>Managed: <code>CloudFrontFullAccess</code>, <code>AmazonS3FullAccess</code> (sync SPA build to <code>notism-web-prod</code> + invalidate CF).</li>
+  </ul>
 
-<h3>Useful commands (on the EC2)</h3>
-<pre><code>cd /opt/notism
+  <table>
+    <tr><th>Role</th><th>Repo (sub)</th><th>Permissions</th></tr>
+    <tr><td><code>notism-api-deploy-role</code></td><td><code>simpscal/notism-api:*</code></td><td>ECR PowerUser, ECS Full, CloudFront Full, ec2:StartInstances(api)</td></tr>
+    <tr><td><code>notism-web-deploy</code></td><td><code>simpscal/notism-web:*</code></td><td>S3 Full, CloudFront Full</td></tr>
+  </table>
+</section>
 
-sudo docker compose ps              # container status
-sudo docker compose logs -f api     # follow API logs
-sudo docker compose restart api     # restart the API
-sudo docker compose down            # stop everything
-sudo docker compose up -d           # start everything</code></pre>
+<!-- ===================================================== -->
+<section id="external">
+  <h2><span class="num">13</span>External Dependencies (Non-AWS)</h2>
+  <div class="card red">
+    <h3 style="margin-top:0"><span class="tag ext">EXTERNAL</span> PostgreSQL — Supabase</h3>
+    <p>Not provisioned in AWS. The <code>connection_string_hint</code> output documents it: <code>Host=&lt;supabase-host&gt;;Database=postgres;Username=postgres;Port=5432;SSL Mode=Require;Trust Server Certificate=true</code>. The real connection string is injected at deploy via the <code>CONNECTION_STRING</code> GitHub secret. The .NET API (EC2) connects out over the SG's open egress.</p>
+    <p class="note">CLAUDE.md mentions RDS PostgreSQL as "optional" — no RDS resource exists in this Terraform; the live DB is Supabase.</p>
+  </div>
+  <div class="card">
+    <strong>GitHub Actions</strong> — the OIDC identity provider / CI runner (<code>token.actions.githubusercontent.com</code>), repos <code>simpscal/notism-api</code> &amp; <code>simpscal/notism-web</code>.
+  </div>
+  <div class="card">
+    <strong>Angular SPA dev</strong> — <code>http://localhost:4200</code> is whitelisted across all CORS rules and the private-bucket Referer policy.
+  </div>
+</section>
 
-<h2 id="cicd">CI/CD pipeline</h2>
-<p>Deployment is triggered by pushes to <code>main</code> or <code>dev</code> via <code>.github/workflows/deploy.yml</code>. The workflow authenticates to AWS via <strong>OIDC</strong> — it assumes <code>notism-api-deploy-role</code> through the GitHub Actions OIDC provider, with no stored AWS keys.</p>
+<!-- ===================================================== -->
+<section id="dataflows">
+  <h2><span class="num">14</span>End-to-End Data Flows</h2>
 
-<div class="diagram">  git push ──▶ Determine env ──▶ Build + push ECR ──▶ Deploy to EC2
-                                                          │
-                                                          ▼
-                       ┌──────────────────────────────────────────────┐
-                       │ 1. Ensure EC2 running (start + wait)         │
-                       │ 2. Prepare .env + .env.api                   │
-                       │ 3. SCP files to EC2                          │
-                       │ 4. docker login to ECR                       │
-                       │ 5. docker compose up -d                      │
-                       │ 6. docker image prune                        │
-                       └──────────────────────────────────────────────┘
-</div>
-<div class="callout info">
-  <strong>Self-healing deploy:</strong> the <code>deploy-ec2</code> job runs <code>aws ec2 start-instances</code> + <code>aws ec2 wait instance-running</code> (using the <code>EC2_INSTANCE_ID</code> secret) before SSH, so a stopped instance no longer blocks CI. This requires the <code>ec2:StartInstances</code>/<code>Describe*</code> permissions on <code>notism-api-deploy-role</code> (see <a href="terraform-architecture.html#oidc">github_oidc.tf</a>).
-</div>
+  <div class="card green">
+    <h3 style="margin-top:0">A. Frontend (SPA) delivery</h3>
+    User → CloudFront (HTTPS, edge cache) → OAC-signed GET → <code>notism-web-prod</code> S3 (private). Missing path / 403 → rewritten to <code>/index.html</code> for client-side routing.
+  </div>
 
-<h3>GitHub secrets and variables</h3>
-<table>
-  <tr><th>Name</th><th>Type</th><th>Purpose</th></tr>
-  <tr><td><code>AWS_ROLE_TO_ASSUME</code></td><td>Secret</td><td>ARN of <code>notism-api-deploy-role</code>, assumed via OIDC.</td></tr>
-  <tr><td><code>EC2_INSTANCE_ID</code></td><td>Secret</td><td>API EC2 instance id; target of the deploy auto-start step.</td></tr>
-  <tr><td><code>CONNECTION_STRING</code></td><td>Secret</td><td>Npgsql connection string for Supabase PostgreSQL.</td></tr>
-  <tr><td><code>JWT_SECRET</code></td><td>Secret</td><td>JWT signing key.</td></tr>
-  <tr><td><code>MAILERSEND_API_KEY</code></td><td>Secret</td><td>MailerSend email API key.</td></tr>
-  <tr><td><code>EC2_HOST</code></td><td>Secret</td><td>EC2 public IP (Elastic IP).</td></tr>
-  <tr><td><code>EC2_USER</code></td><td>Secret</td><td>SSH user (typically <code>ec2-user</code>).</td></tr>
-  <tr><td><code>EC2_SSH_PRIVATE_KEY</code></td><td>Secret</td><td>PEM private key for SSH access.</td></tr>
-  <tr><td><code>ECR_REPOSITORY</code></td><td>Secret</td><td>ECR repository name (<code>notism-api</code>).</td></tr>
-  <tr><td><code>AWS_ACCESS_KEY</code></td><td>Secret</td><td>AWS access key for S3 operations from the API.</td></tr>
-  <tr><td><code>AWS_SECRET_KEY</code></td><td>Secret</td><td>AWS secret key for S3 operations from the API.</td></tr>
-  <tr><td><code>GOOGLE_OAUTH_CLIENT_ID</code></td><td>Secret</td><td>Google OAuth client ID.</td></tr>
-  <tr><td><code>GOOGLE_OAUTH_CLIENT_SECRET</code></td><td>Secret</td><td>Google OAuth client secret.</td></tr>
-  <tr><td><code>AWS_REGION</code></td><td>Variable</td><td>AWS region (<code>ap-northeast-1</code>).</td></tr>
-</table>
+  <div class="card accent">
+    <h3 style="margin-top:0">B. API request</h3>
+    Client → Elastic IP (port 80/443 → host → API :5000) → EC2 <code>t4g.micro</code> Docker Compose (.NET API) → Supabase PostgreSQL (5432, TLS) for data; → S3 storage buckets via <code>notism-ec2-role</code> for file read/write.
+  </div>
 
-<h2 id="network">Network design</h2>
+  <div class="card teal">
+    <h3 style="margin-top:0">C. Image upload &amp; resize</h3>
+    Client/API uploads original to <code>private-notism-storage</code> under <code>avatars/</code> or <code>food/</code> → S3 ObjectCreated event → Lambda resizes (sharp) → writes to <code>public-notism-storage</code>. <code>food</code> chains into <code>food-detail-resizing</code> (800²). Public resized images served directly (public-read) or referenced by the SPA.
+  </div>
 
-<h3>VPC and CIDR</h3>
-<ul>
-  <li>One VPC (10.0.0.0/16) with an IPv6 CIDR block (<code>2600:1f18:61e2:3000::/56</code>) assigned.</li>
-  <li>Public subnet: 10.0.1.0/24 (IPv6: <code>2600:1f18:61e2:3000::/64</code>).</li>
-</ul>
+  <div class="card purple">
+    <h3 style="margin-top:0">D. CI/CD deploy</h3>
+    <strong>API:</strong> GitHub Actions (notism-api) → OIDC AssumeRole → <code>notism-api-deploy-role</code> → build &amp; push image to ECR → <code>ec2:StartInstances</code> (wake host) → host pulls image, compose up → CloudFront invalidate.<br>
+    <strong>Web:</strong> GitHub Actions (notism-web) → <code>notism-web-deploy</code> → <code>aws s3 sync</code> to <code>notism-web-prod</code> → CloudFront invalidate.
+  </div>
+</section>
 
-<h3>Public subnet</h3>
-<p>The public subnet has routes <code>0.0.0.0/0</code> and <code>::/0</code> to the Internet Gateway. EC2 gets a public IPv4 (Elastic IP) and an IPv6 address. <strong>IPv6 is required for direct connections to Supabase</strong>, which exposes its database endpoint on IPv6 only.</p>
+<!-- ===================================================== -->
+<section id="inventory">
+  <h2><span class="num">15</span>Full Resource Inventory</h2>
+  <p>Every terraformed resource → AWS mapping.</p>
+  <table>
+    <tr><th>#</th><th>Terraform address</th><th>AWS service / object</th><th>Scope</th></tr>
+    <tr><td>1</td><td><code>aws_vpc.main</code></td><td>VPC 10.0.0.0/16</td><td>region</td></tr>
+    <tr><td>2</td><td><code>aws_internet_gateway.main</code></td><td>Internet Gateway</td><td>region</td></tr>
+    <tr><td>3</td><td><code>aws_subnet.public</code></td><td>Public subnet 10.0.1.0/24</td><td>AZ</td></tr>
+    <tr><td>4</td><td><code>aws_route_table.public</code></td><td>Route table (→IGW)</td><td>region</td></tr>
+    <tr><td>5</td><td><code>aws_route_table_association.public</code></td><td>RT association</td><td>region</td></tr>
+    <tr><td>6</td><td><code>aws_instance.api</code></td><td>EC2 t4g.micro (AL2023 ARM)</td><td>AZ</td></tr>
+    <tr><td>7</td><td><code>aws_eip.api</code></td><td>Elastic IP</td><td>region</td></tr>
+    <tr><td>8</td><td><code>aws_eip_association.api</code></td><td>EIP↔EC2 association</td><td>region</td></tr>
+    <tr><td>9</td><td><code>aws_security_group.ec2</code></td><td>Security group (22/80/443)</td><td>VPC</td></tr>
+    <tr><td>10</td><td><code>aws_ecr_repository.api</code></td><td>ECR repo notism-api</td><td>region</td></tr>
+    <tr><td>11</td><td><code>aws_s3_bucket.private_storage</code></td><td>S3 private-notism-storage</td><td>region</td></tr>
+    <tr><td>12</td><td><code>aws_s3_bucket.public_storage</code></td><td>S3 public-notism-storage</td><td>region</td></tr>
+    <tr><td>13</td><td><code>aws_s3_bucket.web_prod</code></td><td>S3 notism-web-prod</td><td>region</td></tr>
+    <tr><td>14–16</td><td><code>aws_s3_bucket_server_side_encryption_configuration.*</code></td><td>S3 SSE (AES256) ×3</td><td>region</td></tr>
+    <tr><td>17–19</td><td><code>aws_s3_bucket_ownership_controls.*</code></td><td>BucketOwnerEnforced ×3</td><td>region</td></tr>
+    <tr><td>20–22</td><td><code>aws_s3_bucket_public_access_block.*</code></td><td>Public access block ×3</td><td>region</td></tr>
+    <tr><td>23–24</td><td><code>aws_s3_bucket_cors_configuration.*</code></td><td>CORS (private, public) ×2</td><td>region</td></tr>
+    <tr><td>25</td><td><code>aws_s3_bucket_notification.private_storage</code></td><td>S3 event → Lambda</td><td>region</td></tr>
+    <tr><td>26–28</td><td><code>aws_s3_bucket_policy.*</code></td><td>Bucket policies ×3</td><td>region</td></tr>
+    <tr><td>29</td><td><code>aws_cloudfront_origin_access_control.web_prod</code></td><td>CloudFront OAC</td><td>global</td></tr>
+    <tr><td>30</td><td><code>aws_cloudfront_distribution.web_prod</code></td><td>CloudFront distribution</td><td>global</td></tr>
+    <tr><td>31</td><td><code>aws_lambda_function.avatar_resizing</code></td><td>Lambda 128MB/3s</td><td>region</td></tr>
+    <tr><td>32</td><td><code>aws_lambda_function.food_resizing</code></td><td>Lambda 256MB/30s</td><td>region</td></tr>
+    <tr><td>33</td><td><code>aws_lambda_function.food_detail_resizing</code></td><td>Lambda 256MB/30s</td><td>region</td></tr>
+    <tr><td>34–35</td><td><code>aws_lambda_permission.s3_invoke_*</code></td><td>Lambda resource policies ×2</td><td>region</td></tr>
+    <tr><td>36</td><td><code>aws_iam_role.lambda_image_resizing</code></td><td>IAM role (Lambda)</td><td>global</td></tr>
+    <tr><td>37</td><td><code>aws_iam_role_policy.lambda_image_resizing_s3</code></td><td>IAM inline (S3+invoke)</td><td>global</td></tr>
+    <tr><td>38</td><td><code>aws_iam_role_policy_attachment.lambda_image_resizing_basic_execution</code></td><td>AWSLambdaBasicExecutionRole</td><td>global</td></tr>
+    <tr><td>39</td><td><code>aws_iam_role.ec2</code></td><td>IAM role (EC2)</td><td>global</td></tr>
+    <tr><td>40</td><td><code>aws_iam_role_policy.ec2_s3</code></td><td>IAM inline (S3)</td><td>global</td></tr>
+    <tr><td>41</td><td><code>aws_iam_role_policy_attachment.ec2_ecr</code></td><td>AmazonEC2ContainerRegistryReadOnly</td><td>global</td></tr>
+    <tr><td>42</td><td><code>aws_iam_instance_profile.ec2</code></td><td>EC2 instance profile</td><td>global</td></tr>
+    <tr><td>43</td><td><code>aws_iam_openid_connect_provider.github_actions</code></td><td>IAM OIDC provider</td><td>global</td></tr>
+    <tr><td>44</td><td><code>aws_iam_role.api_deploy</code></td><td>IAM role (GH OIDC, API)</td><td>global</td></tr>
+    <tr><td>45–47</td><td><code>aws_iam_role_policy_attachment.api_deploy_*</code></td><td>CloudFront/ECR/ECS managed ×3</td><td>global</td></tr>
+    <tr><td>48</td><td><code>aws_iam_role_policy.api_deploy_ec2_start</code></td><td>IAM inline (ec2:StartInstances)</td><td>global</td></tr>
+    <tr><td>49</td><td><code>aws_iam_role.web_deploy</code></td><td>IAM role (GH OIDC, web)</td><td>global</td></tr>
+    <tr><td>50–51</td><td><code>aws_iam_role_policy_attachment.web_deploy_*</code></td><td>CloudFront/S3 managed ×2</td><td>global</td></tr>
+  </table>
 
-<h3>Route tables</h3>
-<ul>
-  <li><strong>notism-public-rt:</strong> IPv4 <code>0.0.0.0/0</code> and IPv6 <code>::/0</code> → notism-igw; associated with notism-public-subnet.</li>
-</ul>
+  <h3>Data sources (read-only lookups)</h3>
+  <table>
+    <tr><th>Data source</th><th>Resolves</th></tr>
+    <tr><td><code>data.aws_availability_zones.available</code></td><td>AZ list → first AZ for subnet/EC2</td></tr>
+    <tr><td><code>data.aws_ami.amazon_linux_2023_arm</code></td><td>Latest AL2023 ARM64 kernel-6.1 AMI</td></tr>
+    <tr><td><code>data.aws_caller_identity.current</code></td><td>Account ID 249550149516 (Lambda layer ARN, permissions, OIDC policy)</td></tr>
+    <tr><td><code>data.aws_cloudfront_cache_policy.caching_optimized</code></td><td>Managed-CachingOptimized policy ID</td></tr>
+  </table>
+</section>
 
-<h2 id="security">Security</h2>
+<footer style="margin-top:48px; padding-top:24px; border-top:1px solid var(--border); color:var(--muted); font-size:13px;">
+  Generated from Terraform in <code>terraform/</code> — provider hashicorp/aws ~&gt; 5.0, region ap-northeast-1, account 249550149516.
+  Database (Supabase PostgreSQL) and the ECS cluster referenced by the deploy role live outside this Terraform.
+</footer>
 
-<h3>Security groups</h3>
-<div class="callout danger">
-  <strong>notism-ec2-sg:</strong> Allows SSH (22), HTTP (80), and HTTPS (443) from <code>0.0.0.0/0</code>. In production, restrict SSH to known IPs.
-</div>
-
-<h3>IAM</h3>
-<ul>
-  <li>EC2 uses the <strong>notism-ec2-profile</strong> instance profile (role <strong>notism-ec2-role</strong>).</li>
-  <li>The role has Amazon S3 full access and Amazon ECR read-only access so the app can use S3 buckets and pull images without storing access keys.</li>
-  <li>GitHub Actions authenticates via the <strong>token.actions.githubusercontent.com</strong> OIDC provider and assumes a per-repo deploy role (<strong>notism-api-deploy-role</strong>, <strong>notism-web-deploy</strong>) scoped by the token's <code>sub</code> claim — no long-lived CI keys.</li>
-  <li><strong>notism-api-deploy-role</strong> additionally holds an inline policy granting <code>ec2:StartInstances</code> (scoped to the API instance) and <code>ec2:DescribeInstances</code>/<code>ec2:DescribeInstanceStatus</code> (<code>*</code>) for the deploy auto-start step.</li>
-</ul>
-
-<h3>Secrets</h3>
-<ul>
-  <li>Database connection string is stored in the <code>CONNECTION_STRING</code> GitHub secret and written to <code>.env.api</code> on EC2 at deploy time.</li>
-  <li>All app secrets (JWT, MailerSend, OAuth) are written to <code>.env.api</code> at deploy time. They never appear in the repo or Docker image.</li>
-</ul>
-
-<h2 id="dataflow">Data flow</h2>
-<ol>
-  <li><strong>User → API:</strong> Internet → IGW → notism-public-subnet → EC2 (port 80/443 via Caddy) → notism-api container.</li>
-  <li><strong>User → Frontend:</strong> Internet → CloudFront → S3 (notism-web-prod via OAC).</li>
-  <li><strong>API → PostgreSQL:</strong> notism-api container → IGW → Supabase (port 5432, SSL, IPv6).</li>
-  <li><strong>API → S3:</strong> EC2 → IGW → S3 (private-notism-storage / public-notism-storage via instance profile credentials).</li>
-  <li><strong>EC2 → ECR:</strong> EC2 pulls the API Docker image from ECR (using instance profile).</li>
-  <li><strong>CI → ECR:</strong> GitHub Actions builds the image and pushes to the notism-api ECR repository.</li>
-</ol>
-
-<h2 id="migrations">Database migrations</h2>
-<p>EF Core migrations are applied with <code>dotnet ef database update</code> against the Supabase connection string. An idempotent SQL script can be generated for manual runs:</p>
-<pre><code>cd src/Notism.Infrastructure
-dotnet ef migrations script \
-  --project Notism.Infrastructure.csproj \
-  --startup-project ../Notism.Api/Notism.Api.csproj \
-  --idempotent \
-  --output /tmp/migrations.sql</code></pre>
-
-<p>Apply via <code>psql</code> (requires a host with IPv6 internet access if connecting to the Supabase direct endpoint):</p>
-<pre><code>PGPASSWORD='&lt;password&gt;' psql \
-  'host=db.vqwfgdsazmalixzmvfok.supabase.co port=5432 dbname=postgres user=postgres sslmode=require' \
-  -f /tmp/migrations.sql</code></pre>
-
-<h2 id="scaling">Scalability and future changes</h2>
-<table>
-  <tr><th>Need</th><th>Change</th></tr>
-  <tr><td>More API capacity</td><td>Add an ALB, register more EC2 instances, same AMI and IAM profile.</td></tr>
-  <tr><td>Database scaling</td><td>Upgrade Supabase plan or switch to a dedicated Supabase project.</td></tr>
-  <tr><td>HTTPS / ALB</td><td>Put an ALB in front of EC2, attach ACM certificate.</td></tr>
-  <tr><td>Custom domain for frontend</td><td>Add an ACM certificate and CNAME alias to the CloudFront distributions.</td></tr>
-</table>
-
-<h2 id="related">Related docs</h2>
-<ul>
-  <li><a href="terraform-architecture.html">terraform-architecture.html</a> — Terraform configuration reference.</li>
-  <li><a href="../rules/architecture.md">../rules/architecture.md</a> — Application architecture.</li>
-</ul>
-
-<hr>
-<p style="color: var(--muted); font-size: 0.85em; text-align: center;">
-  Notism AWS infrastructure · Account 249550149516 · ap-northeast-1
-</p>
-
-</div>
+</main>
 </body>
 </html>
