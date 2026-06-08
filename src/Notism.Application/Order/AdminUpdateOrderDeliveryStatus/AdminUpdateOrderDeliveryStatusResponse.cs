@@ -31,9 +31,12 @@ public sealed record AdminUpdateOrderDeliveryStatusResponse
             UserName = user?.FullName ?? string.Empty,
             TotalAmount = order.TotalAmount,
             DeliveryStatus = order.DeliveryStatus.GetStringValue(),
+            PaymentStatus = order.PaymentStatus.GetStringValue(),
+            PaidAt = order.PaidAt,
             CreatedAt = order.CreatedAt,
             UpdatedAt = order.UpdatedAt,
             TotalItems = order.Items.Count,
+            DeliveryNotes = order.DeliveryNotes,
         };
     }
 }
