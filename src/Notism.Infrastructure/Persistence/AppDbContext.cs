@@ -263,11 +263,6 @@ public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator medi
             entity.HasIndex(f => f.IsAvailable);
             entity.HasIndex(f => new { f.CategoryId, f.IsAvailable });
 
-            // GIN trigram indexes for the case-insensitive substring food search are declared
-            // as raw-SQL expression indexes on LOWER(Name)/LOWER(Description) in the migration
-            // (AddFoodNameDescriptionTrigramIndexes) because the search query filters on
-            // LOWER(col) LIKE '%kw%'; a plain-column trigram index would not be used by the planner.
-            // EF Core 8 cannot model a LOWER(...) expression index via HasIndex, so they live in SQL only.
             entity.HasMany(f => f.Images)
                 .WithOne(i => i.Food)
                 .HasForeignKey(i => i.FoodId)
