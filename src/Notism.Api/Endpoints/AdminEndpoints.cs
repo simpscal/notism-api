@@ -19,6 +19,7 @@ using Notism.Application.Food.AdminUpdateFood;
 using Notism.Application.Food.GetFoodById;
 using Notism.Application.Food.GetFoods;
 using Notism.Application.Order.AdminGetOrderStatusSummary;
+using Notism.Application.Order.AdminGetRevenueSeries;
 using Notism.Application.Order.AdminGetTodaySales;
 using Notism.Application.Order.AdminOrdersForKanban;
 using Notism.Application.Order.AdminOrdersForTable;
@@ -164,6 +165,16 @@ public static class AdminEndpoints
             .WithDescription("Retrieves today's headline sales figures (total revenue and order count) for the Asia/Ho_Chi_Minh civil day. Revenue sums paid orders; order count counts orders created today. Both are zero when there is no matching activity.")
             .RequireAdmin()
             .Produces<AdminGetTodaySalesResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
+
+        group.MapGet("/revenue-series", AdminGetRevenueSeriesAsync)
+            .WithName("AdminGetRevenueSeries")
+            .WithSummary("Get revenue series")
+            .WithDescription("Retrieves an ordered, dense per-period revenue series bucketed by the requested granularity (year, month or day) in Asia/Ho_Chi_Minh civil time. The range is server-derived from the granularity; every period in the range is present, with zero-revenue periods reported as 0.")
+            .RequireAdmin()
+            .Produces<AdminGetRevenueSeriesResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
     }
@@ -607,6 +618,15 @@ public static class AdminEndpoints
         CancellationToken cancellationToken)
     {
         var request = new AdminGetTodaySalesRequest();
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AdminGetRevenueSeriesAsync(
+        IMediator mediator,
+        [AsParameters] AdminGetRevenueSeriesRequest request,
+        CancellationToken cancellationToken)
+    {
         var result = await mediator.Send(request, cancellationToken);
         return Results.Ok(result);
     }
