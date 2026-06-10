@@ -5,4 +5,20 @@ namespace Notism.Domain.Order.Repositories;
 
 public interface IOrderRepository : IRepository<Order>
 {
+    /// <summary>
+    /// Returns order counts folded into the dashboard delivery-status buckets,
+    /// computed as a single server-side GROUP BY query. Cancelled orders are
+    /// excluded and every bucket is always present (zero when empty).
+    /// </summary>
+    Task<OrderStatusBucketCounts> GetDeliveryStatusBucketCountsAsync();
+
+    /// <summary>
+    /// Returns the SUM of <c>TotalAmount</c> for Paid orders whose <c>PaidAt</c>
+    /// falls in <paramref name="startUtc"/>..<paramref name="endUtc"/> (half-open),
+    /// and the COUNT of orders whose <c>CreatedAt</c> falls in the same window.
+    /// Both are computed as server-side aggregates.
+    /// </summary>
+    /// <param name="startUtc">Inclusive start of the window (UTC).</param>
+    /// <param name="endUtc">Exclusive end of the window (UTC).</param>
+    Task<OrderWindowAggregate> GetWindowAggregateAsync(DateTime startUtc, DateTime endUtc);
 }
