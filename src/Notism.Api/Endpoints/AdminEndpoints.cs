@@ -18,6 +18,7 @@ using Notism.Application.Food.AdminUpdateCustomisationOption;
 using Notism.Application.Food.AdminUpdateFood;
 using Notism.Application.Food.GetFoodById;
 using Notism.Application.Food.GetFoods;
+using Notism.Application.Order.AdminGetOrderStatusSummary;
 using Notism.Application.Order.AdminOrdersForKanban;
 using Notism.Application.Order.AdminOrdersForTable;
 using Notism.Application.Order.AdminUpdateOrderDeliveryStatus;
@@ -35,6 +36,7 @@ public static class AdminEndpoints
     {
         MapAdminUserEndpoints(app);
         MapAdminOrderEndpoints(app);
+        MapAdminDashboardEndpoints(app);
         MapAdminCategoryEndpoints(app);
         MapAdminFoodEndpoints(app);
         MapAdminFoodCustomisationEndpoints(app);
@@ -137,6 +139,23 @@ public static class AdminEndpoints
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
             .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+    }
+
+    private static void MapAdminDashboardEndpoints(IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/api/admin/dashboard")
+            .WithTags("Admin Dashboard")
+            .WithOpenApi()
+            .RequireAuthorization();
+
+        group.MapGet("/order-status-summary", AdminGetOrderStatusSummaryAsync)
+            .WithName("AdminGetOrderStatusSummary")
+            .WithSummary("Get order status summary")
+            .WithDescription("Retrieves order counts grouped into the dashboard delivery-status buckets (new, in progress, completed). Cancelled orders are excluded and every bucket is always present.")
+            .RequireAdmin()
+            .Produces<AdminGetOrderStatusSummaryResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
     }
 
     private static void MapAdminCategoryEndpoints(IEndpointRouteBuilder app)
@@ -560,6 +579,15 @@ public static class AdminEndpoints
         [AsParameters] AdminOrdersForTableRequest request,
         CancellationToken cancellationToken)
     {
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AdminGetOrderStatusSummaryAsync(
+        IMediator mediator,
+        CancellationToken cancellationToken)
+    {
+        var request = new AdminGetOrderStatusSummaryRequest();
         var result = await mediator.Send(request, cancellationToken);
         return Results.Ok(result);
     }

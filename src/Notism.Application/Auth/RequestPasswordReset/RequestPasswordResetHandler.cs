@@ -1,7 +1,9 @@
 using System.Security.Cryptography;
 
 using MediatR;
+
 using Microsoft.Extensions.Logging;
+
 using Notism.Application.Common.Services;
 using Notism.Domain.Common.Persistence;
 using Notism.Domain.Common.Repositories;

@@ -1,7 +1,9 @@
 using System.Reflection;
 
 using FluentAssertions;
+
 using Microsoft.Extensions.Logging;
+
 using Notism.Application.Cart.UpdateCartItemCustomisations;
 using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
@@ -11,6 +13,7 @@ using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
 using Notism.Shared.Exceptions;
+
 using NSubstitute;
 
 namespace Notism.Application.Tests.Cart.UpdateCartItemCustomisations;
