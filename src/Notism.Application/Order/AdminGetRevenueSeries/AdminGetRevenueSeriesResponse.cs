@@ -1,6 +1,3 @@
-using Notism.Domain.Order.Repositories;
-using Notism.Shared.Extensions;
-
 namespace Notism.Application.Order.AdminGetRevenueSeries;
 
 public sealed record AdminGetRevenueSeriesResponse
@@ -9,12 +6,13 @@ public sealed record AdminGetRevenueSeriesResponse
     public required IReadOnlyList<RevenueSeriesPoint> Points { get; init; }
 
     public static AdminGetRevenueSeriesResponse FromPoints(
-        RevenuePeriodGranularity granularity,
+        string? granularity,
         IReadOnlyList<RevenueSeriesPoint> points)
     {
         return new AdminGetRevenueSeriesResponse
         {
-            Granularity = granularity.ToCamelCase(),
+            // Client hint echoed back verbatim (empty string when omitted).
+            Granularity = granularity ?? string.Empty,
             Points = points,
         };
     }

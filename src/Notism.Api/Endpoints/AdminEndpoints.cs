@@ -162,16 +162,17 @@ public static class AdminEndpoints
         group.MapGet("/today-sales", AdminGetTodaySalesAsync)
             .WithName("AdminGetTodaySales")
             .WithSummary("Get today's sales")
-            .WithDescription("Retrieves today's headline sales figures (total revenue and order count) for the Asia/Ho_Chi_Minh civil day. Revenue sums paid orders; order count counts orders created today. Both are zero when there is no matching activity.")
+            .WithDescription("Retrieves headline sales figures (total revenue and order count) for the client-supplied UTC window [startUtc, endUtc). Revenue sums paid orders; order count counts orders created in the window. Both are zero when there is no matching activity. The server is time-zone agnostic and derives no window.")
             .RequireAdmin()
             .Produces<AdminGetTodaySalesResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
 
         group.MapGet("/revenue-series", AdminGetRevenueSeriesAsync)
             .WithName("AdminGetRevenueSeries")
             .WithSummary("Get revenue series")
-            .WithDescription("Retrieves an ordered, dense per-period revenue series bucketed by the requested granularity (year, month or day) in Asia/Ho_Chi_Minh civil time. The range is server-derived from the granularity; every period in the range is present, with zero-revenue periods reported as 0.")
+            .WithDescription("Retrieves an ordered, dense per-bucket revenue series. The client supplies the n+1 ascending UTC boundaries and one label per bucket; revenue is the SUM of paid orders whose PaidAt falls in each half-open [boundaries[i], boundaries[i+1]) range. Every bucket is present, with zero-revenue buckets reported as 0. Granularity is an optional client hint echoed back verbatim and carries no server semantics.")
             .RequireAdmin()
             .Produces<AdminGetRevenueSeriesResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
@@ -615,18 +616,32 @@ public static class AdminEndpoints
 
     private static async Task<IResult> AdminGetTodaySalesAsync(
         IMediator mediator,
+        DateTime startUtc,
+        DateTime endUtc,
         CancellationToken cancellationToken)
     {
-        var request = new AdminGetTodaySalesRequest();
+        var request = new AdminGetTodaySalesRequest
+        {
+            StartUtc = startUtc,
+            EndUtc = endUtc,
+        };
         var result = await mediator.Send(request, cancellationToken);
         return Results.Ok(result);
     }
 
     private static async Task<IResult> AdminGetRevenueSeriesAsync(
         IMediator mediator,
-        [AsParameters] AdminGetRevenueSeriesRequest request,
+        DateTime[] boundaries,
+        string[] labels,
+        string? granularity,
         CancellationToken cancellationToken)
     {
+        var request = new AdminGetRevenueSeriesRequest
+        {
+            Boundaries = boundaries.ToList(),
+            Labels = labels.ToList(),
+            Granularity = granularity,
+        };
         var result = await mediator.Send(request, cancellationToken);
         return Results.Ok(result);
     }
