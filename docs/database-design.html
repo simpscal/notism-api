@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notism API — Database Design</title>
+<style>
+  :root {
+    --bg: #0f1419; --panel: #1a212b; --border: #2a3441;
+    --fg: #d6dce5; --muted: #8b97a7; --accent: #5cc8ff;
+    --accent2: #ffb454; --code: #2a3441; --row: #161d26;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
+  h1 { font-size: 2rem; margin: 0 0 .25em; color: #fff; }
+  h2 {
+    font-size: 1.35rem; margin: 2.4em 0 .6em; padding-bottom: .3em;
+    border-bottom: 2px solid var(--border); color: var(--accent);
+  }
+  h3 { font-size: 1.05rem; margin: 1.8em 0 .5em; color: var(--accent2); }
+  .lead { color: var(--muted); margin: 0 0 1.5em; }
+  table {
+    width: 100%; border-collapse: collapse; margin: .8em 0 1.4em;
+    font-size: .9rem; background: var(--panel); border-radius: 8px; overflow: hidden;
+  }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: #222c38; color: #fff; font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) { background: var(--row); }
+  code {
+    background: var(--code); padding: .12em .4em; border-radius: 4px;
+    font: .85em "SF Mono", Menlo, Consolas, monospace; color: #e6c07b;
+  }
+  td code { white-space: nowrap; }
+  pre {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; overflow-x: auto; line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; color: var(--fg); white-space: pre; }
+  strong { color: #fff; }
+  ul { padding-left: 1.3em; }
+  li { margin: .3em 0; }
+  .badge {
+    display: inline-block; font-size: .75rem; padding: .1em .5em; border-radius: 4px;
+    background: #243; color: #8fd; font-weight: 600;
+  }
+  .toc {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px 24px; margin: 1.5em 0 2em;
+  }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc ul { columns: 2; margin: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>Database Design</h1>
+<p class="lead">
+  Notism API persistence layer. PostgreSQL via EF Core 8 (Npgsql), configured through
+  <code>AppDbContext</code> (<code>src/Notism.Infrastructure/Persistence/</code>).
+  Domain-Driven Design: aggregate roots own child entities; child collections cascade-delete;
+  cross-aggregate references use <code>Restrict</code>.
+</p>
+
+<div class="toc">
+  <ul>
+    <li><a href="#conventions">Conventions</a></li>
+    <li><a href="#aggregates">Aggregates</a></li>
+    <li><a href="#erd">Schema map (ERD)</a></li>
+    <li><a href="#tables">Tables</a></li>
+    <li><a href="#enums">Enums</a></li>
+    <li><a href="#vo">Value objects</a></li>
+    <li><a href="#delete">Delete behavior</a></li>
+    <li><a href="#migrations">Migration history</a></li>
+    <li><a href="#notable">Notable design choices</a></li>
+  </ul>
+</div>
+
+<h2 id="conventions">Conventions</h2>
+<table>
+  <thead><tr><th>Aspect</th><th>Convention</th></tr></thead>
+  <tbody>
+    <tr><td>Primary key</td><td><code>Id</code> — <code>Guid</code> / <code>uuid</code>, on every table</td></tr>
+    <tr><td>Timestamps</td><td><code>timestamp with time zone</code>, UTC</td></tr>
+    <tr><td>Money</td><td><code>numeric(18,2)</code> (surcharges <code>numeric(10,2)</code>)</td></tr>
+    <tr><td>Enums</td><td>Stored as <strong>camelCase strings</strong> (<code>varchar</code>), not ints</td></tr>
+    <tr><td>Soft delete</td><td><code>IsDeleted</code> + <code>DeletedAt</code>; unique indexes filtered on <code>"IsDeleted" = false</code></td></tr>
+    <tr><td>Audit</td><td><code>CreatedAt</code>, <code>UpdatedAt</code>, <code>CreatedBy</code>, <code>UpdatedBy</code> set by app layer</td></tr>
+    <tr><td>Config</td><td>Inline fluent API in <code>OnModelCreating</code></td></tr>
+    <tr><td>Extension</td><td><code>pg_trgm</code> enabled for trigram search</td></tr>
+  </tbody>
+</table>
+
+<h3>Base classes</h3>
+<p>All entities derive from <code>Entity</code>; aggregate roots derive from <code>AggregateRoot</code> (adds domain-event support). Shared fields:</p>
+<pre><code>public abstract class Entity
+{
+    public Guid Id { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public DateTime UpdatedAt { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public Guid? CreatedBy { get; set; }
+    public Guid? UpdatedBy { get; set; }
+}</code></pre>
+
+<h2 id="aggregates">Aggregates</h2>
+<table>
+  <thead><tr><th>Aggregate root</th><th>Children (cascade delete)</th></tr></thead>
+  <tbody>
+    <tr><td><code>User</code></td><td>—</td></tr>
+    <tr><td><code>Food</code></td><td><code>FoodImage</code>, <code>FoodCustomisationGroup</code> → <code>FoodCustomisationOption</code></td></tr>
+    <tr><td><code>CartItem</code></td><td><code>CartItemCustomisation</code></td></tr>
+    <tr><td><code>Order</code></td><td><code>OrderItem</code>, <code>DeliveryStatusHistory</code></td></tr>
+    <tr><td><code>Payment</code></td><td>—</td></tr>
+    <tr><td><code>BankingCheckout</code></td><td>—</td></tr>
+  </tbody>
+</table>
+<p>Standalone: <code>Category</code>, <code>RefreshToken</code>, <code>PasswordResetToken</code>.</p>
+
+<h2 id="erd">Schema map (ERD)</h2>
+<pre><code>User 1──&lt; Order 1──&lt; OrderItem &gt;──1 Food
+              └──&lt; DeliveryStatusHistory
+
+Category 1──&lt; Food 1──&lt; FoodImage
+                  └──&lt; FoodCustomisationGroup 1──&lt; FoodCustomisationOption
+
+User ──&lt; CartItem &gt;──1 Food
+              └──&lt; CartItemCustomisation ··&gt; FoodCustomisationGroup  (SetNull)
+                                        ··&gt; FoodCustomisationOption (SetNull)
+
+User ──&lt; RefreshToken,  PasswordResetToken,  BankingCheckout
+Payment (keyed by StorerId)</code></pre>
+<p><code>──&lt;</code> one-to-many composition (cascade) · <code>&gt;──1</code> reference (Restrict) · <code>··&gt;</code> nullable soft reference (SetNull)</p>
+
+<h2 id="tables">Tables</h2>
+
+<h3>Users</h3>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>Email</td><td><code>varchar(255)</code></td><td>value object, <strong>unique</strong></td></tr>
+    <tr><td>PasswordHash</td><td><code>varchar(255)</code></td><td><code>Password</code> value object</td></tr>
+    <tr><td>Role</td><td><code>varchar(20)</code></td><td><code>UserRole</code> — <code>user</code> / <code>admin</code></td></tr>
+    <tr><td>FirstName / LastName</td><td><code>varchar(50)</code></td><td>nullable</td></tr>
+    <tr><td>AvatarUrl</td><td><code>varchar(500)</code></td><td>nullable</td></tr>
+    <tr><td>Location</td><td><code>varchar(200)</code></td><td>nullable</td></tr>
+  </tbody>
+</table>
+<p>Events: <code>UserCreatedEvent</code>, <code>UserProfileUpdatedEvent</code>, <code>UserPasswordChangedEvent</code>.</p>
+
+<h3>Foods</h3>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>Name</td><td><code>varchar(200)</code></td><td>required</td></tr>
+    <tr><td>Description</td><td><code>varchar(1000)</code></td><td>required</td></tr>
+    <tr><td>Price</td><td><code>numeric(18,2)</code></td><td>required</td></tr>
+    <tr><td>DiscountPrice</td><td><code>numeric(18,2)</code></td><td>nullable</td></tr>
+    <tr><td>CategoryId</td><td><code>uuid</code></td><td>FK → Categories, <strong>Restrict</strong>, nullable</td></tr>
+    <tr><td>IsAvailable</td><td><code>bool</code></td><td>required</td></tr>
+    <tr><td>QuantityUnit</td><td><code>varchar(50)</code></td><td><code>g</code> / <code>ml</code></td></tr>
+    <tr><td>StockQuantity</td><td><code>int</code></td><td>required</td></tr>
+  </tbody>
+</table>
+<p>Indexes: <code>CategoryId</code>, <code>IsAvailable</code>, <code>(CategoryId, IsAvailable)</code>, GIN trigram on <code>LOWER(Name)</code> and <code>LOWER(Description)</code>. Events: <code>FoodCreatedEvent</code>, <code>FoodUpdatedEvent</code>.</p>
+
+<h3>Categories</h3>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>Name</td><td><code>varchar(200)</code></td><td><strong>unique</strong> where <code>IsDeleted = false</code></td></tr>
+  </tbody>
+</table>
+<p>Index: <code>IsDeleted</code>.</p>
+
+<h3>FoodImages</h3>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>FoodId</td><td><code>uuid</code></td><td>FK → Foods, <strong>Cascade</strong></td></tr>
+    <tr><td>FileKey</td><td><code>varchar(500)</code></td><td>required</td></tr>
+    <tr><td>DisplayOrder</td><td><code>int</code></td><td>required</td></tr>
+    <tr><td>AltText</td><td><code>varchar(200)</code></td><td>nullable</td></tr>
+  </tbody>
+</table>
+<p>Indexes: <code>FoodId</code>, <code>(FoodId, DisplayOrder)</code>.</p>
+
+<h3>FoodCustomisationGroups</h3>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>FoodId</td><td><code>uuid</code></td><td>FK → Foods, <strong>Cascade</strong></td></tr>
+    <tr><td>Label</td><td><code>varchar(100)</code></td><td>required</td></tr>
+    <tr><td>IsRequired</td><td><code>bool</code></td><td>required</td></tr>
+    <tr><td>DisplayOrder</td><td><code>int</code></td><td>required</td></tr>
+  </tbody>
+</table>
+<p>Index: <code>FoodId</code>.</p>
+
+<h3>FoodCustomisationOptions</h3>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>GroupId</td><td><code>uuid</code></td><td>FK → FoodCustomisationGroups, <strong>Cascade</strong></td></tr>
+    <tr><td>Label</td><td><code>varchar(100)</code></td><td>required</td></tr>
+    <tr><td>Surcharge</td><td><code>numeric(18,2)</code></td><td>nullable</td></tr>
+    <tr><td>DisplayOrder</td><td><code>int</code></td><td>required</td></tr>
+  </tbody>
+</table>
+<p>Index: <code>GroupId</code>.</p>
+
+<h3>CartItems</h3>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>UserId</td><td><code>uuid</code></td><td>required</td></tr>
+    <tr><td>FoodId</td><td><code>uuid</code></td><td>FK → Foods, <strong>Restrict</strong></td></tr>
+    <tr><td>Quantity</td><td><code>int</code></td><td>required</td></tr>
+  </tbody>
+</table>
+<p>Indexes: <code>UserId</code>, <code>FoodId</code>, <strong>unique</strong> <code>(UserId, FoodId)</code>. Events: <code>CartItemAddedEvent</code>, <code>CartItemQuantityUpdatedEvent</code>.</p>
+
+<h3>CartItemCustomisations</h3>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>CartItemId</td><td><code>uuid</code></td><td>FK → CartItems, <strong>Cascade</strong></td></tr>
+    <tr><td>CustomisationGroupId</td><td><code>uuid</code></td><td>FK → groups, <strong>SetNull</strong>, nullable</td></tr>
+    <tr><td>CustomisationOptionId</td><td><code>uuid</code></td><td>FK → options, <strong>SetNull</strong>, nullable</td></tr>
+    <tr><td>GroupLabel / OptionLabel</td><td><code>varchar(100)</code></td><td>denormalized, required</td></tr>
+    <tr><td>Surcharge</td><td><code>numeric(10,2)</code></td><td>nullable</td></tr>
+  </tbody>
+</table>
+<p>Indexes: <code>CartItemId</code>, <code>CustomisationGroupId</code>, <code>CustomisationOptionId</code>.</p>
+
+<h3>Orders</h3>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>UserId</td><td><code>uuid</code></td><td>FK → Users, <strong>Restrict</strong></td></tr>
+    <tr><td>SlugId</td><td><code>varchar(20)</code></td><td><strong>unique</strong> human-friendly id</td></tr>
+    <tr><td>TotalAmount</td><td><code>numeric(18,2)</code></td><td>required</td></tr>
+    <tr><td>PaymentMethod</td><td><code>varchar(50)</code></td><td><code>cashOnDelivery</code> / <code>banking</code></td></tr>
+    <tr><td>DeliveryStatus</td><td><code>varchar(50)</code></td><td><code>orderPlaced</code> / <code>preparing</code> / <code>onTheWay</code> / <code>delivered</code> / <code>cancelled</code></td></tr>
+    <tr><td>PaymentStatus</td><td><code>varchar(50)</code></td><td><code>unpaid</code> (default) / <code>paid</code> / <code>failed</code></td></tr>
+    <tr><td>PaidAt</td><td><code>timestamptz</code></td><td>nullable</td></tr>
+    <tr><td>DeliveryNotes</td><td><code>varchar(500)</code></td><td>nullable</td></tr>
+  </tbody>
+</table>
+<p>Indexes: <code>UserId</code>, <strong>unique</strong> <code>SlugId</code>, <code>DeliveryStatus</code>, <code>(UserId, CreatedAt)</code>. Events: <code>OrderCreatedEvent</code>, <code>OrderPaidEvent</code>, <code>OrderPaymentFailedEvent</code>, <code>DeliveryStatusUpdatedEvent</code>.</p>
+
+<h3>OrderItems</h3>
+<p>Line items snapshot food data at purchase time (denormalized — survives food edits/deletes).</p>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>OrderId</td><td><code>uuid</code></td><td>FK → Orders, <strong>Cascade</strong></td></tr>
+    <tr><td>FoodId</td><td><code>uuid</code></td><td>FK → Foods, <strong>Restrict</strong></td></tr>
+    <tr><td>FoodName</td><td><code>varchar(200)</code></td><td>denormalized</td></tr>
+    <tr><td>UnitPrice / TotalPrice</td><td><code>numeric(18,2)</code></td><td>required</td></tr>
+    <tr><td>DiscountPrice</td><td><code>numeric(18,2)</code></td><td>nullable</td></tr>
+    <tr><td>Quantity</td><td><code>int</code></td><td>required</td></tr>
+    <tr><td>Surcharge</td><td><code>numeric(10,2)</code></td><td>nullable</td></tr>
+    <tr><td>CustomisationLabel</td><td><code>varchar(200)</code></td><td>nullable</td></tr>
+  </tbody>
+</table>
+<p>Indexes: <code>OrderId</code>, <code>FoodId</code>.</p>
+
+<h3>DeliveryStatusHistories</h3>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>OrderId</td><td><code>uuid</code></td><td>FK → Orders, <strong>Cascade</strong></td></tr>
+    <tr><td>Status</td><td><code>varchar(50)</code></td><td><code>DeliveryStatus</code></td></tr>
+    <tr><td>StatusChangedAt</td><td><code>timestamptz</code></td><td>required</td></tr>
+  </tbody>
+</table>
+<p>Indexes: <code>OrderId</code>, <code>(OrderId, StatusChangedAt)</code>.</p>
+
+<h3>Payments</h3>
+<p>Stores merchant bank details keyed per storer.</p>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>StorerId</td><td><code>uuid</code></td><td><strong>unique</strong></td></tr>
+    <tr><td>BankCode</td><td><code>varchar(100)</code></td><td>required</td></tr>
+    <tr><td>AccountNumber</td><td><code>varchar(50)</code></td><td>required</td></tr>
+    <tr><td>AccountHolderName</td><td><code>varchar(200)</code></td><td>required</td></tr>
+  </tbody>
+</table>
+
+<h3>BankingCheckouts</h3>
+<p>Pending bank-transfer checkout; holds cart ids until payment confirmed.</p>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>UserId</td><td><code>uuid</code></td><td>required</td></tr>
+    <tr><td>CartItemIds</td><td><span class="badge">jsonb</span></td><td><code>List&lt;Guid&gt;</code> via ValueConverter</td></tr>
+    <tr><td>TotalAmount</td><td><code>numeric(18,2)</code></td><td>required</td></tr>
+    <tr><td>IsUsed</td><td><code>bool</code></td><td>required</td></tr>
+  </tbody>
+</table>
+<p>Indexes: <code>UserId</code>, <code>IsUsed</code>.</p>
+
+<h3>RefreshTokens</h3>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>Token</td><td><code>varchar(255)</code></td><td><strong>unique</strong></td></tr>
+    <tr><td>UserId</td><td><code>uuid</code></td><td>required</td></tr>
+    <tr><td>ExpiresAt</td><td><code>timestamptz</code></td><td>required</td></tr>
+    <tr><td>IsRevoked</td><td><code>bool</code></td><td>required</td></tr>
+  </tbody>
+</table>
+<p>Indexes: unique <code>Token</code>, <code>UserId</code>, <code>(UserId, IsRevoked)</code>.</p>
+
+<h3>PasswordResetTokens</h3>
+<table>
+  <thead><tr><th>Column</th><th>Type</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>Token</td><td><code>varchar(255)</code></td><td><strong>unique</strong></td></tr>
+    <tr><td>UserId</td><td><code>uuid</code></td><td>required</td></tr>
+    <tr><td>ExpiresAt</td><td><code>timestamptz</code></td><td>required</td></tr>
+    <tr><td>IsUsed</td><td><code>bool</code></td><td>required</td></tr>
+  </tbody>
+</table>
+<p>Indexes: unique <code>Token</code>, <code>UserId</code>, <code>(UserId, IsUsed, ExpiresAt)</code>.</p>
+
+<h2 id="enums">Enums (stored as strings)</h2>
+<table>
+  <thead><tr><th>Enum</th><th>Column type</th><th>Values</th></tr></thead>
+  <tbody>
+    <tr><td><code>UserRole</code></td><td><code>varchar(20)</code></td><td><code>user</code>, <code>admin</code></td></tr>
+    <tr><td><code>QuantityUnit</code></td><td><code>varchar(50)</code></td><td><code>g</code>, <code>ml</code></td></tr>
+    <tr><td><code>PaymentMethod</code></td><td><code>varchar(50)</code></td><td><code>cashOnDelivery</code>, <code>banking</code></td></tr>
+    <tr><td><code>DeliveryStatus</code></td><td><code>varchar(50)</code></td><td><code>orderPlaced</code>, <code>preparing</code>, <code>onTheWay</code>, <code>delivered</code>, <code>cancelled</code></td></tr>
+    <tr><td><code>PaymentStatus</code></td><td><code>varchar(50)</code></td><td><code>unpaid</code> (default), <code>paid</code>, <code>failed</code></td></tr>
+  </tbody>
+</table>
+
+<h2 id="vo">Value objects</h2>
+<ul>
+  <li><strong><code>Email</code></strong> → <code>Users.Email</code> (varchar 255). Format-validated, lowercased.</li>
+  <li><strong><code>Password</code></strong> → <code>Users.PasswordHash</code> (varchar 255). Min 8 chars; hashing done in app layer.</li>
+</ul>
+
+<h2 id="delete">Delete behavior</h2>
+<table>
+  <thead><tr><th>Behavior</th><th>Relationships</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Cascade</strong></td><td>Food→Image/Group, Group→Option, CartItem→Customisation, Order→Item/StatusHistory</td></tr>
+    <tr><td><strong>Restrict</strong></td><td>User←Order, Food←CartItem, Food←OrderItem, Category←Food</td></tr>
+    <tr><td><strong>SetNull</strong></td><td>CartItemCustomisation→Group / →Option</td></tr>
+  </tbody>
+</table>
+
+<h2 id="migrations">Migration history</h2>
+<table>
+  <thead><tr><th>#</th><th>Migration</th><th>Adds</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>InitialCreate</td><td>Users + Email unique index</td></tr>
+    <tr><td>2</td><td>AddRefreshTokenTable</td><td>RefreshTokens</td></tr>
+    <tr><td>3</td><td>AddPasswordResetToken</td><td>PasswordResetTokens</td></tr>
+    <tr><td>4</td><td>ConvertUserRoleToString</td><td>Role enum → string</td></tr>
+    <tr><td>5</td><td>AddAvatarUrlToUser</td><td>Users.AvatarUrl</td></tr>
+    <tr><td>6</td><td>RemovePreparationTimeAddQuantityUnit</td><td>Foods.QuantityUnit</td></tr>
+    <tr><td>7</td><td>UpdateFoodCategoryAndQuantityUnitToEnums</td><td>Food category/unit → enum strings</td></tr>
+    <tr><td>8</td><td>AddFoodImageTable</td><td>FoodImages (cascade)</td></tr>
+    <tr><td>9</td><td>AddCartItemTable</td><td>CartItems + unique (UserId, FoodId)</td></tr>
+    <tr><td>10</td><td>RemoveFileKeyFromFood</td><td>drop Foods.FileKey (→ FoodImages)</td></tr>
+    <tr><td>11</td><td>AddOrderTables</td><td>Orders, OrderItems, DeliveryStatusHistories</td></tr>
+    <tr><td>12</td><td>AddOrderSlugId</td><td>Orders.SlugId (unique)</td></tr>
+    <tr><td>13</td><td>AddCategoryTable</td><td>Categories (soft-delete)</td></tr>
+    <tr><td>14</td><td>AddCategoryIdToFood</td><td>Foods.CategoryId FK (Restrict)</td></tr>
+    <tr><td>15</td><td>AddUniqueIndexOnCategoryName</td><td>filtered unique Category.Name</td></tr>
+    <tr><td>16</td><td>AddPaymentSupport</td><td>Payments (StorerId unique)</td></tr>
+    <tr><td>17</td><td>ChangeOrderPaymentStatusToString</td><td>PaymentStatus → string</td></tr>
+    <tr><td>18</td><td>FixOrderPaymentStatusData</td><td>data fix for PaymentStatus</td></tr>
+    <tr><td>19</td><td>AddBankingCheckout</td><td>BankingCheckouts (jsonb CartItemIds)</td></tr>
+    <tr><td>20</td><td>MigrateBankingOrdersToCod</td><td>data: banking orders → COD</td></tr>
+    <tr><td>21</td><td>AddFoodCustomisationTables</td><td>FoodCustomisationGroups/Options</td></tr>
+    <tr><td>22</td><td>AddCartItemCustomisationFields</td><td>cart customisation cols (later refactored)</td></tr>
+    <tr><td>23</td><td>AddOrderItemSurchargeFields</td><td>OrderItems.Surcharge, CustomisationLabel</td></tr>
+    <tr><td>24</td><td>RefactorCartItemCustomisationToChildTable</td><td>CartItemCustomisations child table</td></tr>
+    <tr><td>25</td><td>AddLocationToUser</td><td>Users.Location</td></tr>
+    <tr><td>26</td><td>AddDeliveryNotesToOrder</td><td>Orders.DeliveryNotes</td></tr>
+    <tr><td>27</td><td>AddFoodNameDescriptionTrigramIndexes</td><td>pg_trgm GIN indexes on Foods</td></tr>
+  </tbody>
+</table>
+
+<h2 id="notable">Notable design choices</h2>
+<ul>
+  <li><strong>Denormalized snapshots</strong> — <code>OrderItem</code> and <code>CartItemCustomisation</code> copy labels/prices so historical records survive catalog edits and deletes (why parent FKs are <code>Restrict</code>/<code>SetNull</code>, not <code>Cascade</code>).</li>
+  <li><strong>Soft delete + filtered unique</strong> — <code>Category.Name</code> stays reusable after deletion since the unique index filters <code>IsDeleted = false</code>.</li>
+  <li><strong>Trigram search</strong> — GIN indexes on <code>LOWER(Name)</code>/<code>LOWER(Description)</code> back case-insensitive substring food search (<code>pg_trgm</code>).</li>
+  <li><strong>Domain events</strong> — aggregate roots raise events dispatched via MediatR after <code>SaveChangesAsync</code>.</li>
+  <li><strong>jsonb</strong> — <code>BankingCheckout.CartItemIds</code> persists a <code>List&lt;Guid&gt;</code> via ValueConverter with value-comparison.</li>
+</ul>
+
+</div>
+</body>
+</html>
