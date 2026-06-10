@@ -6,10 +6,12 @@ using System.Text;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
-using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.RefreshToken;
+using Notism.Domain.RefreshToken.Repositories;
 using Notism.Domain.User;
+using Notism.Domain.User.Repositories;
 using Notism.Shared.Configuration;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Extensions;

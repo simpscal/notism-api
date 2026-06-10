@@ -1,6 +1,6 @@
 using MediatR;
 
-using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Auth.RefreshToken;

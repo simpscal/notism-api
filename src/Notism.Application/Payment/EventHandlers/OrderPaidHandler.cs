@@ -1,6 +1,6 @@
 using MediatR;
 
-using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Domain.Order.Events;
 
 namespace Notism.Application.Payment.EventHandlers;

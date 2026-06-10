@@ -7,7 +7,6 @@ using Microsoft.OpenApi.Models;
 
 using Notism.Api.Constants;
 using Notism.Api.Services;
-using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Shared.Configuration;
 

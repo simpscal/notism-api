@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 
-namespace Notism.Application.Common.Interfaces;
+namespace Notism.Application.Common.Services;
 
 public interface IGoogleOAuthService
 {

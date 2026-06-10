@@ -4,7 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
 using Notism.Application.Food.Common;
-using Notism.Domain.Common.Interfaces;
+using Notism.Domain.Common.Repositories;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Food.AdminAddCustomisationOption;

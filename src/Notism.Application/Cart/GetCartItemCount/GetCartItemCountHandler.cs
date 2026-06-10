@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Domain.Cart;
+using Notism.Domain.Cart.Repositories;
 using Notism.Domain.Common.Specifications;
 
 namespace Notism.Application.Cart.GetCartItemCount;

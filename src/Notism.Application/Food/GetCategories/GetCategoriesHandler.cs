@@ -3,6 +3,7 @@ using MediatR;
 using Notism.Application.Food.AdminGetCategories;
 using Notism.Application.Food.Common;
 using Notism.Domain.Food;
+using Notism.Domain.Food.Repositories;
 
 namespace Notism.Application.Food.GetCategories;
 

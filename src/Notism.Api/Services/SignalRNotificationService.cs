@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.SignalR;
 
 using Notism.Api.Hubs;
-using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 
 namespace Notism.Api.Services;
 

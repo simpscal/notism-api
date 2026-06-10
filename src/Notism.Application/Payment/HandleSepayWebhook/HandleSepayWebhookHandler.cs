@@ -2,11 +2,13 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Application.Order.CreateOrder;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Order;
+using Notism.Domain.Order.Repositories;
 using Notism.Domain.Payment;
+using Notism.Domain.Payment.Repositories;
 
 namespace Notism.Application.Payment.HandleSepayWebhook;
 

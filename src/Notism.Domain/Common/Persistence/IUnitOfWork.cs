@@ -1,4 +1,4 @@
-namespace Notism.Domain.Common.Interfaces;
+namespace Notism.Domain.Common.Persistence;
 
 public interface IUnitOfWork
 {

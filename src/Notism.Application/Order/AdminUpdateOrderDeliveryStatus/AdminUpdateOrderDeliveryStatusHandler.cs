@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Notism.Application.Common.Services;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
+using Notism.Domain.Order.Repositories;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Extensions;
 

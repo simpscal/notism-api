@@ -1,6 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 
-using Notism.Worker.Interfaces;
+using Notism.Worker.Services;
 using Notism.Worker.Workers.Base;
 
 namespace Notism.Worker.Workers;

@@ -1,6 +1,6 @@
 using Notism.Domain.User.ValueObjects;
 
-namespace Notism.Application.Common.Interfaces;
+namespace Notism.Application.Common.Services;
 
 public interface IEmailService
 {

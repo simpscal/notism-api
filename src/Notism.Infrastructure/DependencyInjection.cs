@@ -1,19 +1,24 @@
 using System.Net.Http.Headers;
 
 using Amazon.S3;
-
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-
-using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
-using Notism.Domain.Common.Interfaces;
+using Notism.Domain.Cart.Repositories;
+using Notism.Domain.Common.Persistence;
+using Notism.Domain.Common.Repositories;
 using Notism.Domain.Food;
+using Notism.Domain.Food.Repositories;
 using Notism.Domain.Order;
+using Notism.Domain.Order.Repositories;
 using Notism.Domain.Payment;
+using Notism.Domain.Payment.Repositories;
 using Notism.Domain.RefreshToken;
+using Notism.Domain.RefreshToken.Repositories;
 using Notism.Domain.User;
+using Notism.Domain.User.Repositories;
 using Notism.Infrastructure.Persistence;
 using Notism.Infrastructure.Repositories;
 using Notism.Infrastructure.Services;

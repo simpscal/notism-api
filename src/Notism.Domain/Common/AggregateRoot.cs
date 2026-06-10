@@ -1,4 +1,4 @@
-using Notism.Domain.Common.Interfaces;
+using Notism.Domain.Common.Events;
 
 namespace Notism.Domain.Common;
 

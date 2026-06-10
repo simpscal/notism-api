@@ -2,14 +2,14 @@ using FluentAssertions;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Application.Order.GetOrderById;
-using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
+using Notism.Domain.Order.Repositories;
 using Notism.Domain.Payment;
+using Notism.Domain.Payment.Repositories;
 using Notism.Shared.Exceptions;
 
 using NSubstitute;

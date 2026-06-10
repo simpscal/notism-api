@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Notism.Application.Common.Services;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Order;
+using Notism.Domain.Order.Repositories;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Order.CancelOrder;

@@ -1,6 +1,6 @@
 using Notism.Application.Cart.Common;
 using Notism.Application.Common.Constants;
-using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 
 namespace Notism.Application.Cart.GetCartItems;

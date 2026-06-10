@@ -3,7 +3,8 @@ using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 
 using Notism.Application.Common.Constants;
-using Notism.Domain.Common.Interfaces;
+using Notism.Domain.Common.Repositories;
+using Notism.Domain.Common.Specifications;
 using Notism.Infrastructure.Persistence;
 using Notism.Shared.Models;
 

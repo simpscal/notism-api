@@ -1,6 +1,7 @@
 using MediatR;
 
 using Notism.Domain.Payment;
+using Notism.Domain.Payment.Repositories;
 
 namespace Notism.Application.Payment.CreateBankingCheckout;
 

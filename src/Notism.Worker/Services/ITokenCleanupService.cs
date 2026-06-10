@@ -1,4 +1,4 @@
-namespace Notism.Worker.Interfaces;
+namespace Notism.Worker.Services;
 
 public interface ITokenCleanupService
 {

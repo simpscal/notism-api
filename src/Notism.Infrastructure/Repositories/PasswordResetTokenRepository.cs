@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using Notism.Domain.User;
+using Notism.Domain.User.Repositories;
 using Notism.Infrastructure.Persistence;
 
 namespace Notism.Infrastructure.Repositories;

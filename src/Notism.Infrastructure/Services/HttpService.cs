@@ -3,7 +3,7 @@ using System.Text.Json;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 
 namespace Notism.Infrastructure.Services;
 

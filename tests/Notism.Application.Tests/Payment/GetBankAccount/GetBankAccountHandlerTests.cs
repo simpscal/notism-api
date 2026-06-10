@@ -1,9 +1,9 @@
 using FluentAssertions;
 
 using Notism.Application.Payment.GetBankAccount;
-using Notism.Domain.Common.Interfaces;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Payment;
+using Notism.Domain.Payment.Repositories;
 
 using NSubstitute;
 

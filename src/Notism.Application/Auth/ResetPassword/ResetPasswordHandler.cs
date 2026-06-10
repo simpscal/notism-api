@@ -1,8 +1,7 @@
 using MediatR;
-
-using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Interfaces;
+using Notism.Domain.Common.Persistence;
+using Notism.Domain.Common.Repositories;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
 using Notism.Shared.Exceptions;

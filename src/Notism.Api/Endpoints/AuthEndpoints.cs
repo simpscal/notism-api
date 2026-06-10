@@ -11,6 +11,7 @@ using Notism.Application.Auth.RequestPasswordReset;
 using Notism.Application.Auth.ResetPassword;
 using Notism.Application.User.GetProfile;
 using Notism.Domain.RefreshToken;
+using Notism.Domain.RefreshToken.Repositories;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Api.Endpoints;

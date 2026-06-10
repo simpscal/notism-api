@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
+using Notism.Domain.Cart.Repositories;
 using Notism.Domain.Common.Specifications;
 using Notism.Shared.Exceptions;
 
