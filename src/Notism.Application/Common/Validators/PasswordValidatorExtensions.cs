@@ -2,8 +2,6 @@ using System.Text.RegularExpressions;
 
 using FluentValidation;
 
-using Microsoft.Extensions.Localization;
-
 using Notism.Application.Common.Services;
 
 namespace Notism.Application.Common.Validators;
@@ -15,21 +13,21 @@ public static class PasswordValidatorExtensions
     private const string NumberPattern = @"[0-9]";
     private const int MinimumPasswordLength = 8;
 
-    public static IRuleBuilderOptions<T, string> ValidatePassword<T>(this IRuleBuilder<T, string> ruleBuilder, IStringLocalizer<Messages> localizer)
+    public static IRuleBuilderOptions<T, string> ValidatePassword<T>(this IRuleBuilder<T, string> ruleBuilder, IMessages messages)
     {
         return ruleBuilder
             .NotEmpty()
-            .WithMessage(_ => localizer["PasswordRequired"])
+            .WithMessage(_ => messages.PasswordRequired)
             .NotNull()
-            .WithMessage(_ => localizer["PasswordRequired"])
+            .WithMessage(_ => messages.PasswordRequired)
             .MinimumLength(MinimumPasswordLength)
-            .WithMessage(_ => localizer["PasswordMinLength"])
+            .WithMessage(_ => messages.PasswordMinLength)
             .Must(HaveSpecialSymbol)
-            .WithMessage(_ => localizer["PasswordSpecialChar"])
+            .WithMessage(_ => messages.PasswordSpecialChar)
             .Must(HaveCapitalizedLetter)
-            .WithMessage(_ => localizer["PasswordUppercase"])
+            .WithMessage(_ => messages.PasswordUppercase)
             .Must(HaveNumber)
-            .WithMessage(_ => localizer["PasswordNumber"]);
+            .WithMessage(_ => messages.PasswordNumber);
     }
 
     private static bool HaveSpecialSymbol(string? password)

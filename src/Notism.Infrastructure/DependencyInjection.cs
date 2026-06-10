@@ -49,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<IPaymentRepository, PaymentRepository>();
         services.AddScoped<IBankingCheckoutRepository, BankingCheckoutRepository>();
 
+        services.AddScoped<IMessages, Messages>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IPasswordService, PasswordService>();
         services.AddScoped<IStorageService, S3StorageService>();

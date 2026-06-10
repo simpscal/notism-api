@@ -5,7 +5,6 @@ using MediatR;
 using Microsoft.Extensions.DependencyInjection;
 
 using Notism.Application.Common.Behaviors;
-using Notism.Application.Common.Services;
 
 namespace Notism.Application;
 
@@ -13,7 +12,7 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddApplication(this IServiceCollection services)
     {
-        services.AddMediatR().AddValidations().AddUtilities();
+        services.AddMediatR().AddValidations();
 
         return services;
     }
@@ -33,13 +32,6 @@ public static class DependencyInjection
     private static IServiceCollection AddValidations(this IServiceCollection services)
     {
         services.AddValidatorsFromAssemblyContaining(typeof(DependencyInjection));
-
-        return services;
-    }
-
-    private static IServiceCollection AddUtilities(this IServiceCollection services)
-    {
-        services.AddScoped<IMessages, Messages>();
 
         return services;
     }
