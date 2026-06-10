@@ -19,6 +19,7 @@ using Notism.Application.Food.AdminUpdateFood;
 using Notism.Application.Food.GetFoodById;
 using Notism.Application.Food.GetFoods;
 using Notism.Application.Order.AdminGetOrderStatusSummary;
+using Notism.Application.Order.AdminGetTodaySales;
 using Notism.Application.Order.AdminOrdersForKanban;
 using Notism.Application.Order.AdminOrdersForTable;
 using Notism.Application.Order.AdminUpdateOrderDeliveryStatus;
@@ -154,6 +155,15 @@ public static class AdminEndpoints
             .WithDescription("Retrieves order counts grouped into the dashboard delivery-status buckets (new, in progress, completed). Cancelled orders are excluded and every bucket is always present.")
             .RequireAdmin()
             .Produces<AdminGetOrderStatusSummaryResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
+
+        group.MapGet("/today-sales", AdminGetTodaySalesAsync)
+            .WithName("AdminGetTodaySales")
+            .WithSummary("Get today's sales")
+            .WithDescription("Retrieves today's headline sales figures (total revenue and order count) for the Asia/Ho_Chi_Minh civil day. Revenue sums paid orders; order count counts orders created today. Both are zero when there is no matching activity.")
+            .RequireAdmin()
+            .Produces<AdminGetTodaySalesResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
     }
@@ -588,6 +598,15 @@ public static class AdminEndpoints
         CancellationToken cancellationToken)
     {
         var request = new AdminGetOrderStatusSummaryRequest();
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AdminGetTodaySalesAsync(
+        IMediator mediator,
+        CancellationToken cancellationToken)
+    {
+        var request = new AdminGetTodaySalesRequest();
         var result = await mediator.Send(request, cancellationToken);
         return Results.Ok(result);
     }
