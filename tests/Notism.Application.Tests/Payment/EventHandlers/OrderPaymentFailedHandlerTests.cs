@@ -10,13 +10,13 @@ namespace Notism.Application.Tests.Payment.EventHandlers;
 
 public class OrderPaymentFailedHandlerTests
 {
-    private readonly INotificationService _notificationService;
+    private readonly IPaymentNotifier _paymentNotifier;
     private readonly OrderPaymentFailedHandler _handler;
 
     public OrderPaymentFailedHandlerTests()
     {
-        _notificationService = Substitute.For<INotificationService>();
-        _handler = new OrderPaymentFailedHandler(_notificationService);
+        _paymentNotifier = Substitute.For<IPaymentNotifier>();
+        _handler = new OrderPaymentFailedHandler(_paymentNotifier);
     }
 
     [Fact]
@@ -28,7 +28,7 @@ public class OrderPaymentFailedHandlerTests
 
         await _handler.Handle(notification, CancellationToken.None);
 
-        await _notificationService.Received(1).NotifyPaymentFailureAsync(
+        await _paymentNotifier.Received(1).NotifyPaymentFailureAsync(
             orderId, userId, Arg.Any<CancellationToken>());
     }
 
@@ -42,9 +42,9 @@ public class OrderPaymentFailedHandlerTests
 
         await _handler.Handle(notification, CancellationToken.None);
 
-        await _notificationService.Received(1).NotifyPaymentFailureAsync(
+        await _paymentNotifier.Received(1).NotifyPaymentFailureAsync(
             orderId, userId, Arg.Any<CancellationToken>());
-        await _notificationService.DidNotReceive().NotifyPaymentFailureAsync(
+        await _paymentNotifier.DidNotReceive().NotifyPaymentFailureAsync(
             Arg.Any<Guid>(), otherUserId, Arg.Any<CancellationToken>());
     }
 

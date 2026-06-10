@@ -17,20 +17,20 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
     private readonly IBankingCheckoutRepository _bankingCheckoutRepository;
     private readonly IOrderRepository _orderRepository;
     private readonly ISender _sender;
-    private readonly INotificationService _notificationService;
+    private readonly IPaymentNotifier _paymentNotifier;
     private readonly ILogger<HandleSepayWebhookHandler> _logger;
 
     public HandleSepayWebhookHandler(
         IBankingCheckoutRepository bankingCheckoutRepository,
         IOrderRepository orderRepository,
         ISender sender,
-        INotificationService notificationService,
+        IPaymentNotifier paymentNotifier,
         ILogger<HandleSepayWebhookHandler> logger)
     {
         _bankingCheckoutRepository = bankingCheckoutRepository;
         _orderRepository = orderRepository;
         _sender = sender;
-        _notificationService = notificationService;
+        _paymentNotifier = paymentNotifier;
         _logger = logger;
     }
 
@@ -56,7 +56,7 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
         if (checkout.IsUsed)
         {
             _logger.LogInformation("BankingCheckout {CheckoutId} already used — ignoring webhook", checkoutId);
-            await _notificationService.NotifyPaymentFailureAsync(Guid.Empty, checkout.UserId, cancellationToken);
+            await _paymentNotifier.NotifyPaymentFailureAsync(Guid.Empty, checkout.UserId, cancellationToken);
             return;
         }
 
@@ -68,7 +68,7 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
                 checkout.TotalAmount,
                 request.Amount);
 
-            await _notificationService.NotifyPaymentFailureAsync(Guid.Empty, checkout.UserId, cancellationToken);
+            await _paymentNotifier.NotifyPaymentFailureAsync(Guid.Empty, checkout.UserId, cancellationToken);
             return;
         }
 

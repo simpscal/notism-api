@@ -5,11 +5,11 @@ using Notism.Application.Common.Services;
 
 namespace Notism.Api.Services;
 
-public class SignalRNotificationService : INotificationService
+public class PaymentSignalRNotifier : IPaymentNotifier
 {
     private readonly IHubContext<PaymentHub> _hubContext;
 
-    public SignalRNotificationService(IHubContext<PaymentHub> hubContext)
+    public PaymentSignalRNotifier(IHubContext<PaymentHub> hubContext)
         => _hubContext = hubContext;
 
     public Task NotifyPaymentSuccessAsync(Guid orderId, Guid userId, DateTime paidAt, string slugId, CancellationToken cancellationToken)

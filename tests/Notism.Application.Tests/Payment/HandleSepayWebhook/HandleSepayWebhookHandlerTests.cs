@@ -23,7 +23,7 @@ public class HandleSepayWebhookHandlerTests
     private readonly IBankingCheckoutRepository _bankingCheckoutRepository;
     private readonly IOrderRepository _orderRepository;
     private readonly ISender _sender;
-    private readonly INotificationService _notificationService;
+    private readonly IPaymentNotifier _paymentNotifier;
     private readonly ILogger<HandleSepayWebhookHandler> _logger;
     private readonly HandleSepayWebhookHandler _handler;
 
@@ -32,14 +32,14 @@ public class HandleSepayWebhookHandlerTests
         _bankingCheckoutRepository = Substitute.For<IBankingCheckoutRepository>();
         _orderRepository = Substitute.For<IOrderRepository>();
         _sender = Substitute.For<ISender>();
-        _notificationService = Substitute.For<INotificationService>();
+        _paymentNotifier = Substitute.For<IPaymentNotifier>();
         _logger = Substitute.For<ILogger<HandleSepayWebhookHandler>>();
 
         _handler = new HandleSepayWebhookHandler(
             _bankingCheckoutRepository,
             _orderRepository,
             _sender,
-            _notificationService,
+            _paymentNotifier,
             _logger);
     }
 
@@ -177,7 +177,7 @@ public class HandleSepayWebhookHandlerTests
 
         await _handler.Handle(request, CancellationToken.None);
 
-        await _notificationService.Received(1).NotifyPaymentFailureAsync(
+        await _paymentNotifier.Received(1).NotifyPaymentFailureAsync(
             Guid.Empty,
             userId,
             Arg.Any<CancellationToken>());

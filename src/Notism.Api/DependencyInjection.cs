@@ -30,7 +30,7 @@ public static class DependencyInjection
         services.AddProblemDetails();
 
         services.AddScoped<ICookieService, CookieService>();
-        services.AddScoped<INotificationService, SignalRNotificationService>();
+        services.AddScoped<IPaymentNotifier, PaymentSignalRNotifier>();
 
         return services;
     }
