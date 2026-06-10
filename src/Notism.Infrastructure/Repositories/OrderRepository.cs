@@ -6,7 +6,10 @@ using Notism.Domain.Order.Repositories;
 using Notism.Domain.Payment.Enums;
 using Notism.Infrastructure.Persistence;
 using Notism.Shared.Extensions;
-using Notism.Shared.Utilities;
+
+using Npgsql;
+
+using NpgsqlTypes;
 
 namespace Notism.Infrastructure.Repositories;
 
@@ -60,59 +63,62 @@ public class OrderRepository : Repository<Order>, IOrderRepository
         return new OrderWindowAggregate(revenue, orderCount);
     }
 
-    public async Task<IReadOnlyList<RevenuePeriodTotal>> GetRevenueByPeriodAsync(RevenuePeriodGranularity granularity)
+    public async Task<IReadOnlyList<RevenueBucketTotal>> GetRevenueByBucketsAsync(IReadOnlyList<DateTime> boundaries)
     {
-        // Bucket Paid revenue by the Asia/Ho_Chi_Minh (UTC+7) civil period of PaidAt.
+        // Bucket Paid revenue into the half-open UTC ranges [boundaries[i], boundaries[i+1]).
         //
-        // PaidAt is a `timestamp with time zone` (timestamptz). The correct Postgres
-        // idiom for civil-period bucketing is to convert it to local civil time with
-        // `AT TIME ZONE 'Asia/Ho_Chi_Minh'` (which yields a `timestamp without time
-        // zone`) and then `date_trunc(...)` to the period. We must NOT shift the
-        // timestamptz by an interval and extract date-parts: that forces Npgsql to
-        // emit `timezone(unknown, interval)`, which does not exist (PostgresException
-        // 42883) and crashes at runtime against real Postgres.
+        // This is a PLAIN UTC comparison — the server derives no time-zone civil
+        // period. Bucketing uses Postgres `width_bucket(value, thresholds[])`, which
+        // is itself a half-open right-exclusive bucketer:
+        //   - returns 0       for value < thresholds[1]            (before b0)
+        //   - returns i       for thresholds[i] <= value < thresholds[i+1]
+        //   - returns len     for value >= thresholds[len]         (>= bn)
+        // Feeding the n+1 epoch boundaries gives results 1..n for in-range orders; we
+        // subtract 1 to get the zero-based bucket index. The WHERE clause already
+        // restricts PaidAt to [b0, bn) so the 0 and len edge results never occur, but
+        // we keep the index translation explicit.
         //
-        // Expressed as raw SQL on the DbSet so the whole aggregate runs as a single
-        // server-side GROUP BY query: filtered to Paid + PaidAt NOT NULL, grouped by
-        // the truncated local-civil period, SUM(TotalAmount) per bucket. SUM keeps
-        // full decimal precision (numeric). Only populated buckets are returned.
-        var truncField = granularity switch
-        {
-            RevenuePeriodGranularity.Year => "year",
-            RevenuePeriodGranularity.Month => "month",
-            _ => "day",
-        };
+        // The epoch doubles are used ONLY to PLACE each order in a bucket. The money
+        // is SUM("TotalAmount") in full numeric/decimal precision — epochs never enter
+        // the sum. There is NO AT TIME ZONE, NO date_trunc, NO offset/interval
+        // arithmetic; the boundary array binds as a single typed `double precision[]`
+        // parameter (no string interpolation of client values into the SQL).
+        var epochBoundaries = boundaries
+            .Select(b => (DateTime.SpecifyKind(b, DateTimeKind.Utc) - DateTime.UnixEpoch).TotalSeconds)
+            .ToArray();
 
-        // date_trunc yields the local-civil period start as a `timestamp without time
-        // zone`. We read it as the unspecified civil instant and convert it back to
-        // the UTC instant below (subtract the +7h offset), consistent with DayWindow.
-        var sql = $$"""
-            SELECT date_trunc('{{truncField}}', "PaidAt" AT TIME ZONE 'Asia/Ho_Chi_Minh') AS "PeriodStartLocal",
+        var b0 = DateTime.SpecifyKind(boundaries[0], DateTimeKind.Utc);
+        var bn = DateTime.SpecifyKind(boundaries[^1], DateTimeKind.Utc);
+
+        const string sql = """
+            SELECT width_bucket(extract(epoch from "PaidAt"), @boundaries) - 1 AS "BucketIndex",
                    SUM("TotalAmount") AS "Revenue"
             FROM "Orders"
-            WHERE "PaymentStatus" = {0} AND "PaidAt" IS NOT NULL
-            GROUP BY date_trunc('{{truncField}}', "PaidAt" AT TIME ZONE 'Asia/Ho_Chi_Minh')
+            WHERE "PaymentStatus" = @paidStatus
+              AND "PaidAt" IS NOT NULL
+              AND "PaidAt" >= @b0
+              AND "PaidAt" < @bn
+            GROUP BY width_bucket(extract(epoch from "PaidAt"), @boundaries)
             """;
 
+        var boundariesParam = new NpgsqlParameter("boundaries", NpgsqlDbType.Array | NpgsqlDbType.Double)
+        {
+            Value = epochBoundaries,
+        };
+        var paidStatusParam = new NpgsqlParameter("paidStatus", PaymentStatus.Paid.GetStringValue());
+        var b0Param = new NpgsqlParameter("b0", NpgsqlDbType.TimestampTz) { Value = b0 };
+        var bnParam = new NpgsqlParameter("bn", NpgsqlDbType.TimestampTz) { Value = bn };
+
         var rows = await _appDbContext.Database
-            .SqlQueryRaw<RevenuePeriodRow>(sql, PaymentStatus.Paid.GetStringValue())
+            .SqlQueryRaw<RevenueBucketRow>(sql, boundariesParam, paidStatusParam, b0Param, bnParam)
             .ToListAsync();
 
         return rows
-            .Select(r => new RevenuePeriodTotal(LocalPeriodStartUtc(r.PeriodStartLocal), r.Revenue))
-            .OrderBy(t => t.PeriodStartUtc)
+            .Select(r => new RevenueBucketTotal(r.BucketIndex, r.Revenue))
+            .OrderBy(t => t.BucketIndex)
             .ToList();
     }
 
-    // Row shape of the period-bucket aggregate. PeriodStartLocal is the truncated
-    // local-civil period start (timestamp without time zone). Mapped by column alias.
-    private sealed record RevenuePeriodRow(DateTime PeriodStartLocal, decimal Revenue);
-
-    // Reconstruct the inclusive UTC start of a UTC+7 civil period from its local
-    // civil-period start: treat it as local civil time, then shift back by the offset.
-    private static DateTime LocalPeriodStartUtc(DateTime localPeriodStart)
-    {
-        var localMidnight = DateTime.SpecifyKind(localPeriodStart, DateTimeKind.Unspecified);
-        return DateTime.SpecifyKind(localMidnight - DayWindow.HoChiMinhOffset, DateTimeKind.Utc);
-    }
+    // Row shape of the bucket aggregate. Mapped by column alias.
+    private sealed record RevenueBucketRow(int BucketIndex, decimal Revenue);
 }

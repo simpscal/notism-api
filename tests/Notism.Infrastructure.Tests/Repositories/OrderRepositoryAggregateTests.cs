@@ -20,12 +20,12 @@ namespace Notism.Infrastructure.Tests.Repositories;
 /// <summary>
 /// SQLite-backed coverage for the shipped <c>GetDeliveryStatusBucketCountsAsync</c>
 /// and <c>GetWindowAggregateAsync</c> aggregates.
-/// <para><c>GetRevenueByPeriodAsync</c> is intentionally NOT covered here: it relies
-/// on the Postgres-only <c>AT TIME ZONE 'Asia/Ho_Chi_Minh'</c> + <c>date_trunc</c>
-/// idiom (raw SQL on the DbSet) that SQLite cannot translate. SQLite-only coverage
-/// previously masked PostgresException 42883 (timezone(unknown, interval)); it is now
+/// <para><c>GetRevenueByBucketsAsync</c> is intentionally NOT covered here: it binds
+/// a <c>double precision[]</c> boundary parameter and buckets via Postgres-only
+/// <c>width_bucket(...)</c> (raw SQL on the DbSet) that SQLite cannot exercise.
+/// SQLite-only coverage would mask Npgsql parameter/translation failures; it is
 /// verified against a real Postgres in
-/// <see cref="OrderRepositoryRevenueByPeriodPostgresTests"/>.</para>
+/// <see cref="OrderRepositoryRevenueByBucketsPostgresTests"/>.</para>
 /// </summary>
 public sealed class OrderRepositoryAggregateTests : IDisposable
 {

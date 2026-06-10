@@ -1,27 +1,45 @@
 using FluentValidation;
 
-using Notism.Domain.Order.Repositories;
-using Notism.Shared.Extensions;
-
 namespace Notism.Application.Order.AdminGetRevenueSeries;
 
 public class AdminGetRevenueSeriesRequestValidator : AbstractValidator<AdminGetRevenueSeriesRequest>
 {
     public AdminGetRevenueSeriesRequestValidator()
     {
-        RuleFor(x => x.Granularity)
-            .NotEmpty()
-            .WithMessage("Granularity is required")
-            .Must(BeKnownGranularity)
-            .WithMessage("Granularity must be 'year', 'month' or 'day'");
+        // The client supplies the full UTC boundary set and a label per bucket; the
+        // server derives no period semantics. Granularity is a free-form echoed hint
+        // and is intentionally NOT validated against any enum.
+        RuleFor(x => x.Boundaries)
+            .NotNull()
+            .Must(b => b is { Count: >= 2 })
+            .WithMessage("At least 2 boundaries are required")
+            .Must(BeStrictlyAscending)
+            .WithMessage("Boundaries must be strictly ascending");
+
+        RuleFor(x => x.Labels)
+            .NotNull()
+            .Must((request, labels) => labels is not null
+                && request.Boundaries is not null
+                && labels.Count == request.Boundaries.Count - 1)
+            .WithMessage("Labels count must equal boundaries count minus one");
     }
 
-    // FromCamelCase delegates to Enum.TryParse, which also accepts numeric strings
-    // (e.g. "123") and bare member names. Restrict acceptance to the defined member
-    // names so only year / month / day pass.
-    private static bool BeKnownGranularity(string? granularity)
+    private static bool BeStrictlyAscending(List<DateTime>? boundaries)
     {
-        var parsed = granularity.FromCamelCase<RevenuePeriodGranularity>();
-        return parsed != null && Enum.IsDefined(parsed.Value);
+        if (boundaries is null || boundaries.Count < 2)
+        {
+            // Count is enforced by the dedicated rule; don't double-report here.
+            return true;
+        }
+
+        for (var i = 1; i < boundaries.Count; i++)
+        {
+            if (boundaries[i] <= boundaries[i - 1])
+            {
+                return false;
+            }
+        }
+
+        return true;
     }
 }
