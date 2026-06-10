@@ -1,7 +1,5 @@
 using FluentValidation;
 
-using Microsoft.Extensions.Localization;
-
 using Notism.Application.Common.Services;
 using Notism.Application.Common.Validators;
 using Notism.Shared.Enums;
@@ -11,10 +9,10 @@ namespace Notism.Application.User.AdminGetUsers;
 
 public class AdminGetUsersRequestValidator : AbstractValidator<AdminGetUsersRequest>
 {
-    public AdminGetUsersRequestValidator(IStringLocalizer<Messages> localizer)
+    public AdminGetUsersRequestValidator(IMessages messages)
     {
-        RuleFor(x => x.Skip).ValidSkip(localizer);
-        RuleFor(x => x.Take).ValidTake(localizer);
+        RuleFor(x => x.Skip).ValidSkip(messages);
+        RuleFor(x => x.Take).ValidTake(messages);
 
         RuleFor(x => x.SortOrder)
             .Must(sortOrder => sortOrder is null || sortOrder.FromCamelCase<SortOrder>() != null)

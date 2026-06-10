@@ -2,7 +2,7 @@ using System.ComponentModel.DataAnnotations;
 
 using MediatR;
 
-using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 
 namespace Notism.Application.Auth.RefreshToken;
 

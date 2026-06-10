@@ -11,6 +11,7 @@ using Notism.Application.Auth.RequestPasswordReset;
 using Notism.Application.Auth.ResetPassword;
 using Notism.Application.User.GetProfile;
 using Notism.Domain.RefreshToken;
+using Notism.Domain.RefreshToken.Repositories;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Api.Endpoints;
@@ -95,7 +96,7 @@ public static class AuthEndpoints
     private static async Task<IResult> LoginAsync(
         LoginRequest request,
         IMediator mediator,
-        CookieService cookieService,
+        ICookieService cookieService,
         HttpContext httpContext)
     {
         var result = await mediator.Send(request);
@@ -113,7 +114,7 @@ public static class AuthEndpoints
     private static async Task<IResult> RegisterAsync(
         RegisterRequest request,
         IMediator mediator,
-        CookieService cookieService,
+        ICookieService cookieService,
         HttpContext httpContext)
     {
         var result = await mediator.Send(request);
@@ -130,7 +131,7 @@ public static class AuthEndpoints
 
     private static async Task<IResult> RefreshTokenAsync(
         IMediator mediator,
-        CookieService cookieService,
+        ICookieService cookieService,
         HttpContext httpContext)
     {
         await cookieService.ValidateAntiForgeryTokenAsync(httpContext);
@@ -148,7 +149,7 @@ public static class AuthEndpoints
     }
 
     private static async Task<IResult> LogoutAsync(
-        CookieService cookieService,
+        ICookieService cookieService,
         IRefreshTokenRepository refreshTokenRepository,
         HttpContext httpContext)
     {
@@ -200,7 +201,7 @@ public static class AuthEndpoints
     private static async Task<IResult> GoogleOAuthCallbackAsync(
         GoogleOAuthCallbackRequest request,
         IMediator mediator,
-        CookieService cookieService,
+        ICookieService cookieService,
         HttpContext httpContext)
     {
         var result = await mediator.Send(request);

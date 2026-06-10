@@ -1,6 +1,8 @@
 using Microsoft.Extensions.Localization;
 
-namespace Notism.Application.Common.Services;
+using Notism.Application.Common.Services;
+
+namespace Notism.Infrastructure.Services;
 
 public class Messages : IMessages
 {

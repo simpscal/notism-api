@@ -2,10 +2,9 @@ using FluentAssertions;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Application.Food.GetFoodById;
-using Notism.Domain.Common.Interfaces;
+using Notism.Domain.Common.Repositories;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;

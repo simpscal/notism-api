@@ -1,10 +1,10 @@
 using MediatR;
 
-using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
 using Notism.Domain.User.Enums;
+using Notism.Domain.User.Repositories;
 using Notism.Domain.User.ValueObjects;
 using Notism.Shared.Exceptions;
 

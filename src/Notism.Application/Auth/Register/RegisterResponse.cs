@@ -1,5 +1,5 @@
 using Notism.Application.Auth.Common;
-using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 
 namespace Notism.Application.Auth.Register;
 

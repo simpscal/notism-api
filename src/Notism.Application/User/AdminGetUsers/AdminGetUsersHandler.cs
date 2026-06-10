@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Domain.User;
+using Notism.Domain.User.Repositories;
 
 namespace Notism.Application.User.AdminGetUsers;
 

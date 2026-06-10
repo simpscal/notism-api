@@ -1,6 +1,6 @@
 using FluentAssertions;
 
-using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Application.Payment.EventHandlers;
 using Notism.Domain.Order.Events;
 

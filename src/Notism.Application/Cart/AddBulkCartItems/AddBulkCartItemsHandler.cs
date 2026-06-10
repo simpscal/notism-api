@@ -1,11 +1,10 @@
 using MediatR;
-
 using Microsoft.Extensions.Logging;
-
-using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
-using Notism.Domain.Common.Interfaces;
+using Notism.Domain.Cart.Repositories;
+using Notism.Domain.Common.Persistence;
+using Notism.Domain.Common.Repositories;
 using Notism.Domain.Common.Specifications;
 using Notism.Shared.Exceptions;
 

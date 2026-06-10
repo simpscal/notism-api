@@ -1,5 +1,4 @@
 using Notism.Infrastructure;
-using Notism.Worker.Interfaces;
 using Notism.Worker.Services;
 using Notism.Worker.Workers;
 

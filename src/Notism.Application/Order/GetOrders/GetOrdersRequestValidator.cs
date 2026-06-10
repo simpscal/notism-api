@@ -1,7 +1,5 @@
 using FluentValidation;
 
-using Microsoft.Extensions.Localization;
-
 using Notism.Application.Common.Services;
 using Notism.Application.Common.Validators;
 
@@ -9,9 +7,9 @@ namespace Notism.Application.Order.GetOrders;
 
 public class GetOrdersRequestValidator : AbstractValidator<GetOrdersRequest>
 {
-    public GetOrdersRequestValidator(IStringLocalizer<Messages> localizer)
+    public GetOrdersRequestValidator(IMessages messages)
     {
-        RuleFor(x => x.Skip).ValidSkip(localizer);
-        RuleFor(x => x.Take).ValidTake(localizer);
+        RuleFor(x => x.Skip).ValidSkip(messages);
+        RuleFor(x => x.Take).ValidTake(messages);
     }
 }

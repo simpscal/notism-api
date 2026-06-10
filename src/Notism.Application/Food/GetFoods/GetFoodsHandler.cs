@@ -2,8 +2,9 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Domain.Food;
+using Notism.Domain.Food.Repositories;
 
 namespace Notism.Application.Food.GetFoods;
 

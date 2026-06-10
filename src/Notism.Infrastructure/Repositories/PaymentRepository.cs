@@ -1,4 +1,5 @@
 using Notism.Domain.Payment;
+using Notism.Domain.Payment.Repositories;
 using Notism.Infrastructure.Persistence;
 
 namespace Notism.Infrastructure.Repositories;

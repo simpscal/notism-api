@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Notism API — TLS Configuration</title>
+<style>
+  :root {
+    --bg: #0f1419; --panel: #1a212b; --border: #2a3441;
+    --fg: #d6dce5; --muted: #8b97a7; --accent: #5cc8ff;
+    --accent2: #ffb454; --code: #2a3441; --row: #161d26;
+    --ok: #5ad18a; --warn: #ffb454; --bad: #ff6b6b;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.6 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 48px 24px 96px; }
+  h1 { font-size: 2rem; margin: 0 0 .25em; color: #fff; }
+  h2 {
+    font-size: 1.35rem; margin: 2.4em 0 .6em; padding-bottom: .3em;
+    border-bottom: 2px solid var(--border); color: var(--accent);
+  }
+  h3 { font-size: 1.05rem; margin: 1.8em 0 .5em; color: var(--accent2); }
+  .lead { color: var(--muted); margin: 0 0 1.5em; }
+  table {
+    width: 100%; border-collapse: collapse; margin: .8em 0 1.4em;
+    font-size: .9rem; background: var(--panel); border-radius: 8px; overflow: hidden;
+  }
+  th, td { text-align: left; padding: 8px 12px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  th { background: #222c38; color: #fff; font-weight: 600; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:nth-child(even) { background: var(--row); }
+  code {
+    background: var(--code); padding: .12em .4em; border-radius: 4px;
+    font: .85em "SF Mono", Menlo, Consolas, monospace; color: #e6c07b;
+  }
+  td code { white-space: nowrap; }
+  pre {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px; overflow-x: auto; line-height: 1.5;
+  }
+  pre code { background: none; padding: 0; color: var(--fg); white-space: pre; }
+  strong { color: #fff; }
+  ul { padding-left: 1.3em; }
+  li { margin: .3em 0; }
+  .toc {
+    background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+    padding: 16px 24px; margin: 1.5em 0 2em;
+  }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  .toc ul { columns: 2; margin: 0; }
+  .note {
+    background: #2a2417; border: 1px solid #5a4a1f; border-left: 4px solid var(--warn);
+    border-radius: 6px; padding: 12px 16px; margin: 1.4em 0;
+  }
+  .note strong { color: var(--warn); }
+  .pill { display: inline-block; font-size: .72rem; font-weight: 700; padding: .1em .5em; border-radius: 4px; }
+  .pill.ok { background: #16321f; color: var(--ok); }
+  .pill.warn { background: #332a14; color: var(--warn); }
+  .pill.bad { background: #331717; color: var(--bad); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1>TLS Configuration</h1>
+<p class="lead">
+  TLS terminates in two independent places in this stack — the static web frontend behind
+  CloudFront, and the API behind a Caddy reverse proxy on EC2. They use different certificate
+  authorities, renewal models, and minimum protocol floors. This document covers both, plus the
+  encryption-in-transit and at-rest posture of supporting services.
+</p>
+
+<div class="toc">
+  <ul>
+    <li><a href="#overview">Overview</a></li>
+    <li><a href="#topology">Termination topology</a></li>
+    <li><a href="#web">Web — CloudFront</a></li>
+    <li><a href="#api">API — Caddy on EC2</a></li>
+    <li><a href="#sg">Network exposure</a></li>
+    <li><a href="#atrest">Encryption at rest</a></li>
+    <li><a href="#nginx">nginx.conf (dev only)</a></li>
+    <li><a href="#findings">Findings &amp; hardening</a></li>
+  </ul>
+</div>
+
+<h2 id="overview">Overview</h2>
+<table>
+  <thead><tr><th>Edge</th><th>Terminator</th><th>Cert authority</th><th>Renewal</th><th>Min TLS</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Web (SPA)</td>
+      <td>CloudFront</td>
+      <td>Default <code>*.cloudfront.net</code> (AWS-managed)</td>
+      <td>Automatic (AWS)</td>
+      <td><span class="pill bad">TLSv1</span></td>
+    </tr>
+    <tr>
+      <td>API</td>
+      <td>Caddy 2 (Docker)</td>
+      <td>Let's Encrypt (ACME)</td>
+      <td>Automatic (Caddy)</td>
+      <td><span class="pill ok">TLS 1.2 / 1.3</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<h2 id="topology">Termination topology</h2>
+<pre><code>            ┌──────────────── Web path ────────────────┐
+browser ──TLS──▶ CloudFront ──HTTPS(AWS net)──▶ S3 (notism-web-prod, OAC)
+  (redirect-to-https)   default *.cloudfront.net cert
+
+            ┌──────────────── API path ────────────────┐
+browser ──TLS──▶ Caddy :443 ──HTTP(docker net)──▶ api:5000 (Kestrel)
+  notism-api.duckdns.org   Let's Encrypt cert        plaintext, internal only</code></pre>
+<p>
+  In both paths TLS is terminated at the edge; the hop from edge to origin is either the trusted
+  AWS backbone (CloudFront → S3) or the private Docker bridge network (Caddy → api), so the API
+  container itself serves plain HTTP on <code>:5000</code> and is never exposed directly.
+</p>
+
+<h2 id="web">Web frontend — CloudFront</h2>
+<p>Defined in <code>terraform/cloudfront.tf</code> (<code>aws_cloudfront_distribution.web_prod</code>).</p>
+<table>
+  <thead><tr><th>Setting</th><th>Value</th><th>Effect</th></tr></thead>
+  <tbody>
+    <tr><td><code>viewer_protocol_policy</code></td><td><code>redirect-to-https</code></td><td>HTTP requests 301 → HTTPS</td></tr>
+    <tr><td><code>cloudfront_default_certificate</code></td><td><code>true</code></td><td>Serves the shared <code>*.cloudfront.net</code> cert; no custom domain / ACM cert</td></tr>
+    <tr><td><code>minimum_protocol_version</code></td><td><code>TLSv1</code></td><td>Floor forced by the default cert — cannot be raised without a custom ACM cert + SNI</td></tr>
+    <tr><td><code>http_version</code></td><td><code>http2</code></td><td>HTTP/2 over TLS (ALPN)</td></tr>
+    <tr><td>Origin auth</td><td>OAC, sigv4, <code>signing_behavior = always</code></td><td>S3 reachable only via CloudFront (SigV4-signed)</td></tr>
+  </tbody>
+</table>
+<p>
+  The production API reads this distribution as its public web origin —
+  <code>appsettings.Production.json</code> → <code>"Url": "https://d2rtuiaa374iik.cloudfront.net"</code>.
+</p>
+
+<h2 id="api">API backend — Caddy on EC2</h2>
+<p>Defined in <code>docker-compose.yml</code> + <code>Caddyfile</code>, running on the EC2 instance (<code>terraform/ec2.tf</code>).</p>
+<pre><code># Caddyfile
+notism-api.duckdns.org {
+    reverse_proxy notism-api:5000
+}</code></pre>
+<ul>
+  <li><strong>Automatic HTTPS.</strong> Caddy provisions and renews a Let's Encrypt certificate for <code>notism-api.duckdns.org</code> via the ACME protocol on first boot — no manual certs, no certbot cron.</li>
+  <li><strong>Modern defaults.</strong> Caddy negotiates TLS 1.2/1.3 only, with secure cipher suites and OCSP stapling out of the box. No explicit tuning needed.</li>
+  <li><strong>Cert persistence.</strong> The <code>caddy_data</code> Docker volume stores issued certs and ACME account keys, so container restarts do not re-trigger issuance (and avoid Let's Encrypt rate limits).</li>
+  <li><strong>Ports.</strong> Caddy binds <code>80</code> (ACME HTTP-01 challenge + HTTP→HTTPS redirect) and <code>443</code>; the <code>api</code> service only <code>expose</code>s <code>5000</code> on the internal network — not published to the host.</li>
+  <li><strong>Dynamic DNS.</strong> The hostname is a DuckDNS record pointing at the EC2 public IP.</li>
+</ul>
+
+<h2 id="sg">Network exposure — EC2 security group</h2>
+<p><code>terraform/security_groups.tf</code> (<code>notism-ec2-sg</code>), all ingress from <code>0.0.0.0/0</code>:</p>
+<table>
+  <thead><tr><th>Port</th><th>Proto</th><th>Purpose</th><th>Note</th></tr></thead>
+  <tbody>
+    <tr><td>22</td><td>SSH</td><td>Admin access</td><td><span class="pill warn">open to world</span></td></tr>
+    <tr><td>80</td><td>HTTP</td><td>ACME challenge + redirect to 443</td><td><span class="pill ok">required by Caddy</span></td></tr>
+    <tr><td>443</td><td>HTTPS</td><td>API TLS</td><td><span class="pill ok">primary entrypoint</span></td></tr>
+  </tbody>
+</table>
+
+<h2 id="atrest">Encryption at rest (supporting context)</h2>
+<p>All three S3 buckets enable SSE — <code>terraform/s3.tf</code>:</p>
+<table>
+  <thead><tr><th>Bucket</th><th>SSE algorithm</th><th>Bucket key</th></tr></thead>
+  <tbody>
+    <tr><td><code>private-notism-storage</code></td><td><code>AES256</code> (SSE-S3)</td><td>enabled</td></tr>
+    <tr><td><code>public-notism-storage</code></td><td><code>AES256</code> (SSE-S3)</td><td>enabled</td></tr>
+    <tr><td><code>notism-web-prod</code></td><td><code>AES256</code> (SSE-S3)</td><td>enabled</td></tr>
+  </tbody>
+</table>
+
+<h2 id="nginx">nginx.conf — development only</h2>
+<div class="note">
+  <strong>Not part of the production TLS path.</strong> The repo's <code>nginx.conf</code> listens on
+  plaintext <code>:3000</code>, proxies to <code>api:5000</code>, and exposes <code>/swagger</code> — no
+  TLS at all. It is a local/dev reverse-proxy alternative. Production uses <strong>Caddy</strong>
+  (<code>docker-compose.yml</code>), which is what provides HTTPS. Don't confuse the two.
+</div>
+
+<h2 id="findings">Findings &amp; hardening</h2>
+<table>
+  <thead><tr><th>Severity</th><th>Finding</th><th>Recommendation</th></tr></thead>
+  <tbody>
+    <tr>
+      <td><span class="pill bad">High</span></td>
+      <td>CloudFront <code>minimum_protocol_version = "TLSv1"</code> permits deprecated TLS 1.0/1.1 for the web frontend.</td>
+      <td>Attach a custom domain + ACM certificate and set <code>minimum_protocol_version = "TLSv1.2_2021"</code>. The floor cannot be raised while using the default <code>*.cloudfront.net</code> cert.</td>
+    </tr>
+    <tr>
+      <td><span class="pill warn">Med</span></td>
+      <td>SSH (22) open to <code>0.0.0.0/0</code>.</td>
+      <td>Restrict to a bastion/office CIDR, or replace with SSM Session Manager and drop the rule.</td>
+    </tr>
+    <tr>
+      <td><span class="pill warn">Low</span></td>
+      <td>S3 buckets use SSE-S3 (<code>AES256</code>), not SSE-KMS.</td>
+      <td>For audited key rotation / access logging on objects, switch sensitive buckets to <code>aws:kms</code>.</td>
+    </tr>
+    <tr>
+      <td><span class="pill ok">Good</span></td>
+      <td>API TLS via Caddy — auto-issued, auto-renewed, TLS 1.2/1.3, internal API never exposed.</td>
+      <td>No action. Keep <code>caddy_data</code> volume backed up to avoid re-issuance.</td>
+    </tr>
+  </tbody>
+</table>
+
+</div>
+</body>
+</html>

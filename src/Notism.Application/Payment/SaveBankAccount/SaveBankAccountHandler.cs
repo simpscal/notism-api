@@ -4,6 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Payment;
+using Notism.Domain.Payment.Repositories;
 
 namespace Notism.Application.Payment.SaveBankAccount;
 

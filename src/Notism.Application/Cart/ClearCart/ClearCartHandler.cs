@@ -3,6 +3,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Domain.Cart;
+using Notism.Domain.Cart.Repositories;
 
 namespace Notism.Application.Cart.ClearCart;
 

@@ -1,4 +1,4 @@
-using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Application.Order.Common;
 using Notism.Shared.Extensions;
 

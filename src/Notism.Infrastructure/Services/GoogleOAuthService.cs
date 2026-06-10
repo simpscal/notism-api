@@ -2,7 +2,7 @@ using System.Security.Cryptography;
 
 using Microsoft.Extensions.Options;
 
-using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Shared.Configuration;
 using Notism.Shared.Exceptions;
 

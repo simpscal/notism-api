@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.ChangeTracking;
 
 using Notism.Domain.Cart;
 using Notism.Domain.Common;
-using Notism.Domain.Common.Interfaces;
+using Notism.Domain.Common.Events;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
 using Notism.Domain.Order;

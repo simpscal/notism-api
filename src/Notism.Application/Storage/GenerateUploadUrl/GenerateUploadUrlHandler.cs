@@ -2,7 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Shared.Extensions;
 
 namespace Notism.Application.Storage.GenerateUploadUrl;

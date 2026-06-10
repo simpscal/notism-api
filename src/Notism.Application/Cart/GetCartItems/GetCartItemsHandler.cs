@@ -3,8 +3,9 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Cart.Common;
-using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
+using Notism.Domain.Cart.Repositories;
 
 namespace Notism.Application.Cart.GetCartItems;
 

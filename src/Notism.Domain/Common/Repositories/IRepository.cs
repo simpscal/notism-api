@@ -1,8 +1,9 @@
 using System.Linq.Expressions;
 
+using Notism.Domain.Common.Specifications;
 using Notism.Shared.Models;
 
-namespace Notism.Domain.Common.Interfaces;
+namespace Notism.Domain.Common.Repositories;
 
 public interface IRepository<T>
 {

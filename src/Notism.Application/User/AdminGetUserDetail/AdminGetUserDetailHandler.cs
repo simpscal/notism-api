@@ -5,6 +5,7 @@ using Microsoft.Extensions.Logging;
 using Notism.Application.Common.Services;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
+using Notism.Domain.User.Repositories;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.User.AdminGetUserDetail;

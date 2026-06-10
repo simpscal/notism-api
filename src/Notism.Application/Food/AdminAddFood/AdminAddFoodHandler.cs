@@ -2,11 +2,11 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Common.Interfaces;
 using Notism.Application.Common.Services;
 using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
+using Notism.Domain.Food.Repositories;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Extensions;
 

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 
 using Notism.Domain.Cart;
+using Notism.Domain.Cart.Repositories;
 using Notism.Infrastructure.Persistence;
 
 namespace Notism.Infrastructure.Repositories;

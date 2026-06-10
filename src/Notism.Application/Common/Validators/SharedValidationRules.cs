@@ -1,7 +1,5 @@
 using FluentValidation;
 
-using Microsoft.Extensions.Localization;
-
 using Notism.Application.Common.Services;
 using Notism.Shared.Extensions;
 
@@ -20,11 +18,11 @@ public static class SharedValidationRules
     /// <typeparam name="T">The type of the object being validated.</typeparam>
     /// <param name="ruleBuilder">The rule builder.</param>
     /// <returns>The rule builder options.</returns>
-    public static IRuleBuilderOptions<T, int> ValidSkip<T>(this IRuleBuilder<T, int> ruleBuilder, IStringLocalizer<Messages> localizer)
+    public static IRuleBuilderOptions<T, int> ValidSkip<T>(this IRuleBuilder<T, int> ruleBuilder, IMessages messages)
     {
         return ruleBuilder
             .GreaterThanOrEqualTo(0)
-            .WithMessage(_ => localizer["SkipMustBeNonNegative"]);
+            .WithMessage(_ => messages.SkipMustBeNonNegative);
     }
 
     /// <summary>
@@ -36,13 +34,13 @@ public static class SharedValidationRules
     /// <returns>The rule builder options.</returns>
     public static IRuleBuilderOptions<T, int> ValidTake<T>(
         this IRuleBuilder<T, int> ruleBuilder,
-        IStringLocalizer<Messages> localizer,
+        IMessages messages,
         int maxTake = DefaultMaxTake)
     {
         return ruleBuilder
             .GreaterThan(0)
             .LessThanOrEqualTo(maxTake)
-            .WithMessage(_ => string.Format(localizer["TakeMustBeBetween"], maxTake));
+            .WithMessage(_ => string.Format(messages.TakeMustBeBetween, maxTake));
     }
 
     /// <summary>
@@ -56,15 +54,15 @@ public static class SharedValidationRules
     /// <returns>The rule builder options.</returns>
     public static IRuleBuilderOptions<T, string?> ValidRequiredEnum<T, TEnum>(
         this IRuleBuilder<T, string?> ruleBuilder,
-        IStringLocalizer<Messages> localizer,
+        IMessages messages,
         string propertyDisplayName = "Value")
         where TEnum : Enum
     {
         return ruleBuilder
             .NotEmpty()
-            .WithMessage(_ => string.Format(localizer["FieldRequired"], propertyDisplayName))
+            .WithMessage(_ => string.Format(messages.FieldRequired, propertyDisplayName))
             .Must(value => value!.ExistInEnum<TEnum>())
-            .WithMessage(_ => string.Format(localizer["InvalidValue"], propertyDisplayName.ToLowerInvariant()));
+            .WithMessage(_ => string.Format(messages.InvalidValue, propertyDisplayName.ToLowerInvariant()));
     }
 
     /// <summary>
@@ -78,12 +76,12 @@ public static class SharedValidationRules
     /// <returns>The rule builder options.</returns>
     public static IRuleBuilderOptions<T, string?> ValidOptionalEnum<T, TEnum>(
         this IRuleBuilder<T, string?> ruleBuilder,
-        IStringLocalizer<Messages> localizer,
+        IMessages messages,
         string propertyDisplayName = "Value")
         where TEnum : Enum
     {
         return ruleBuilder
             .Must(value => string.IsNullOrWhiteSpace(value) || value.ExistInEnum<TEnum>())
-            .WithMessage(_ => string.Format(localizer["InvalidValue"], propertyDisplayName.ToLowerInvariant()));
+            .WithMessage(_ => string.Format(messages.InvalidValue, propertyDisplayName.ToLowerInvariant()));
     }
 }

@@ -1,6 +1,6 @@
 using Microsoft.Extensions.Logging;
 
-using Notism.Domain.Common.Interfaces;
+using Notism.Domain.Common.Persistence;
 
 namespace Notism.Infrastructure.Persistence;
 

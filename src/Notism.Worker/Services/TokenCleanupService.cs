@@ -1,8 +1,7 @@
 using Microsoft.Extensions.Logging;
 
-using Notism.Domain.RefreshToken;
-using Notism.Domain.User;
-using Notism.Worker.Interfaces;
+using Notism.Domain.RefreshToken.Repositories;
+using Notism.Domain.User.Repositories;
 
 namespace Notism.Worker.Services;
 

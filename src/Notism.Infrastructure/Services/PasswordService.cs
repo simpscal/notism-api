@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Identity;
 
-using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 
 namespace Notism.Infrastructure.Services;
 

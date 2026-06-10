@@ -2,8 +2,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 
-using Notism.Domain.Common.Interfaces;
-
 namespace Notism.Domain.Common.Specifications;
 
 public abstract class Specification<T> : ISpecification<T>

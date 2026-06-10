@@ -1,5 +1,5 @@
 using Notism.Application.Common.Constants;
-using Notism.Application.Common.Interfaces;
+using Notism.Application.Common.Services;
 using Notism.Shared.Extensions;
 
 namespace Notism.Application.Food.AdminUpdateFood;
