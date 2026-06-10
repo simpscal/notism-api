@@ -29,7 +29,7 @@ public static class DependencyInjection
 
         services.AddProblemDetails();
 
-        services.AddScoped<CookieService>();
+        services.AddScoped<ICookieService, CookieService>();
         services.AddScoped<INotificationService, SignalRNotificationService>();
 
         return services;
