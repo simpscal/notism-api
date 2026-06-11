@@ -18,6 +18,9 @@ using Notism.Application.Food.AdminUpdateCustomisationOption;
 using Notism.Application.Food.AdminUpdateFood;
 using Notism.Application.Food.GetFoodById;
 using Notism.Application.Food.GetFoods;
+using Notism.Application.Order.AdminGetOrderStatusSummary;
+using Notism.Application.Order.AdminGetRevenueSeries;
+using Notism.Application.Order.AdminGetTodaySales;
 using Notism.Application.Order.AdminOrdersForKanban;
 using Notism.Application.Order.AdminOrdersForTable;
 using Notism.Application.Order.AdminUpdateOrderDeliveryStatus;
@@ -35,6 +38,7 @@ public static class AdminEndpoints
     {
         MapAdminUserEndpoints(app);
         MapAdminOrderEndpoints(app);
+        MapAdminDashboardEndpoints(app);
         MapAdminCategoryEndpoints(app);
         MapAdminFoodEndpoints(app);
         MapAdminFoodCustomisationEndpoints(app);
@@ -137,6 +141,43 @@ public static class AdminEndpoints
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
             .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+    }
+
+    private static void MapAdminDashboardEndpoints(IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/api/admin/dashboard")
+            .WithTags("Admin Dashboard")
+            .WithOpenApi()
+            .RequireAuthorization();
+
+        group.MapGet("/order-status-summary", AdminGetOrderStatusSummaryAsync)
+            .WithName("AdminGetOrderStatusSummary")
+            .WithSummary("Get order status summary")
+            .WithDescription("Retrieves order counts grouped into the dashboard delivery-status buckets (new, in progress, completed). Cancelled orders are excluded and every bucket is always present.")
+            .RequireAdmin()
+            .Produces<AdminGetOrderStatusSummaryResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
+
+        group.MapGet("/today-sales", AdminGetTodaySalesAsync)
+            .WithName("AdminGetTodaySales")
+            .WithSummary("Get today's sales")
+            .WithDescription("Retrieves headline sales figures (total revenue and order count) for the client-supplied UTC window [startUtc, endUtc). Revenue sums paid orders; order count counts orders created in the window. Both are zero when there is no matching activity. The server is time-zone agnostic and derives no window.")
+            .RequireAdmin()
+            .Produces<AdminGetTodaySalesResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
+
+        group.MapGet("/revenue-series", AdminGetRevenueSeriesAsync)
+            .WithName("AdminGetRevenueSeries")
+            .WithSummary("Get revenue series")
+            .WithDescription("Retrieves an ordered, dense per-bucket revenue series. The client supplies the n+1 ascending UTC boundaries and one label per bucket; revenue is the SUM of paid orders whose PaidAt falls in each half-open [boundaries[i], boundaries[i+1]) range. Every bucket is present, with zero-revenue buckets reported as 0. Granularity is an optional client hint echoed back verbatim and carries no server semantics.")
+            .RequireAdmin()
+            .Produces<AdminGetRevenueSeriesResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
     }
 
     private static void MapAdminCategoryEndpoints(IEndpointRouteBuilder app)
@@ -560,6 +601,47 @@ public static class AdminEndpoints
         [AsParameters] AdminOrdersForTableRequest request,
         CancellationToken cancellationToken)
     {
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AdminGetOrderStatusSummaryAsync(
+        IMediator mediator,
+        CancellationToken cancellationToken)
+    {
+        var request = new AdminGetOrderStatusSummaryRequest();
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AdminGetTodaySalesAsync(
+        IMediator mediator,
+        DateTime startUtc,
+        DateTime endUtc,
+        CancellationToken cancellationToken)
+    {
+        var request = new AdminGetTodaySalesRequest
+        {
+            StartUtc = startUtc,
+            EndUtc = endUtc,
+        };
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AdminGetRevenueSeriesAsync(
+        IMediator mediator,
+        DateTime[] boundaries,
+        string[] labels,
+        string? granularity,
+        CancellationToken cancellationToken)
+    {
+        var request = new AdminGetRevenueSeriesRequest
+        {
+            Boundaries = boundaries.ToList(),
+            Labels = labels.ToList(),
+            Granularity = granularity,
+        };
         var result = await mediator.Send(request, cancellationToken);
         return Results.Ok(result);
     }

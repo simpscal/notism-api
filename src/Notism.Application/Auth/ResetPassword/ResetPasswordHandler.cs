@@ -1,4 +1,5 @@
 using MediatR;
+
 using Notism.Application.Common.Services;
 using Notism.Domain.Common.Persistence;
 using Notism.Domain.Common.Repositories;
