@@ -55,7 +55,6 @@ public class OrderRepository : Repository<Order>, IOrderRepository
                 && o.PaidAt < endUtc)
             .SumAsync(o => (decimal?)o.TotalAmount) ?? 0m;
 
-        // Order count: COUNT over orders by CreatedAt window. Distinct predicate.
         var orderCount = await _dbSet
             .Where(o => o.CreatedAt >= startUtc && o.CreatedAt < endUtc)
             .CountAsync();
