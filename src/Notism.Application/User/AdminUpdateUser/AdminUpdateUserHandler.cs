@@ -4,8 +4,6 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
 using Notism.Application.User.AdminGetUserDetail;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.User;
 using Notism.Domain.User.Enums;
 using Notism.Domain.User.Repositories;
 using Notism.Shared.Exceptions;
@@ -37,8 +35,7 @@ public class AdminUpdateUserHandler : IRequestHandler<AdminUpdateUserRequest, Ad
             throw new ResultFailureException(_messages.CannotUpdateOwnRole);
         }
 
-        var specification = new FilterSpecification<Domain.User.User>(u => u.Id == request.TargetUserId);
-        var user = await _userRepository.FindByExpressionAsync(specification)
+        var user = await _userRepository.GetForUpdateAsync(u => u.Id == request.TargetUserId)
             ?? throw new NotFoundException(_messages.UserNotFound);
 
         if (Enum.TryParse<UserRole>(request.Role, true, out var newRole))

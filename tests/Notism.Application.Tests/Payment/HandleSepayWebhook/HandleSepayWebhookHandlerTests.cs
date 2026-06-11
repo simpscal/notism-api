@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+
 using FluentAssertions;
 
 using MediatR;
@@ -7,8 +9,7 @@ using Microsoft.Extensions.Logging;
 using Notism.Application.Common.Services;
 using Notism.Application.Order.CreateOrder;
 using Notism.Application.Payment.HandleSepayWebhook;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.Order;
+using Notism.Domain.Common.Repositories;
 using Notism.Domain.Order.Enums;
 using Notism.Domain.Order.Repositories;
 using Notism.Domain.Payment;
@@ -59,7 +60,7 @@ public class HandleSepayWebhookHandlerTests
         var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, cartItemIds);
 
         _bankingCheckoutRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<BankingCheckout>>())
+            .GetForUpdateAsync(Arg.Any<Expression<Func<BankingCheckout, bool>>>(), Arg.Any<Action<IncludeBuilder<BankingCheckout>>?>())
             .Returns(checkout);
 
         _sender
@@ -67,7 +68,7 @@ public class HandleSepayWebhookHandlerTests
             .Returns(new CreateOrderResponse { OrderId = orderId });
 
         _orderRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
+            .GetForUpdateAsync(Arg.Any<Expression<Func<Domain.Order.Order, bool>>>(), Arg.Any<Action<IncludeBuilder<Domain.Order.Order>>?>())
             .Returns(order);
 
         var hex32 = checkoutId.ToString("N");
@@ -101,7 +102,7 @@ public class HandleSepayWebhookHandlerTests
 
         await _handler.Handle(request, CancellationToken.None);
 
-        await _bankingCheckoutRepository.DidNotReceive().FindByExpressionAsync(Arg.Any<FilterSpecification<BankingCheckout>>());
+        await _bankingCheckoutRepository.DidNotReceive().GetForUpdateAsync(Arg.Any<Expression<Func<BankingCheckout, bool>>>(), Arg.Any<Action<IncludeBuilder<BankingCheckout>>?>());
         await _bankingCheckoutRepository.DidNotReceive().SaveChangesAsync();
     }
 
@@ -111,7 +112,7 @@ public class HandleSepayWebhookHandlerTests
         var checkoutId = Guid.NewGuid();
 
         _bankingCheckoutRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<BankingCheckout>>())
+            .GetForUpdateAsync(Arg.Any<Expression<Func<BankingCheckout, bool>>>(), Arg.Any<Action<IncludeBuilder<BankingCheckout>>?>())
             .Returns((BankingCheckout?)null);
 
         var request = new HandleSepayWebhookRequest
@@ -138,7 +139,7 @@ public class HandleSepayWebhookHandlerTests
         checkout.MarkAsUsed();
 
         _bankingCheckoutRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<BankingCheckout>>())
+            .GetForUpdateAsync(Arg.Any<Expression<Func<BankingCheckout, bool>>>(), Arg.Any<Action<IncludeBuilder<BankingCheckout>>?>())
             .Returns(checkout);
 
         var request = new HandleSepayWebhookRequest
@@ -164,7 +165,7 @@ public class HandleSepayWebhookHandlerTests
         checkout.Id = checkoutId;
 
         _bankingCheckoutRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<BankingCheckout>>())
+            .GetForUpdateAsync(Arg.Any<Expression<Func<BankingCheckout, bool>>>(), Arg.Any<Action<IncludeBuilder<BankingCheckout>>?>())
             .Returns(checkout);
 
         var request = new HandleSepayWebhookRequest

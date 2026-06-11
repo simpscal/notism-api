@@ -3,8 +3,6 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.User;
 using Notism.Domain.User.Enums;
 using Notism.Domain.User.Repositories;
 using Notism.Shared.Exceptions;
@@ -34,8 +32,7 @@ public class AdminDeleteUserHandler : IRequestHandler<AdminDeleteUserRequest>
             throw new ResultFailureException(_messages.CannotDeleteOwnAccount);
         }
 
-        var specification = new FilterSpecification<Domain.User.User>(u => u.Id == request.TargetUserId);
-        var user = await _userRepository.FindByExpressionAsync(specification)
+        var user = await _userRepository.GetForUpdateAsync(u => u.Id == request.TargetUserId)
             ?? throw new NotFoundException(_messages.UserNotFound);
 
         if (user.Role == UserRole.Admin)

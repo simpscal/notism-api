@@ -2,22 +2,20 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Domain.Cart;
-using Notism.Domain.Cart.Repositories;
-using Notism.Domain.Common.Specifications;
+using Notism.Application.Common.Persistence;
 
 namespace Notism.Application.Cart.GetCartItemCount;
 
 public class GetCartItemCountHandler : IRequestHandler<GetCartItemCountRequest, GetCartItemCountResponse>
 {
-    private readonly ICartItemRepository _cartItemRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly ILogger<GetCartItemCountHandler> _logger;
 
     public GetCartItemCountHandler(
-        ICartItemRepository cartItemRepository,
+        IReadDbContext readDbContext,
         ILogger<GetCartItemCountHandler> logger)
     {
-        _cartItemRepository = cartItemRepository;
+        _readDbContext = readDbContext;
         _logger = logger;
     }
 
@@ -25,11 +23,10 @@ public class GetCartItemCountHandler : IRequestHandler<GetCartItemCountRequest, 
         GetCartItemCountRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new FilterSpecification<CartItem>(c => c.UserId == request.UserId);
-        var cartItems = await _cartItemRepository.FilterByExpressionAsync(specification);
+        var quantities = await new GetCartItemCountQuery(_readDbContext).ExecuteAsync(request.UserId, cancellationToken);
 
-        var totalQuantity = cartItems.Sum(item => item.Quantity);
-        var itemCount = cartItems.Count();
+        var totalQuantity = quantities.Sum();
+        var itemCount = quantities.Count;
 
         _logger.LogInformation(
             "Retrieved cart count for user {UserId}: {ItemCount} items with total quantity {TotalQuantity}",

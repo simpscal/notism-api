@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using System.Reflection;
 
 using FluentAssertions;
@@ -9,7 +10,6 @@ using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Domain.Cart.Repositories;
 using Notism.Domain.Common.Repositories;
-using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
 using Notism.Shared.Exceptions;
@@ -57,11 +57,11 @@ public class UpdateCartItemCustomisationsHandlerTests
         var option = group.Options.First();
 
         _cartItemRepository
-            .FindByExpressionAsync(Arg.Any<ISpecification<CartItem>>())
+            .GetForUpdateAsync(Arg.Any<Expression<Func<CartItem, bool>>>(), Arg.Any<Action<IncludeBuilder<CartItem>>?>())
             .Returns(cartItem);
 
         _optionRepository
-            .FilterByExpressionAsync(Arg.Any<FilterSpecification<FoodCustomisationOption>>())
+            .ListForUpdateAsync(Arg.Any<Expression<Func<FoodCustomisationOption, bool>>>(), Arg.Any<Action<IncludeBuilder<FoodCustomisationOption>>?>())
             .Returns(new List<FoodCustomisationOption> { option });
 
         var request = new UpdateCartItemCustomisationsRequest
@@ -88,7 +88,7 @@ public class UpdateCartItemCustomisationsHandlerTests
     public async Task Handle_WhenCartItemNotFound_ThrowsNotFoundException()
     {
         _cartItemRepository
-            .FindByExpressionAsync(Arg.Any<ISpecification<CartItem>>())
+            .GetForUpdateAsync(Arg.Any<Expression<Func<CartItem, bool>>>(), Arg.Any<Action<IncludeBuilder<CartItem>>?>())
             .Returns((CartItem?)null);
 
         var request = new UpdateCartItemCustomisationsRequest
@@ -113,7 +113,7 @@ public class UpdateCartItemCustomisationsHandlerTests
         var cartItem = CreateCartItem(Guid.NewGuid(), foodId);
 
         _cartItemRepository
-            .FindByExpressionAsync(Arg.Any<ISpecification<CartItem>>())
+            .GetForUpdateAsync(Arg.Any<Expression<Func<CartItem, bool>>>(), Arg.Any<Action<IncludeBuilder<CartItem>>?>())
             .Returns(cartItem);
 
         var request = new UpdateCartItemCustomisationsRequest
@@ -138,12 +138,12 @@ public class UpdateCartItemCustomisationsHandlerTests
         var cartItem = CreateCartItem(userId, Guid.NewGuid());
 
         _cartItemRepository
-            .FindByExpressionAsync(Arg.Any<ISpecification<CartItem>>())
+            .GetForUpdateAsync(Arg.Any<Expression<Func<CartItem, bool>>>(), Arg.Any<Action<IncludeBuilder<CartItem>>?>())
             .Returns(cartItem);
 
         _optionRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<FoodCustomisationOption>>())
-            .Returns((FoodCustomisationOption?)null);
+            .ListForUpdateAsync(Arg.Any<Expression<Func<FoodCustomisationOption, bool>>>(), Arg.Any<Action<IncludeBuilder<FoodCustomisationOption>>?>())
+            .Returns(new List<FoodCustomisationOption>());
 
         var request = new UpdateCartItemCustomisationsRequest
         {

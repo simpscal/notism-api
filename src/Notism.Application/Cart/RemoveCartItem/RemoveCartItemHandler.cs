@@ -3,9 +3,7 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
-using Notism.Domain.Cart;
 using Notism.Domain.Cart.Repositories;
-using Notism.Domain.Common.Specifications;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Cart.RemoveCartItem;
@@ -30,8 +28,7 @@ public class RemoveCartItemHandler : IRequestHandler<RemoveCartItemRequest>
         RemoveCartItemRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new FilterSpecification<CartItem>(c => c.Id == request.CartItemId);
-        var cartItem = await _cartItemRepository.FindByExpressionAsync(specification)
+        var cartItem = await _cartItemRepository.GetForUpdateAsync(c => c.Id == request.CartItemId)
             ?? throw new ResultFailureException(_messages.CartItemNotFound);
 
         if (cartItem.UserId != request.UserId)

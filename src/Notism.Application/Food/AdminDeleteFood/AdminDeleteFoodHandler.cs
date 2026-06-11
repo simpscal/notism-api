@@ -3,7 +3,6 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Repositories;
 using Notism.Shared.Exceptions;
@@ -28,8 +27,7 @@ public class AdminDeleteFoodHandler : IRequestHandler<AdminDeleteFoodRequest>
 
     public async Task Handle(AdminDeleteFoodRequest request, CancellationToken cancellationToken)
     {
-        var specification = new FilterSpecification<Notism.Domain.Food.Food>(f => f.Id == request.FoodId);
-        var food = await _foodRepository.FindByExpressionAsync(specification)
+        var food = await _foodRepository.GetForUpdateAsync(f => f.Id == request.FoodId)
             ?? throw new ResultFailureException(_messages.FoodNotFound);
 
         food.MarkAsDeleted();

@@ -1,63 +1,66 @@
 # Repository Pattern
 
-## Repository Pattern
+`IRepository<T>` is the **command/write boundary** for an aggregate. It loads tracked
+aggregates for mutation, adds/removes entities, and commits. Read-only and projection
+queries do **not** live here — see [Read Queries](read-queries.md).
 
-### Use Specifications with IRepository<T> Methods
+## Write-path loads
 
-**✅ DO: Use Specifications with IRepository<T> Methods**
+Read-modify-write handlers load a **tracked** aggregate by a richer-than-PK predicate
+(optionally with a navigation graph to mutate), change it, then `SaveChanges`:
 
 ```csharp
-// In Handler
-var specification = new CartItemByUserIdSpecification(userId);
-var cartItems = await _cartItemRepository.FilterByExpressionAsync(specification);
+// Load tracked, mutate, save
+var order = await _orderRepository.GetForUpdateAsync(
+    o => o.Id == request.OrderId && o.UserId == request.UserId);
 
-// Repository interface stays clean
-public interface ICartItemRepository : IRepository<CartItem>
-{
-    // No custom query methods needed for simple queries
-}
+order.Cancel();
+await _orderRepository.SaveChangesAsync();
 ```
 
-**❌ DON'T: Add Custom Query Methods to Repository Interfaces**
+`IRepository<T>` exposes:
+
+- `GetForUpdateAsync(predicate, includes?)` — a single tracked aggregate.
+- `ListForUpdateAsync(predicate, includes?)` — every matching tracked aggregate (bulk
+  read-modify-write).
+- `AddAsync` / `Add` / `Remove` / `SaveChangesAsync`.
+
+The optional `includes` declares the navigation graph to load for mutation via the
+`IncludeBuilder<T>` (typed lambdas and/or string paths).
+
+**❌ There is no specification layer.** Do not add `FindByExpression`,
+`FilterByExpression`, `FilterPaged` or specification classes — they have been removed.
+
+**❌ Don't add read/projection methods to repository interfaces.** A read is an
+Application query object over `IReadDbContext`, not a repository method.
 
 ```csharp
-// Avoid this pattern for simple queries
+// Avoid — reads are query objects, not repo methods
 public interface ICartItemRepository : IRepository<CartItem>
 {
     Task<IEnumerable<CartItem>> GetCartItemsByUserIdAsync(Guid userId);
-    Task<CartItem?> FindCartItemByUserAndFoodAsync(Guid userId, Guid foodId);
 }
 ```
 
-**When to Add Custom Repository Methods**
+## When to add a custom repository method
 
-Only add custom methods to repository interfaces when:
-- The operation involves complex business logic that belongs in the repository
-- The operation is a specific domain operation (e.g., `ClearCartByUserIdAsync`)
-- The operation cannot be easily expressed as a specification
+Only for write-side domain operations that encapsulate behaviour the generic surface
+cannot express:
 
 ```csharp
-// ✅ Acceptable: Complex operation that encapsulates business logic
+// ✅ Acceptable: a write-side domain operation
 public interface ICartItemRepository : IRepository<CartItem>
 {
-    Task ClearCartByUserIdAsync(Guid userId); // Uses specifications internally
+    Task ClearCart(Guid userId);
 }
 ```
 
-### Why Use Specifications?
+## Persistence Commit Policy
 
-1. **Separation of Concerns**: Query logic lives in Application layer as specifications, not Infrastructure
-2. **Reusability**: Specifications can be composed and reused across different queries
-3. **Testability**: Specifications are easy to unit test independently
-4. **Consistency**: All repositories follow the same pattern using `IRepository<T>`
-5. **Flexibility**: Easy to combine specifications using `And()`, `Or()`, `Not()` methods
-6. **Maintainability**: Query logic is centralized in specification classes, not scattered in repository methods
+**Single commit point.** A handler that mutates state commits exactly once. The target
+policy is to commit through `IUnitOfWork` and to keep `SaveChangesAsync` off the
+handler-facing repository surface so a double-save is impossible.
 
-### Persistence Commit Policy
-
-**Single commit point.** A handler that mutates state commits exactly once. The target policy is to commit through `IUnitOfWork` and to keep `SaveChangesAsync` off the handler-facing repository surface so a double-save is impossible.
-
-Until the full migration lands, handlers must still issue at most one commit per logical operation and must not call `SaveChangesAsync` on more than one repository sharing the same `DbContext`.
-
----
-
+Until the full migration lands, handlers must still issue at most one commit per logical
+operation and must not call `SaveChangesAsync` on more than one repository sharing the
+same `DbContext`.

@@ -2,8 +2,6 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.Payment;
 using Notism.Domain.Payment.Repositories;
 
 namespace Notism.Application.Payment.SaveBankAccount;
@@ -23,8 +21,7 @@ public class SaveBankAccountHandler : IRequestHandler<SaveBankAccountRequest>
 
     public async Task Handle(SaveBankAccountRequest request, CancellationToken cancellationToken)
     {
-        var specification = new FilterSpecification<Domain.Payment.Payment>(p => p.StorerId == request.StorerId);
-        var existing = await _paymentRepository.FindByExpressionAsync(specification);
+        var existing = await _paymentRepository.GetForUpdateAsync(p => p.StorerId == request.StorerId);
 
         if (existing is null)
         {

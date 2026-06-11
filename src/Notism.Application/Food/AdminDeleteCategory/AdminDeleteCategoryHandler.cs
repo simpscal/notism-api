@@ -3,7 +3,6 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Repositories;
 using Notism.Shared.Exceptions;
@@ -31,16 +30,14 @@ public class AdminDeleteCategoryHandler : IRequestHandler<AdminDeleteCategoryReq
 
     public async Task Handle(AdminDeleteCategoryRequest request, CancellationToken cancellationToken)
     {
-        var specification = new FilterSpecification<Domain.Food.Category>(
-            c => c.Id == request.CategoryId && !c.IsDeleted);
-        var category = await _categoryRepository.FindByExpressionAsync(specification)
+        var category = await _categoryRepository.GetForUpdateAsync(
+                c => c.Id == request.CategoryId && !c.IsDeleted)
             ?? throw new NotFoundException(_messages.CategoryNotFound);
 
         category.MarkAsDeleted();
 
-        var foodsInCategorySpec = new FilterSpecification<Domain.Food.Food>(
+        var foodsInCategory = await _foodRepository.ListForUpdateAsync(
             f => f.CategoryId == request.CategoryId && !f.IsDeleted);
-        var foodsInCategory = (await _foodRepository.FilterByExpressionAsync(foodsInCategorySpec)).ToList();
         foreach (var food in foodsInCategory)
         {
             food.MarkAsDeleted();

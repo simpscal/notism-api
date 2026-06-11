@@ -4,10 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
 using Notism.Application.Order.CreateOrder;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.Order;
 using Notism.Domain.Order.Repositories;
-using Notism.Domain.Payment;
 using Notism.Domain.Payment.Repositories;
 
 namespace Notism.Application.Payment.HandleSepayWebhook;
@@ -44,8 +41,7 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
             return;
         }
 
-        var checkout = await _bankingCheckoutRepository.FindByExpressionAsync(
-            new FilterSpecification<BankingCheckout>(c => c.Id == checkoutId));
+        var checkout = await _bankingCheckoutRepository.GetForUpdateAsync(c => c.Id == checkoutId);
 
         if (checkout is null)
         {
@@ -81,8 +77,7 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
             },
             CancellationToken.None);
 
-        var order = await _orderRepository.FindByExpressionAsync(
-            new FilterSpecification<Domain.Order.Order>(o => o.Id == createOrderResponse.OrderId));
+        var order = await _orderRepository.GetForUpdateAsync(o => o.Id == createOrderResponse.OrderId);
 
         if (order is null)
         {

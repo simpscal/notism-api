@@ -1,3 +1,5 @@
+using System.Linq.Expressions;
+
 using FluentAssertions;
 
 using Microsoft.Extensions.Logging;
@@ -5,8 +7,6 @@ using Microsoft.Extensions.Logging;
 using Notism.Application.Common.Services;
 using Notism.Application.Food.AdminAddCustomisationGroup;
 using Notism.Domain.Common.Repositories;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
 using Notism.Shared.Exceptions;
 
@@ -47,7 +47,7 @@ public class AdminAddCustomisationGroupHandlerTests
             5);
 
         _foodRepository
-            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Food.Food>>())
+            .GetForUpdateAsync(Arg.Any<Expression<Func<Domain.Food.Food, bool>>>(), Arg.Any<Action<IncludeBuilder<Domain.Food.Food>>?>())
             .Returns(food);
 
         var request = new AdminAddCustomisationGroupRequest
@@ -73,7 +73,7 @@ public class AdminAddCustomisationGroupHandlerTests
     public async Task Handle_WhenFoodNotFound_ThrowsNotFoundException()
     {
         _foodRepository
-            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Food.Food>>())
+            .GetForUpdateAsync(Arg.Any<Expression<Func<Domain.Food.Food, bool>>>(), Arg.Any<Action<IncludeBuilder<Domain.Food.Food>>?>())
             .Returns((Domain.Food.Food?)null);
 
         var request = new AdminAddCustomisationGroupRequest

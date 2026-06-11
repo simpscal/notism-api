@@ -31,8 +31,9 @@ public class AdminUpdateOrderDeliveryStatusHandler : IRequestHandler<AdminUpdate
         AdminUpdateOrderDeliveryStatusRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new AdminUpdateOrderDeliveryStatusSpecification(request.OrderId);
-        var order = await _orderRepository.FindByExpressionAsync(specification)
+        var order = await _orderRepository.GetForUpdateAsync(
+                o => o.Id == request.OrderId,
+                includes => includes.Include(o => o.User!))
             ?? throw new ResultFailureException(_messages.OrderNotFound);
 
         var deliveryStatus = request.DeliveryStatus.ToEnum<DeliveryStatus>();

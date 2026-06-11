@@ -2,9 +2,8 @@ using System.Security.Cryptography;
 
 using MediatR;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.User;
 using Notism.Domain.User.Enums;
 using Notism.Domain.User.Repositories;
 using Notism.Domain.User.ValueObjects;
@@ -15,6 +14,7 @@ namespace Notism.Application.Auth.GoogleOAuth;
 public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackRequest, (GoogleOAuthCallbackResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
 {
     private readonly IUserRepository _userRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly ITokenService _tokenService;
     private readonly IPasswordService _passwordService;
     private readonly IGoogleOAuthService _googleOAuthService;
@@ -22,12 +22,14 @@ public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackReq
 
     public GoogleOAuthCallbackHandler(
         IUserRepository userRepository,
+        IReadDbContext readDbContext,
         ITokenService tokenService,
         IPasswordService passwordService,
         IGoogleOAuthService googleOAuthService,
         IMessages messages)
     {
         _userRepository = userRepository;
+        _readDbContext = readDbContext;
         _tokenService = tokenService;
         _passwordService = passwordService;
         _googleOAuthService = googleOAuthService;
@@ -47,8 +49,7 @@ public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackReq
             cancellationToken);
 
         var email = Email.Create(userInfo.Email!);
-        var specification = new FilterSpecification<Domain.User.User>(u => u.Email.Equals(email));
-        var user = await _userRepository.FindByExpressionAsync(specification);
+        var user = await new GetUserByEmailQuery(_readDbContext).ExecuteAsync(email, cancellationToken);
 
         if (user == null)
         {

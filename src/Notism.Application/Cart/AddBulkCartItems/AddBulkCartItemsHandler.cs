@@ -7,7 +7,6 @@ using Notism.Domain.Cart;
 using Notism.Domain.Cart.Repositories;
 using Notism.Domain.Common.Persistence;
 using Notism.Domain.Common.Repositories;
-using Notism.Domain.Common.Specifications;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Cart.AddBulkCartItems;
@@ -69,10 +68,11 @@ public class AddBulkCartItemsHandler : IRequestHandler<AddBulkCartItemsRequest, 
     private async Task<Dictionary<Guid, Domain.Food.Food>> FetchFoodsAsync()
     {
         var foodIds = _request!.Items.Select(i => i.FoodId).Distinct().ToList();
-        var foodSpecification = new FilterSpecification<Domain.Food.Food>(f => foodIds.Contains(f.Id))
-            .Include(f => f.Category!)
-            .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1));
-        var foods = await _foodRepository.FilterByExpressionAsync(foodSpecification);
+        var foods = await _foodRepository.ListForUpdateAsync(
+            f => foodIds.Contains(f.Id),
+            includes => includes
+                .Include(f => f.Category!)
+                .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1)));
 
         return foods.ToDictionary(f => f.Id);
     }

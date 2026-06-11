@@ -1,20 +1,30 @@
 using System.Linq.Expressions;
 
-using Notism.Domain.Common.Specifications;
-using Notism.Shared.Models;
-
 namespace Notism.Domain.Common.Repositories;
 
+/// <summary>
+/// Command/write boundary for an aggregate. Exposes tracked predicate-based loads
+/// (for read-modify-write), entity add/remove, and SaveChanges. Read-only and
+/// projection queries do NOT live here — they are Application query objects over
+/// <c>IReadDbContext</c>.
+/// </summary>
 public interface IRepository<T>
+    where T : class
 {
-    Task<T?> FindByExpressionAsync(ISpecification<T> specification);
-    Task<TProjection?> FindByExpressionAsync<TProjection>(ISpecification<T> specification, Expression<Func<T, TProjection>> select);
+    /// <summary>
+    /// Loads a single TRACKED aggregate matching <paramref name="predicate"/>, with the
+    /// navigation graph described by <paramref name="includes"/>. Used by the
+    /// read-modify-write handlers to load, mutate, then SaveChanges.
+    /// </summary>
+    Task<T?> GetForUpdateAsync(Expression<Func<T, bool>> predicate, Action<IncludeBuilder<T>>? includes = null);
 
-    Task<IEnumerable<T>> FilterByExpressionAsync(ISpecification<T> specification);
-    Task<IEnumerable<TProjection>> FilterByExpressionAsync<TProjection>(ISpecification<T> specification, Expression<Func<T, TProjection>> select);
+    /// <summary>
+    /// Loads every TRACKED aggregate matching <paramref name="predicate"/>, with the
+    /// navigation graph described by <paramref name="includes"/>. Used by the bulk
+    /// read-modify-write handlers.
+    /// </summary>
+    Task<List<T>> ListForUpdateAsync(Expression<Func<T, bool>> predicate, Action<IncludeBuilder<T>>? includes = null);
 
-    Task<PagedResult<T>> FilterPagedByExpressionAsync(ISpecification<T> specification, Pagination pagination);
-    Task<PagedResult<TProjection>> FilterPagedByExpressionAsync<TProjection>(ISpecification<T> specification, Pagination pagination, Expression<Func<T, TProjection>> select);
     Task<T> AddAsync(T entity);
     T Add(T entity);
     void Remove(T entity);

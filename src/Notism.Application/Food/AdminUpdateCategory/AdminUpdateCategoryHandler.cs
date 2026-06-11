@@ -3,7 +3,6 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Repositories;
 using Notism.Shared.Exceptions;
@@ -30,15 +29,13 @@ public class AdminUpdateCategoryHandler : IRequestHandler<AdminUpdateCategoryReq
         AdminUpdateCategoryRequest request,
         CancellationToken cancellationToken)
     {
-        var categorySpec = new FilterSpecification<Notism.Domain.Food.Category>(
-            c => c.Id == request.CategoryId && !c.IsDeleted);
-        var category = await _categoryRepository.FindByExpressionAsync(categorySpec)
+        var category = await _categoryRepository.GetForUpdateAsync(
+                c => c.Id == request.CategoryId && !c.IsDeleted)
             ?? throw new NotFoundException(_messages.CategoryNotFound);
 
         var nameTrimmed = request.Name.Trim();
-        var duplicateSpec = new FilterSpecification<Notism.Domain.Food.Category>(
+        var duplicate = await _categoryRepository.GetForUpdateAsync(
             c => !c.IsDeleted && c.Id != request.CategoryId && c.Name.ToLower() == nameTrimmed.ToLower());
-        var duplicate = await _categoryRepository.FindByExpressionAsync(duplicateSpec);
         if (duplicate != null)
         {
             throw new ResultFailureException(_messages.CategoryAlreadyExists);

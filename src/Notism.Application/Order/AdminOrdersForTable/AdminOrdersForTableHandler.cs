@@ -2,8 +2,7 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Domain.Order;
-using Notism.Domain.Order.Repositories;
+using Notism.Application.Common.Persistence;
 using Notism.Domain.Payment.Enums;
 using Notism.Shared.Extensions;
 
@@ -11,14 +10,14 @@ namespace Notism.Application.Order.AdminOrdersForTable;
 
 public class AdminOrdersForTableHandler : IRequestHandler<AdminOrdersForTableRequest, AdminOrdersForTableResponse>
 {
-    private readonly IOrderRepository _orderRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly ILogger<AdminOrdersForTableHandler> _logger;
 
     public AdminOrdersForTableHandler(
-        IOrderRepository orderRepository,
+        IReadDbContext readDbContext,
         ILogger<AdminOrdersForTableHandler> logger)
     {
-        _orderRepository = orderRepository;
+        _readDbContext = readDbContext;
         _logger = logger;
     }
 
@@ -33,20 +32,22 @@ public class AdminOrdersForTableHandler : IRequestHandler<AdminOrdersForTableReq
             paymentStatus = request.PaymentStatus.ToEnum<PaymentStatus>();
         }
 
-        var specification = new AdminOrdersForTableSpecification(
+        var (totalCount, orders) = await new AdminOrdersForTableQuery(_readDbContext).ExecuteAsync(
             request.Keyword,
             request.SortBy,
             request.SortOrder,
-            paymentStatus);
+            paymentStatus,
+            request.Skip,
+            request.Take,
+            cancellationToken);
 
-        var pagedResult = await _orderRepository.FilterPagedByExpressionAsync(specification, request);
-        var items = pagedResult.Items.Select(AdminOrdersForTableOrderResponse.FromDomain).ToList();
+        var items = orders.Select(AdminOrdersForTableOrderResponse.FromDomain).ToList();
 
         _logger.LogInformation("Retrieved {Count} orders for table view", items.Count);
 
         return new AdminOrdersForTableResponse
         {
-            TotalCount = pagedResult.TotalCount,
+            TotalCount = totalCount,
             Items = items,
         };
     }

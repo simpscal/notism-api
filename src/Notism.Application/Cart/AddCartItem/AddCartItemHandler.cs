@@ -6,7 +6,6 @@ using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Domain.Cart.Repositories;
 using Notism.Domain.Common.Repositories;
-using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Shared.Exceptions;
 
@@ -57,11 +56,12 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
 
     private async Task<Domain.Food.Food> ValidateAndFetchFoodAsync()
     {
-        var foodSpecification = new FilterSpecification<Domain.Food.Food>(f => f.Id == _request!.FoodId)
-            .Include(f => f.Category!)
-            .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1))
-            .Include("CustomisationGroups.Options");
-        var food = await _foodRepository.FindByExpressionAsync(foodSpecification)
+        var food = await _foodRepository.GetForUpdateAsync(
+                f => f.Id == _request!.FoodId,
+                includes => includes
+                    .Include(f => f.Category!)
+                    .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1))
+                    .Include("CustomisationGroups.Options"))
             ?? throw new ResultFailureException(_messages.FoodNotFound);
 
         if (!food.IsAvailable)
@@ -74,11 +74,12 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
 
     private async Task<CartItem?> GetExistingCartItemAsync()
     {
-        var cartItemSpecification = new FilterSpecification<CartItem>(c => c.UserId == _request!.UserId && c.FoodId == _request.FoodId)
-            .Include(c => c.Food)
-            .Include("Food.Category")
-            .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1));
-        return await _cartItemRepository.FindByExpressionAsync(cartItemSpecification);
+        return await _cartItemRepository.GetForUpdateAsync(
+            c => c.UserId == _request!.UserId && c.FoodId == _request.FoodId,
+            includes => includes
+                .Include(c => c.Food)
+                .Include("Food.Category")
+                .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1)));
     }
 
     private async Task<List<FoodCustomisationOption>> ResolveCustomisationOptionsAsync(Guid foodId)
@@ -89,10 +90,9 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         }
 
         var requestedOptionIds = _request.Customisations.Select(c => c.OptionId).ToList();
-        var optionSpec = new FilterSpecification<FoodCustomisationOption>(
-            o => requestedOptionIds.Contains(o.Id) && o.Group.FoodId == foodId)
-            .Include(o => o.Group);
-        var fetched = (await _optionRepository.FilterByExpressionAsync(optionSpec))
+        var fetched = (await _optionRepository.ListForUpdateAsync(
+                o => requestedOptionIds.Contains(o.Id) && o.Group.FoodId == foodId,
+                includes => includes.Include(o => o.Group)))
             .ToDictionary(o => o.Id);
 
         var resolved = new List<FoodCustomisationOption>();

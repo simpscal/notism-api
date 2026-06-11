@@ -3,7 +3,6 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
 using Notism.Domain.Food.Repositories;
@@ -39,9 +38,8 @@ public class AdminAddFoodHandler : IRequestHandler<AdminAddFoodRequest, AdminAdd
         CancellationToken cancellationToken)
     {
         var categoryName = request.Category.Trim();
-        var categorySpec = new FilterSpecification<Domain.Food.Category>(
-            c => c.Name == categoryName && !c.IsDeleted);
-        var category = await _categoryRepository.FindByExpressionAsync(categorySpec)
+        var category = await _categoryRepository.GetForUpdateAsync(
+                c => c.Name == categoryName && !c.IsDeleted)
             ?? throw new ResultFailureException(_messages.CategoryNotFound);
 
         var quantityUnit = request.QuantityUnit.ToEnum<QuantityUnit>();

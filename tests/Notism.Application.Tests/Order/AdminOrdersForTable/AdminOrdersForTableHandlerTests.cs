@@ -3,34 +3,41 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Order.AdminOrdersForTable;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.Order;
+using Notism.Application.Tests.Common;
 using Notism.Domain.Order.Enums;
-using Notism.Domain.Order.Repositories;
-using Notism.Shared.Models;
+using Notism.Domain.User.Enums;
+using Notism.Infrastructure.Persistence;
 
 using NSubstitute;
 
+using DomainOrder = Notism.Domain.Order.Order;
+
 namespace Notism.Application.Tests.Order.AdminOrdersForTable;
 
+/// <summary>
+/// Exercises the <see cref="AdminOrdersForTableQuery"/> behind
+/// <see cref="AdminOrdersForTableHandler"/> against an EF InMemory database: payment-status
+/// and delivery-status mapping, user projection, and keyword/sort behaviour.
+/// </summary>
 public class AdminOrdersForTableHandlerTests
 {
-    private readonly IOrderRepository _orderRepository;
-    private readonly ILogger<AdminOrdersForTableHandler> _logger;
+    private readonly AppDbContext _dbContext;
     private readonly AdminOrdersForTableHandler _handler;
+    private Guid _userId;
 
     public AdminOrdersForTableHandlerTests()
     {
-        _orderRepository = Substitute.For<IOrderRepository>();
-        _logger = Substitute.For<ILogger<AdminOrdersForTableHandler>>();
-        _handler = new AdminOrdersForTableHandler(_orderRepository, _logger);
+        _dbContext = ReadDbContextFactory.Create();
+        _handler = new AdminOrdersForTableHandler(
+            _dbContext,
+            Substitute.For<ILogger<AdminOrdersForTableHandler>>());
     }
 
     [Fact]
     public async Task Handle_WhenOrderIsUnpaid_MapsPaymentStatusUnpaidAndNullPaidAt()
     {
-        var order = Domain.Order.Order.Create(Guid.NewGuid(), PaymentMethod.Banking, new List<Guid>());
-        StubPagedResult(order);
+        await SeedUserAsync();
+        await SeedOrderAsync(DomainOrder.Create(_userId, PaymentMethod.Banking, new List<Guid>()));
 
         var result = await _handler.Handle(new AdminOrdersForTableRequest(), CancellationToken.None);
 
@@ -42,10 +49,11 @@ public class AdminOrdersForTableHandlerTests
     [Fact]
     public async Task Handle_WhenOrderIsPaid_MapsPaymentStatusPaidAndPaidAt()
     {
+        await SeedUserAsync();
         var paidAt = new DateTime(2026, 4, 5, 8, 30, 0, DateTimeKind.Utc);
-        var order = Domain.Order.Order.Create(Guid.NewGuid(), PaymentMethod.Banking, new List<Guid>());
+        var order = DomainOrder.Create(_userId, PaymentMethod.Banking, new List<Guid>());
         order.MarkAsPaid(paidAt);
-        StubPagedResult(order);
+        await SeedOrderAsync(order);
 
         var result = await _handler.Handle(new AdminOrdersForTableRequest(), CancellationToken.None);
 
@@ -55,37 +63,58 @@ public class AdminOrdersForTableHandlerTests
     }
 
     [Fact]
-    public async Task Handle_WhenUserNotLoaded_MapsEmptyEmailAndName()
+    public async Task Handle_MapsUserEmailAndName()
     {
-        var order = Domain.Order.Order.Create(Guid.NewGuid(), PaymentMethod.CashOnDelivery, new List<Guid>());
-        StubPagedResult(order);
+        await SeedUserAsync("buyer@example.com", "Jane", "Doe");
+        await SeedOrderAsync(DomainOrder.Create(_userId, PaymentMethod.CashOnDelivery, new List<Guid>()));
 
         var result = await _handler.Handle(new AdminOrdersForTableRequest(), CancellationToken.None);
 
         var item = result.Items.Single();
-        item.UserEmail.Should().BeEmpty();
-        item.UserName.Should().BeEmpty();
+        item.UserEmail.Should().Be("buyer@example.com");
+        item.UserName.Should().Contain("Jane");
     }
 
     [Fact]
     public async Task Handle_MapsDeliveryStatusAsStringValue()
     {
-        var order = Domain.Order.Order.Create(Guid.NewGuid(), PaymentMethod.Banking, new List<Guid>());
-        StubPagedResult(order);
+        await SeedUserAsync();
+        await SeedOrderAsync(DomainOrder.Create(_userId, PaymentMethod.Banking, new List<Guid>()));
 
         var result = await _handler.Handle(new AdminOrdersForTableRequest(), CancellationToken.None);
 
         result.Items.Single().DeliveryStatus.Should().NotBeNullOrEmpty();
     }
 
-    private void StubPagedResult(params Domain.Order.Order[] orders)
+    [Fact]
+    public async Task Handle_WithKeyword_FiltersBySlug()
     {
-        _orderRepository
-            .FilterPagedByExpressionAsync(Arg.Any<ISpecification<Domain.Order.Order>>(), Arg.Any<Pagination>())
-            .Returns(new PagedResult<Domain.Order.Order>
-            {
-                TotalCount = orders.Length,
-                Items = orders,
-            });
+        await SeedUserAsync();
+        var order = DomainOrder.Create(_userId, PaymentMethod.Banking, new List<Guid>());
+        await SeedOrderAsync(order);
+
+        var result = await _handler.Handle(
+            new AdminOrdersForTableRequest { Keyword = order.SlugId },
+            CancellationToken.None);
+
+        result.Items.Should().ContainSingle(i => i.SlugId == order.SlugId);
+    }
+
+    private async Task SeedUserAsync(string email = "table@example.com", string? firstName = null, string? lastName = null)
+    {
+        var user = Domain.User.User.Create(email, "hashedpassword", UserRole.User, firstName, lastName);
+        user.ClearDomainEvents();
+        _dbContext.Users.Add(user);
+        await _dbContext.SaveChangesAsync();
+        _userId = user.Id;
+        _dbContext.ChangeTracker.Clear();
+    }
+
+    private async Task SeedOrderAsync(DomainOrder order)
+    {
+        order.ClearDomainEvents();
+        _dbContext.Orders.Add(order);
+        await _dbContext.SaveChangesAsync();
+        _dbContext.ChangeTracker.Clear();
     }
 }

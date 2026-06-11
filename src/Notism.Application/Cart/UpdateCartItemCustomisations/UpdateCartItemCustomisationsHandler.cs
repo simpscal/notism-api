@@ -2,12 +2,9 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Cart.Common;
 using Notism.Application.Common.Services;
-using Notism.Domain.Cart;
 using Notism.Domain.Cart.Repositories;
 using Notism.Domain.Common.Repositories;
-using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Shared.Exceptions;
 
@@ -36,8 +33,14 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
         UpdateCartItemCustomisationsRequest request,
         CancellationToken cancellationToken)
     {
-        var cartItemSpec = new CartItemDetailSpecification(c => c.Id == request.CartItemId);
-        var cartItem = await _cartItemRepository.FindByExpressionAsync(cartItemSpec)
+        var cartItem = await _cartItemRepository.GetForUpdateAsync(
+                c => c.Id == request.CartItemId,
+                includes => includes
+                    .Include(c => c.Food)
+                    .Include("Food.Category")
+                    .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1))
+                    .Include("Food.CustomisationGroups.Options")
+                    .Include(c => c.Customisations))
             ?? throw new NotFoundException(_messages.CartItemNotFound);
 
         if (cartItem.UserId != request.UserId)
@@ -47,10 +50,9 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
 
         // Resolve all options in a single query
         var requestedOptionIds = request.Customisations.Select(c => c.OptionId).ToList();
-        var optionSpec = new FilterSpecification<FoodCustomisationOption>(
-            o => requestedOptionIds.Contains(o.Id) && o.Group.FoodId == cartItem.FoodId)
-            .Include(o => o.Group);
-        var fetchedOptions = (await _optionRepository.FilterByExpressionAsync(optionSpec))
+        var fetchedOptions = (await _optionRepository.ListForUpdateAsync(
+                o => requestedOptionIds.Contains(o.Id) && o.Group.FoodId == cartItem.FoodId,
+                includes => includes.Include(o => o.Group)))
             .ToDictionary(o => o.Id);
 
         var resolvedOptions = new List<(FoodCustomisationOption Option, string GroupLabel)>();

@@ -3,8 +3,6 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.Order;
 using Notism.Domain.Order.Repositories;
 using Notism.Shared.Exceptions;
 
@@ -30,8 +28,8 @@ public class CancelOrderHandler : IRequestHandler<CancelOrderRequest>
         CancelOrderRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new FilterSpecification<Domain.Order.Order>(o => o.Id == request.OrderId && o.UserId == request.UserId);
-        var order = await _orderRepository.FindByExpressionAsync(specification)
+        var order = await _orderRepository.GetForUpdateAsync(
+                o => o.Id == request.OrderId && o.UserId == request.UserId)
             ?? throw new ResultFailureException(_messages.OrderNotFound);
 
         try

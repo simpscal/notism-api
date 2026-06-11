@@ -2,24 +2,23 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
-using Notism.Domain.Food;
-using Notism.Domain.Food.Repositories;
 
 namespace Notism.Application.Food.GetFoods;
 
 public class GetFoodsHandler : IRequestHandler<GetFoodsRequest, GetFoodsResponse>
 {
-    private readonly IFoodRepository _foodRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly IStorageService _storageService;
     private readonly ILogger<GetFoodsHandler> _logger;
 
     public GetFoodsHandler(
-        IFoodRepository foodRepository,
+        IReadDbContext readDbContext,
         IStorageService storageService,
         ILogger<GetFoodsHandler> logger)
     {
-        _foodRepository = foodRepository;
+        _readDbContext = readDbContext;
         _storageService = storageService;
         _logger = logger;
     }
@@ -30,41 +29,25 @@ public class GetFoodsHandler : IRequestHandler<GetFoodsRequest, GetFoodsResponse
     {
         var keywordLower = request.Keyword?.ToLower();
         var categoryFilter = request.Category?.Trim();
-        var specification = new GetFoodsSpecification(
+
+        var (totalCount, projections) = await new GetFoodsQuery(_readDbContext).ExecuteAsync(
             categoryFilter,
             keywordLower,
             request.IsAvailable,
             request.SortBy,
-            request.SortOrder);
+            request.SortOrder,
+            request.Skip,
+            request.Take,
+            cancellationToken);
 
-        var pagedResult = await _foodRepository.FilterPagedByExpressionAsync(
-            specification,
-            request,
-            f => new FoodListProjection
-            {
-                Id = f.Id,
-                Name = f.Name,
-                Description = f.Description,
-                Price = f.Price,
-                DiscountPrice = f.DiscountPrice,
-                CategoryName = f.Category != null ? f.Category.Name : string.Empty,
-                IsAvailable = f.IsAvailable,
-                QuantityUnit = f.QuantityUnit,
-                StockQuantity = f.StockQuantity,
-                ImageKeys = f.Images
-                    .OrderBy(i => i.DisplayOrder)
-                    .Select(i => new ImageKeyOrder(i.FileKey, i.DisplayOrder))
-                    .ToList(),
-            });
-
-        var items = pagedResult.Items
+        var items = projections
             .Select(proj => FoodItemResponse.FromProjection(proj, _storageService));
 
-        _logger.LogInformation("Retrieved {Count} foods", pagedResult.Items.Count());
+        _logger.LogInformation("Retrieved {Count} foods", projections.Count);
 
         return new GetFoodsResponse
         {
-            TotalCount = pagedResult.TotalCount,
+            TotalCount = totalCount,
             Items = items,
         };
     }

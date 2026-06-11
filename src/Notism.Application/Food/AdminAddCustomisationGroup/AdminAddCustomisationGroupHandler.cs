@@ -3,7 +3,6 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
-using Notism.Application.Food.Common;
 using Notism.Domain.Common.Repositories;
 using Notism.Domain.Food;
 using Notism.Shared.Exceptions;
@@ -30,8 +29,9 @@ public class AdminAddCustomisationGroupHandler : IRequestHandler<AdminAddCustomi
         AdminAddCustomisationGroupRequest request,
         CancellationToken cancellationToken)
     {
-        var spec = new FoodWithCustomisationsByIdSpecification(request.FoodId);
-        var food = await _foodRepository.FindByExpressionAsync(spec)
+        var food = await _foodRepository.GetForUpdateAsync(
+                f => f.Id == request.FoodId && !f.IsDeleted,
+                includes => includes.Include("CustomisationGroups.Options"))
             ?? throw new NotFoundException(_messages.FoodNotFound);
 
         var group = FoodCustomisationGroup.Create(

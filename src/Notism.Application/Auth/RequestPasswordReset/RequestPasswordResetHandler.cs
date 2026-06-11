@@ -4,10 +4,10 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Domain.Common.Persistence;
 using Notism.Domain.Common.Repositories;
-using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
 using Notism.Domain.User.ValueObjects;
 using Notism.Shared.Exceptions;
@@ -16,7 +16,7 @@ namespace Notism.Application.Auth.RequestPasswordReset;
 
 public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetRequest, RequestPasswordResetResponse>
 {
-    private readonly IRepository<Domain.User.User> _userRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly IRepository<PasswordResetToken> _passwordResetTokenRepository;
     private readonly IEmailService _emailService;
     private readonly IUnitOfWork _unitOfWork;
@@ -24,14 +24,14 @@ public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetR
     private readonly IMessages _messages;
 
     public RequestPasswordResetHandler(
-        IRepository<Domain.User.User> userRepository,
+        IReadDbContext readDbContext,
         IRepository<PasswordResetToken> passwordResetTokenRepository,
         IEmailService emailService,
         IUnitOfWork unitOfWork,
         ILogger<RequestPasswordResetHandler> logger,
         IMessages messages)
     {
-        _userRepository = userRepository;
+        _readDbContext = readDbContext;
         _passwordResetTokenRepository = passwordResetTokenRepository;
         _emailService = emailService;
         _unitOfWork = unitOfWork;
@@ -44,8 +44,7 @@ public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetR
         CancellationToken cancellationToken)
     {
         var email = Email.Create(request.Email);
-        var userSpec = new FilterSpecification<Domain.User.User>(u => u.Email.Equals(email));
-        var user = await _userRepository.FindByExpressionAsync(userSpec);
+        var user = await new GetUserByEmailQuery(_readDbContext).ExecuteAsync(email, cancellationToken);
 
         if (user is null)
         {
@@ -57,8 +56,8 @@ public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetR
         }
 
         // Check if there's already an active token for this user
-        var tokenSpec = new FilterSpecification<PasswordResetToken>(t => t.UserId == user.Id && !t.IsUsed && t.ExpiresAt > DateTime.UtcNow);
-        var existingToken = await _passwordResetTokenRepository.FindByExpressionAsync(tokenSpec);
+        var existingToken = await _passwordResetTokenRepository.GetForUpdateAsync(
+            t => t.UserId == user.Id && !t.IsUsed && t.ExpiresAt > DateTime.UtcNow);
 
         if (existingToken is not null && existingToken.IsValid())
         {

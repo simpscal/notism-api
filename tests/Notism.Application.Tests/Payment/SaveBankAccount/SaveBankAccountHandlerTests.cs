@@ -1,10 +1,11 @@
+using System.Linq.Expressions;
+
 using FluentAssertions;
 
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Payment.SaveBankAccount;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.Payment;
+using Notism.Domain.Common.Repositories;
 using Notism.Domain.Payment.Repositories;
 
 using NSubstitute;
@@ -37,7 +38,7 @@ public class SaveBankAccountHandlerTests
         };
 
         _paymentRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Payment.Payment>>())
+            .GetForUpdateAsync(Arg.Any<Expression<Func<Domain.Payment.Payment, bool>>>(), Arg.Any<Action<IncludeBuilder<Domain.Payment.Payment>>?>())
             .Returns((Domain.Payment.Payment?)null);
 
         await _handler.Handle(request, CancellationToken.None);
@@ -65,7 +66,7 @@ public class SaveBankAccountHandlerTests
         };
 
         _paymentRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Payment.Payment>>())
+            .GetForUpdateAsync(Arg.Any<Expression<Func<Domain.Payment.Payment, bool>>>(), Arg.Any<Action<IncludeBuilder<Domain.Payment.Payment>>?>())
             .Returns(existing);
 
         await _handler.Handle(request, CancellationToken.None);

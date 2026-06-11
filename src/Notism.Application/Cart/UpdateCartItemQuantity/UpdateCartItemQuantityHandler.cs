@@ -3,10 +3,8 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
-using Notism.Domain.Cart;
 using Notism.Domain.Cart.Repositories;
 using Notism.Domain.Common.Repositories;
-using Notism.Domain.Common.Specifications;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Cart.UpdateCartItemQuantity;
@@ -34,8 +32,7 @@ public class UpdateCartItemQuantityHandler : IRequestHandler<UpdateCartItemQuant
         UpdateCartItemQuantityRequest request,
         CancellationToken cancellationToken)
     {
-        var cartItemSpecification = new FilterSpecification<CartItem>(c => c.Id == request.CartItemId);
-        var cartItem = await _cartItemRepository.FindByExpressionAsync(cartItemSpecification)
+        var cartItem = await _cartItemRepository.GetForUpdateAsync(c => c.Id == request.CartItemId)
             ?? throw new ResultFailureException(_messages.CartItemNotFound);
 
         // Verify the cart item belongs to the user
@@ -45,8 +42,7 @@ public class UpdateCartItemQuantityHandler : IRequestHandler<UpdateCartItemQuant
         }
 
         // Check if food is still available
-        var foodSpecification = new FilterSpecification<Domain.Food.Food>(f => f.Id == cartItem.FoodId);
-        var food = await _foodRepository.FindByExpressionAsync(foodSpecification)
+        var food = await _foodRepository.GetForUpdateAsync(f => f.Id == cartItem.FoodId)
             ?? throw new ResultFailureException(_messages.FoodNotFound);
 
         if (!food.IsAvailable)

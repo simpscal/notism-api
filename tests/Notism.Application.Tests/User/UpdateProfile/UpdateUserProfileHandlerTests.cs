@@ -1,11 +1,12 @@
+using System.Linq.Expressions;
+
 using FluentAssertions;
 
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
 using Notism.Application.User.UpdateProfile;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.User;
+using Notism.Domain.Common.Repositories;
 using Notism.Domain.User.Enums;
 using Notism.Domain.User.Repositories;
 using Notism.Shared.Exceptions;
@@ -41,7 +42,7 @@ public class UpdateUserProfileHandlerTests
         var user = Domain.User.User.Create("test@example.com", "hashedpassword", UserRole.User, "John", "Doe");
 
         _userRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.User.User>>())
+            .GetForUpdateAsync(Arg.Any<Expression<Func<Domain.User.User, bool>>>(), Arg.Any<Action<IncludeBuilder<Domain.User.User>>?>())
             .Returns(user);
 
         var request = new UpdateUserProfileRequest
@@ -66,7 +67,7 @@ public class UpdateUserProfileHandlerTests
         user.UpdateProfile("John", "Doe", null, "Old address");
 
         _userRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.User.User>>())
+            .GetForUpdateAsync(Arg.Any<Expression<Func<Domain.User.User, bool>>>(), Arg.Any<Action<IncludeBuilder<Domain.User.User>>?>())
             .Returns(user);
 
         var request = new UpdateUserProfileRequest
@@ -87,7 +88,7 @@ public class UpdateUserProfileHandlerTests
     public async Task Handle_WhenUserNotFound_ThrowsResultFailureException()
     {
         _userRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.User.User>>())
+            .GetForUpdateAsync(Arg.Any<Expression<Func<Domain.User.User, bool>>>(), Arg.Any<Action<IncludeBuilder<Domain.User.User>>?>())
             .Returns((Domain.User.User?)null);
 
         var request = new UpdateUserProfileRequest

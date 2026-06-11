@@ -6,7 +6,6 @@ using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Domain.Cart.Repositories;
 using Notism.Domain.Common.Persistence;
-using Notism.Domain.Common.Specifications;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
 using Notism.Domain.Order.Repositories;
@@ -63,11 +62,12 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
 
     private async Task<List<CartItem>> ValidateAndFetchCartItemsAsync(CreateOrderRequest request)
     {
-        var cartItemSpecification = new FilterSpecification<CartItem>(c => c.UserId == request.UserId && request.CartItemIds.Contains(c.Id))
-            .Include(c => c.Food)
-            .Include(c => c.Food.Images)
-            .Include(c => c.Customisations);
-        var cartItems = (await _cartItemRepository.FilterByExpressionAsync(cartItemSpecification)).ToList();
+        var cartItems = await _cartItemRepository.ListForUpdateAsync(
+            c => c.UserId == request.UserId && request.CartItemIds.Contains(c.Id),
+            includes => includes
+                .Include(c => c.Food)
+                .Include(c => c.Food.Images)
+                .Include(c => c.Customisations));
 
         if (cartItems.Count == 0)
         {

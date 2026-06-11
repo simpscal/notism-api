@@ -1,8 +1,7 @@
 using MediatR;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.User;
 using Notism.Domain.User.Enums;
 using Notism.Domain.User.Repositories;
 using Notism.Domain.User.ValueObjects;
@@ -13,17 +12,20 @@ namespace Notism.Application.Auth.Register;
 public class RegisterHandler : IRequestHandler<RegisterRequest, (RegisterResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
 {
     private readonly IUserRepository _userRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly ITokenService _tokenService;
     private readonly IPasswordService _passwordService;
     private readonly IMessages _messages;
 
     public RegisterHandler(
         IUserRepository userRepository,
+        IReadDbContext readDbContext,
         ITokenService tokenService,
         IPasswordService passwordService,
         IMessages messages)
     {
         _userRepository = userRepository;
+        _readDbContext = readDbContext;
         _tokenService = tokenService;
         _passwordService = passwordService;
         _messages = messages;
@@ -33,10 +35,9 @@ public class RegisterHandler : IRequestHandler<RegisterRequest, (RegisterRespons
     {
         // 1. Check if user already exists
         var email = Email.Create(request.Email);
-        var specification = new FilterSpecification<Domain.User.User>(u => u.Email.Equals(email));
-        var existingUser = await _userRepository.FindByExpressionAsync(specification);
+        var existingUser = await new UserExistsByEmailQuery(_readDbContext).ExecuteAsync(email, cancellationToken);
 
-        if (existingUser != null)
+        if (existingUser)
         {
             throw new ResultFailureException(_messages.UserAlreadyExists);
         }

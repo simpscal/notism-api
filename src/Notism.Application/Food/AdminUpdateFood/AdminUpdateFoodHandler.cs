@@ -3,7 +3,6 @@ using MediatR;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
 using Notism.Domain.Food.Repositories;
@@ -38,10 +37,11 @@ public class AdminUpdateFoodHandler : IRequestHandler<AdminUpdateFoodRequest, Ad
         AdminUpdateFoodRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new FilterSpecification<Notism.Domain.Food.Food>(f => f.Id == request.FoodId && !f.IsDeleted)
-            .Include(f => f.Images)
-            .Include(f => f.Category!);
-        var food = await _foodRepository.FindByExpressionAsync(specification);
+        var food = await _foodRepository.GetForUpdateAsync(
+            f => f.Id == request.FoodId && !f.IsDeleted,
+            includes => includes
+                .Include(f => f.Images)
+                .Include(f => f.Category!));
         if (food == null)
         {
             throw new ResultFailureException(_messages.FoodNotFound);
@@ -55,9 +55,8 @@ public class AdminUpdateFoodHandler : IRequestHandler<AdminUpdateFoodRequest, Ad
         if (!string.IsNullOrWhiteSpace(request.Category))
         {
             var categoryName = request.Category.Trim();
-            var categorySpec = new FilterSpecification<Domain.Food.Category>(
-                c => c.Name == categoryName && !c.IsDeleted);
-            category = await _categoryRepository.FindByExpressionAsync(categorySpec)
+            category = await _categoryRepository.GetForUpdateAsync(
+                    c => c.Name == categoryName && !c.IsDeleted)
                 ?? throw new ResultFailureException(_messages.CategoryNotFound);
         }
 

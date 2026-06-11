@@ -1,23 +1,21 @@
 using MediatR;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.Food;
-using Notism.Domain.Food.Repositories;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Food.AdminGetCategoryDetail;
 
 public class AdminGetCategoryDetailHandler : IRequestHandler<AdminGetCategoryDetailRequest, AdminGetCategoryDetailResponse>
 {
-    private readonly ICategoryRepository _categoryRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly IMessages _messages;
 
     public AdminGetCategoryDetailHandler(
-        ICategoryRepository categoryRepository,
+        IReadDbContext readDbContext,
         IMessages messages)
     {
-        _categoryRepository = categoryRepository;
+        _readDbContext = readDbContext;
         _messages = messages;
     }
 
@@ -25,9 +23,7 @@ public class AdminGetCategoryDetailHandler : IRequestHandler<AdminGetCategoryDet
         AdminGetCategoryDetailRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new FilterSpecification<Notism.Domain.Food.Category>(
-            c => c.Id == request.CategoryId && !c.IsDeleted);
-        var category = await _categoryRepository.FindByExpressionAsync(specification)
+        var category = await new AdminGetCategoryDetailQuery(_readDbContext).ExecuteAsync(request.CategoryId, cancellationToken)
             ?? throw new NotFoundException(_messages.CategoryNotFound);
 
         return AdminGetCategoryDetailResponse.FromDomain(category);

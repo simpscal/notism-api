@@ -3,45 +3,53 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
-using Notism.Application.Order.Common;
 using Notism.Application.Order.GetOrders;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.Order;
+using Notism.Application.Tests.Common;
 using Notism.Domain.Order.Enums;
-using Notism.Domain.Order.Repositories;
-using Notism.Domain.Payment.Enums;
-using Notism.Shared.Models;
+using Notism.Domain.User.Enums;
+using Notism.Infrastructure.Persistence;
 
 using NSubstitute;
 
+using DomainOrder = Notism.Domain.Order.Order;
+
 namespace Notism.Application.Tests.Order.GetOrders;
 
+/// <summary>
+/// Exercises the <see cref="GetOrdersQuery"/> behind <see cref="GetOrdersHandler"/>
+/// against an EF InMemory database: paging/total, the not-cancelled + payment-status
+/// filter, the most-recent-first (CreatedAt desc, Id desc) ordering, and paid/unpaid
+/// response mapping.
+/// </summary>
 public class GetOrdersHandlerTests
 {
-    private readonly IOrderRepository _orderRepository;
-    private readonly IStorageService _storageService;
-    private readonly ILogger<GetOrdersHandler> _logger;
+    private readonly AppDbContext _dbContext;
     private readonly GetOrdersHandler _handler;
+    private Guid _userId;
 
     public GetOrdersHandlerTests()
     {
-        _orderRepository = Substitute.For<IOrderRepository>();
-        _storageService = Substitute.For<IStorageService>();
-        _logger = Substitute.For<ILogger<GetOrdersHandler>>();
-        _handler = new GetOrdersHandler(_orderRepository, _storageService, _logger);
+        _dbContext = ReadDbContextFactory.Create();
+        _handler = new GetOrdersHandler(
+            _dbContext,
+            Substitute.For<IStorageService>(),
+            Substitute.For<ILogger<GetOrdersHandler>>());
     }
 
     [Fact]
     public async Task Handle_WithFirstBatch_ReturnsPagedItemsAndTotalCount()
     {
-        var userId = Guid.NewGuid();
-        var firstOrder = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
-        var secondOrder = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
+        await SeedUserAsync();
+        await SeedOrdersAsync(
+            NewOrder(),
+            NewOrder(),
+            NewOrder(),
+            NewOrder(),
+            NewOrder());
 
-        SetupPagedResult(5, firstOrder, secondOrder);
-
-        var request = new GetOrdersRequest { UserId = userId, Skip = 0, Take = 2 };
-        var result = await _handler.Handle(request, CancellationToken.None);
+        var result = await _handler.Handle(
+            new GetOrdersRequest { UserId = _userId, Skip = 0, Take = 2 },
+            CancellationToken.None);
 
         result.Items.Should().HaveCount(2);
         result.TotalCount.Should().Be(5);
@@ -50,92 +58,92 @@ public class GetOrdersHandlerTests
     [Fact]
     public async Task Handle_WhenUserHasNoOrders_ReturnsEmptyPageWithZeroTotal()
     {
-        var userId = Guid.NewGuid();
-        SetupPagedResult(0);
+        await SeedUserAsync();
 
-        var request = new GetOrdersRequest { UserId = userId };
-        var result = await _handler.Handle(request, CancellationToken.None);
+        var result = await _handler.Handle(
+            new GetOrdersRequest { UserId = _userId },
+            CancellationToken.None);
 
         result.Items.Should().BeEmpty();
         result.TotalCount.Should().Be(0);
     }
 
     [Fact]
-    public async Task Handle_PassesUserPaginationToRepository()
+    public async Task Handle_ExcludesCancelledOrders()
     {
-        var userId = Guid.NewGuid();
-        SetupPagedResult(0);
+        await SeedUserAsync();
+        var cancelled = NewOrder();
+        cancelled.Cancel();
+        await SeedOrdersAsync(NewOrder(), cancelled);
 
-        var request = new GetOrdersRequest { UserId = userId, Skip = 25, Take = 25 };
-        await _handler.Handle(request, CancellationToken.None);
+        var result = await _handler.Handle(
+            new GetOrdersRequest { UserId = _userId },
+            CancellationToken.None);
 
-        await _orderRepository.Received(1).FilterPagedByExpressionAsync(
-            Arg.Any<ISpecification<Domain.Order.Order>>(),
-            Arg.Is<Pagination>(p => p.Skip == 25 && p.Take == 25));
+        result.TotalCount.Should().Be(1);
     }
 
     [Fact]
-    public async Task Handle_WithPaidPaymentStatusFilter_PassesPaymentStatusToSpecification()
+    public async Task Handle_WithPaidPaymentStatusFilter_ReturnsOnlyPaidOrders()
     {
-        var userId = Guid.NewGuid();
-        SetupPagedResult(0);
+        await SeedUserAsync();
+        var paid = NewOrder();
+        paid.MarkAsPaid(DateTime.UtcNow);
+        await SeedOrdersAsync(paid, NewOrder());
 
-        OrderDetailSpecification? capturedSpecification = null;
-        _orderRepository
-            .FilterPagedByExpressionAsync(
-                Arg.Do<ISpecification<Domain.Order.Order>>(s => capturedSpecification = s as OrderDetailSpecification),
-                Arg.Any<Pagination>())
-            .Returns(new PagedResult<Domain.Order.Order> { TotalCount = 0, Items = new List<Domain.Order.Order>() });
+        var result = await _handler.Handle(
+            new GetOrdersRequest { UserId = _userId, PaymentStatus = "paid" },
+            CancellationToken.None);
 
-        var paidOrder = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
-        paidOrder.MarkAsPaid(DateTime.UtcNow);
-        var unpaidOrder = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
-
-        var request = new GetOrdersRequest { UserId = userId, PaymentStatus = "paid" };
-        await _handler.Handle(request, CancellationToken.None);
-
-        capturedSpecification.Should().NotBeNull();
-        capturedSpecification!.IsSatisfiedBy(paidOrder).Should().BeTrue();
-        capturedSpecification.IsSatisfiedBy(unpaidOrder).Should().BeFalse();
+        result.TotalCount.Should().Be(1);
+        result.Items.Single().PaymentStatus.Should().Be("paid");
     }
 
     [Fact]
     public async Task Handle_WithUnrecognisedPaymentStatusFilter_DoesNotFilterByPaymentStatus()
     {
-        var userId = Guid.NewGuid();
-        SetupPagedResult(0);
+        await SeedUserAsync();
+        var paid = NewOrder();
+        paid.MarkAsPaid(DateTime.UtcNow);
+        await SeedOrdersAsync(paid, NewOrder());
 
-        OrderDetailSpecification? capturedSpecification = null;
-        _orderRepository
-            .FilterPagedByExpressionAsync(
-                Arg.Do<ISpecification<Domain.Order.Order>>(s => capturedSpecification = s as OrderDetailSpecification),
-                Arg.Any<Pagination>())
-            .Returns(new PagedResult<Domain.Order.Order> { TotalCount = 0, Items = new List<Domain.Order.Order>() });
+        var result = await _handler.Handle(
+            new GetOrdersRequest { UserId = _userId, PaymentStatus = "unknown-value" },
+            CancellationToken.None);
 
-        var paidOrder = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
-        paidOrder.MarkAsPaid(DateTime.UtcNow);
-        var unpaidOrder = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
+        result.TotalCount.Should().Be(2);
+    }
 
-        var request = new GetOrdersRequest { UserId = userId, PaymentStatus = "unknown-value" };
-        await _handler.Handle(request, CancellationToken.None);
+    [Fact]
+    public async Task Handle_OrdersByCreatedAtDescendingThenIdDescending()
+    {
+        await SeedUserAsync();
 
-        capturedSpecification.Should().NotBeNull();
-        capturedSpecification!.IsSatisfiedBy(paidOrder).Should().BeTrue();
-        capturedSpecification.IsSatisfiedBy(unpaidOrder).Should().BeTrue();
+        var shared = new DateTime(2026, 5, 1, 12, 0, 0, DateTimeKind.Utc);
+        var earlier = NewOrderWith(new DateTime(2026, 4, 1, 12, 0, 0, DateTimeKind.Utc), Guid.Parse("00000000-0000-0000-0000-000000000001"));
+        var tieLowerId = NewOrderWith(shared, Guid.Parse("11111111-1111-1111-1111-111111111111"));
+        var tieHigherId = NewOrderWith(shared, Guid.Parse("22222222-2222-2222-2222-222222222222"));
+        await SeedOrdersAsync(earlier, tieLowerId, tieHigherId);
+
+        var result = await _handler.Handle(
+            new GetOrdersRequest { UserId = _userId, Take = 10 },
+            CancellationToken.None);
+
+        result.Items.Select(i => i.Id).Should().ContainInOrder(tieHigherId.Id, tieLowerId.Id, earlier.Id);
     }
 
     [Fact]
     public async Task Handle_WhenOrderIsPaid_ResponseIncludesPaymentStatusPaidAndPaidAt()
     {
-        var userId = Guid.NewGuid();
+        await SeedUserAsync();
         var paidAt = new DateTime(2026, 4, 5, 9, 0, 0, DateTimeKind.Utc);
-        var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
+        var order = NewOrder();
         order.MarkAsPaid(paidAt);
+        await SeedOrdersAsync(order);
 
-        SetupPagedResult(1, order);
-
-        var request = new GetOrdersRequest { UserId = userId };
-        var result = await _handler.Handle(request, CancellationToken.None);
+        var result = await _handler.Handle(
+            new GetOrdersRequest { UserId = _userId },
+            CancellationToken.None);
 
         var orderResponse = result.Items.Single();
         orderResponse.PaymentStatus.Should().Be("paid");
@@ -145,29 +153,48 @@ public class GetOrdersHandlerTests
     [Fact]
     public async Task Handle_WhenOrderIsUnpaid_ResponseIncludesPaymentStatusUnpaidAndNullPaidAt()
     {
-        var userId = Guid.NewGuid();
-        var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, new List<Guid>());
+        await SeedUserAsync();
+        await SeedOrdersAsync(NewOrder());
 
-        SetupPagedResult(1, order);
-
-        var request = new GetOrdersRequest { UserId = userId };
-        var result = await _handler.Handle(request, CancellationToken.None);
+        var result = await _handler.Handle(
+            new GetOrdersRequest { UserId = _userId },
+            CancellationToken.None);
 
         var orderResponse = result.Items.Single();
         orderResponse.PaymentStatus.Should().Be("unpaid");
         orderResponse.PaidAt.Should().BeNull();
     }
 
-    private void SetupPagedResult(int totalCount, params Domain.Order.Order[] orders)
+    private DomainOrder NewOrder()
+        => DomainOrder.Create(_userId, PaymentMethod.Banking, new List<Guid>());
+
+    private DomainOrder NewOrderWith(DateTime createdAt, Guid id)
     {
-        _orderRepository
-            .FilterPagedByExpressionAsync(
-                Arg.Any<ISpecification<Domain.Order.Order>>(),
-                Arg.Any<Pagination>())
-            .Returns(new PagedResult<Domain.Order.Order>
-            {
-                TotalCount = totalCount,
-                Items = orders,
-            });
+        var order = NewOrder();
+        typeof(DomainOrder).GetProperty(nameof(DomainOrder.Id))!.SetValue(order, id);
+        order.CreatedAt = createdAt;
+        return order;
+    }
+
+    private async Task SeedUserAsync()
+    {
+        var user = Domain.User.User.Create("orders@example.com", "hashedpassword", UserRole.User);
+        user.ClearDomainEvents();
+        _dbContext.Users.Add(user);
+        await _dbContext.SaveChangesAsync();
+        _userId = user.Id;
+        _dbContext.ChangeTracker.Clear();
+    }
+
+    private async Task SeedOrdersAsync(params DomainOrder[] orders)
+    {
+        foreach (var order in orders)
+        {
+            order.ClearDomainEvents();
+            _dbContext.Orders.Add(order);
+        }
+
+        await _dbContext.SaveChangesAsync();
+        _dbContext.ChangeTracker.Clear();
     }
 }

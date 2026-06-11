@@ -7,7 +7,6 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Specifications;
 using Notism.Domain.RefreshToken;
 using Notism.Domain.RefreshToken.Repositories;
 using Notism.Domain.User;
@@ -86,16 +85,15 @@ public class TokenService : ITokenService
 
     public async Task<TokenResult> RefreshTokenAsync(string refreshToken)
     {
-        var refreshTokenSpec = new FilterSpecification<RefreshToken>(rt => rt.Token == refreshToken);
-        var refreshTokenEntity = await _refreshTokenRepository.FindByExpressionAsync(refreshTokenSpec);
+        var refreshTokenEntity = await _refreshTokenRepository.GetForUpdateAsync(rt => rt.Token == refreshToken);
 
         if (refreshTokenEntity == null || !refreshTokenEntity.IsValid())
         {
             throw new InvalidRefreshTokenException("Invalid refresh token");
         }
 
-        var userSpec = new FilterSpecification<Domain.User.User>(u => u.Id == refreshTokenEntity.UserId);
-        var user = await _userRepository.FindByExpressionAsync(userSpec) ?? throw new InvalidRefreshTokenException("User not found");
+        var user = await _userRepository.GetForUpdateAsync(u => u.Id == refreshTokenEntity.UserId)
+            ?? throw new InvalidRefreshTokenException("User not found");
 
         return await GenerateTokenAsync(user);
     }

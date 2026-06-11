@@ -2,21 +2,21 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Domain.Order.Repositories;
+using Notism.Application.Common.Persistence;
 
 namespace Notism.Application.Order.AdminGetRevenueSeries;
 
 public class AdminGetRevenueSeriesHandler
     : IRequestHandler<AdminGetRevenueSeriesRequest, AdminGetRevenueSeriesResponse>
 {
-    private readonly IOrderRepository _orderRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly ILogger<AdminGetRevenueSeriesHandler> _logger;
 
     public AdminGetRevenueSeriesHandler(
-        IOrderRepository orderRepository,
+        IReadDbContext readDbContext,
         ILogger<AdminGetRevenueSeriesHandler> logger)
     {
-        _orderRepository = orderRepository;
+        _readDbContext = readDbContext;
         _logger = logger;
     }
 
@@ -28,7 +28,8 @@ public class AdminGetRevenueSeriesHandler
         // labels.Count == boundaries.Count - 1, so bucketCount >= 1.
         var bucketCount = request.Boundaries.Count - 1;
 
-        var populated = await _orderRepository.GetRevenueByBucketsAsync(request.Boundaries);
+        var populated = await new GetRevenueByBucketsQuery(_readDbContext)
+            .ExecuteAsync(request.Boundaries, cancellationToken);
 
         // The repository returns only buckets that contain Paid orders. Zero-fill the
         // absent indices into a dense, boundary-ordered series; this handler owns the

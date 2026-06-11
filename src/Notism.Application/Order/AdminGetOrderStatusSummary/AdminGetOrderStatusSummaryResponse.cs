@@ -1,5 +1,3 @@
-using Notism.Domain.Order.Repositories;
-
 namespace Notism.Application.Order.AdminGetOrderStatusSummary;
 
 public sealed record AdminGetOrderStatusSummaryResponse

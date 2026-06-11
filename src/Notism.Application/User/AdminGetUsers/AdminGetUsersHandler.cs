@@ -2,21 +2,20 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Domain.User;
-using Notism.Domain.User.Repositories;
+using Notism.Application.Common.Persistence;
 
 namespace Notism.Application.User.AdminGetUsers;
 
 public class AdminGetUsersHandler : IRequestHandler<AdminGetUsersRequest, AdminGetUsersResponse>
 {
-    private readonly IUserRepository _userRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly ILogger<AdminGetUsersHandler> _logger;
 
     public AdminGetUsersHandler(
-        IUserRepository userRepository,
+        IReadDbContext readDbContext,
         ILogger<AdminGetUsersHandler> logger)
     {
-        _userRepository = userRepository;
+        _readDbContext = readDbContext;
         _logger = logger;
     }
 
@@ -24,19 +23,21 @@ public class AdminGetUsersHandler : IRequestHandler<AdminGetUsersRequest, AdminG
         AdminGetUsersRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new AdminGetUsersSpecification(
+        var (totalCount, users) = await new AdminGetUsersQuery(_readDbContext).ExecuteAsync(
             request.Keyword,
             request.SortBy,
-            request.SortOrder);
+            request.SortOrder,
+            request.Skip,
+            request.Take,
+            cancellationToken);
 
-        var pagedResult = await _userRepository.FilterPagedByExpressionAsync(specification, request);
-        var items = pagedResult.Items.Select(AdminGetUsersItemResponse.FromDomain).ToList();
+        var items = users.Select(AdminGetUsersItemResponse.FromDomain).ToList();
 
         _logger.LogInformation("Retrieved {Count} users for admin portal", items.Count);
 
         return new AdminGetUsersResponse
         {
-            TotalCount = pagedResult.TotalCount,
+            TotalCount = totalCount,
             Items = items,
         };
     }

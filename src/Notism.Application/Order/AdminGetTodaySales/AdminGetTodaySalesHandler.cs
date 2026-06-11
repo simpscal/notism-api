@@ -2,21 +2,21 @@ using MediatR;
 
 using Microsoft.Extensions.Logging;
 
-using Notism.Domain.Order.Repositories;
+using Notism.Application.Common.Persistence;
 
 namespace Notism.Application.Order.AdminGetTodaySales;
 
 public class AdminGetTodaySalesHandler
     : IRequestHandler<AdminGetTodaySalesRequest, AdminGetTodaySalesResponse>
 {
-    private readonly IOrderRepository _orderRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly ILogger<AdminGetTodaySalesHandler> _logger;
 
     public AdminGetTodaySalesHandler(
-        IOrderRepository orderRepository,
+        IReadDbContext readDbContext,
         ILogger<AdminGetTodaySalesHandler> logger)
     {
-        _orderRepository = orderRepository;
+        _readDbContext = readDbContext;
         _logger = logger;
     }
 
@@ -26,7 +26,8 @@ public class AdminGetTodaySalesHandler
     {
         // The client supplies both UTC boundaries; pass them straight through. The
         // server performs NO window derivation and is fully time-zone agnostic.
-        var aggregate = await _orderRepository.GetWindowAggregateAsync(request.StartUtc, request.EndUtc);
+        var aggregate = await new GetWindowAggregateQuery(_readDbContext)
+            .ExecuteAsync(request.StartUtc, request.EndUtc, cancellationToken);
 
         _logger.LogInformation(
             "Retrieved sales for window [{StartUtc:o}, {EndUtc:o}): Revenue={Revenue}, OrderCount={OrderCount}",

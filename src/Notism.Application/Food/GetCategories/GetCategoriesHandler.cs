@@ -1,27 +1,24 @@
 using MediatR;
 
-using Notism.Application.Food.AdminGetCategories;
+using Notism.Application.Common.Persistence;
 using Notism.Application.Food.Common;
-using Notism.Domain.Food;
-using Notism.Domain.Food.Repositories;
 
 namespace Notism.Application.Food.GetCategories;
 
 public class GetCategoriesHandler : IRequestHandler<GetCategoriesRequest, GetCategoriesResponse>
 {
-    private readonly ICategoryRepository _categoryRepository;
+    private readonly IReadDbContext _readDbContext;
 
-    public GetCategoriesHandler(ICategoryRepository categoryRepository)
+    public GetCategoriesHandler(IReadDbContext readDbContext)
     {
-        _categoryRepository = categoryRepository;
+        _readDbContext = readDbContext;
     }
 
     public async Task<GetCategoriesResponse> Handle(
         GetCategoriesRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new AdminGetCategoriesSpecification();
-        var categories = await _categoryRepository.FilterByExpressionAsync(specification);
+        var categories = await new GetCategoriesQuery(_readDbContext).ExecuteAsync(cancellationToken);
         var items = categories
             .Select(CategoryResponse.FromDomain)
             .ToList();
