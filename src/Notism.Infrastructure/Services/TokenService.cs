@@ -3,15 +3,15 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Specifications;
 using Notism.Domain.RefreshToken;
 using Notism.Domain.RefreshToken.Repositories;
 using Notism.Domain.User;
-using Notism.Domain.User.Repositories;
 using Notism.Shared.Configuration;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Extensions;
@@ -22,16 +22,16 @@ public class TokenService : ITokenService
 {
     private readonly JwtSettings _jwtSettings;
     private readonly IRefreshTokenRepository _refreshTokenRepository;
-    private readonly IUserRepository _userRepository;
+    private readonly IReadDbContext _readDbContext;
 
     public TokenService(
         IOptions<JwtSettings> jwtSettings,
         IRefreshTokenRepository refreshTokenRepository,
-        IUserRepository userRepository)
+        IReadDbContext readDbContext)
     {
         _jwtSettings = jwtSettings.Value;
         _refreshTokenRepository = refreshTokenRepository;
-        _userRepository = userRepository;
+        _readDbContext = readDbContext;
     }
 
     public async Task<TokenResult> GenerateTokenAsync(Domain.User.User user)
@@ -65,7 +65,6 @@ public class TokenService : ITokenService
         var tokenHandler = new JwtSecurityTokenHandler();
         var tokenString = tokenHandler.WriteToken(token);
 
-        // Generate refresh token
         var refreshToken = GenerateRefreshToken();
         var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(refreshExpirationDays);
         var refreshTokenEntity = RefreshToken.Create(refreshToken, user.Id, refreshTokenExpiresAt);
@@ -86,16 +85,19 @@ public class TokenService : ITokenService
 
     public async Task<TokenResult> RefreshTokenAsync(string refreshToken)
     {
-        var refreshTokenSpec = new FilterSpecification<RefreshToken>(rt => rt.Token == refreshToken);
-        var refreshTokenEntity = await _refreshTokenRepository.FindByExpressionAsync(refreshTokenSpec);
+        var refreshTokenEntity = await _readDbContext.Set<RefreshToken>()
+            .Where(rt => rt.Token == refreshToken)
+            .FirstOrDefaultAsync();
 
         if (refreshTokenEntity == null || !refreshTokenEntity.IsValid())
         {
             throw new InvalidRefreshTokenException("Invalid refresh token");
         }
 
-        var userSpec = new FilterSpecification<Domain.User.User>(u => u.Id == refreshTokenEntity.UserId);
-        var user = await _userRepository.FindByExpressionAsync(userSpec) ?? throw new InvalidRefreshTokenException("User not found");
+        var user = await _readDbContext.Set<User>()
+                .Where(u => u.Id == refreshTokenEntity.UserId)
+                .FirstOrDefaultAsync()
+            ?? throw new InvalidRefreshTokenException("User not found");
 
         return await GenerateTokenAsync(user);
     }

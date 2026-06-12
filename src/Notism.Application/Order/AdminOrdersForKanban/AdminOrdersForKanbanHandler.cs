@@ -1,25 +1,27 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-using Notism.Domain.Order;
+using Notism.Application.Common.Persistence;
 using Notism.Domain.Order.Enums;
-using Notism.Domain.Order.Repositories;
 using Notism.Domain.Payment.Enums;
 using Notism.Shared.Extensions;
+
+using DomainOrder = Notism.Domain.Order.Order;
 
 namespace Notism.Application.Order.AdminOrdersForKanban;
 
 public class AdminOrdersForKanbanHandler : IRequestHandler<AdminOrdersForKanbanRequest, AdminOrdersForKanbanResponse>
 {
-    private readonly IOrderRepository _orderRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly ILogger<AdminOrdersForKanbanHandler> _logger;
 
     public AdminOrdersForKanbanHandler(
-        IOrderRepository orderRepository,
+        IReadDbContext readDbContext,
         ILogger<AdminOrdersForKanbanHandler> logger)
     {
-        _orderRepository = orderRepository;
+        _readDbContext = readDbContext;
         _logger = logger;
     }
 
@@ -36,10 +38,25 @@ public class AdminOrdersForKanbanHandler : IRequestHandler<AdminOrdersForKanbanR
             paymentStatus = request.PaymentStatus.ToEnum<PaymentStatus>();
         }
 
-        var specification = new AdminOrdersForKanbanSpecification(deliveryStatus, paymentStatus);
-        var pagedResult = await _orderRepository.FilterPagedByExpressionAsync(specification, request);
+        System.Linq.Expressions.Expression<Func<DomainOrder, bool>> filter =
+            order => order.DeliveryStatus == deliveryStatus
+                && (paymentStatus == null || order.PaymentStatus == paymentStatus);
 
-        var items = pagedResult.Items.Select(AdminOrdersForKanbanOrderResponse.FromDomain).ToList();
+        IQueryable<DomainOrder> BuildQuery() =>
+            _readDbContext.Set<DomainOrder>()
+                .Where(filter)
+                .OrderByDescending(o => o.CreatedAt)
+                .Include(o => o.User!)
+                .Include(o => o.Items);
+
+        var totalCount = await BuildQuery().CountAsync(cancellationToken);
+
+        var orders = await BuildQuery()
+            .Skip(request.Skip)
+            .Take(request.Take)
+            .ToListAsync(cancellationToken);
+
+        var items = orders.Select(AdminOrdersForKanbanOrderResponse.FromDomain).ToList();
 
         _logger.LogInformation(
             "Retrieved {Count} orders for kanban view with status {Status}",
@@ -48,7 +65,7 @@ public class AdminOrdersForKanbanHandler : IRequestHandler<AdminOrdersForKanbanR
 
         return new AdminOrdersForKanbanResponse
         {
-            TotalCount = pagedResult.TotalCount,
+            TotalCount = totalCount,
             Items = items,
         };
     }

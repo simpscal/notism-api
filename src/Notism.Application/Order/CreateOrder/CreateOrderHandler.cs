@@ -1,12 +1,13 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Domain.Cart.Repositories;
 using Notism.Domain.Common.Persistence;
-using Notism.Domain.Common.Specifications;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
 using Notism.Domain.Order.Repositories;
@@ -19,6 +20,7 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
 {
     private readonly ICartItemRepository _cartItemRepository;
     private readonly IOrderRepository _orderRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<CreateOrderHandler> _logger;
     private readonly IMessages _messages;
@@ -26,12 +28,14 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
     public CreateOrderHandler(
         ICartItemRepository cartItemRepository,
         IOrderRepository orderRepository,
+        IReadDbContext readDbContext,
         IUnitOfWork unitOfWork,
         ILogger<CreateOrderHandler> logger,
         IMessages messages)
     {
         _cartItemRepository = cartItemRepository;
         _orderRepository = orderRepository;
+        _readDbContext = readDbContext;
         _unitOfWork = unitOfWork;
         _logger = logger;
         _messages = messages;
@@ -63,11 +67,12 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
 
     private async Task<List<CartItem>> ValidateAndFetchCartItemsAsync(CreateOrderRequest request)
     {
-        var cartItemSpecification = new FilterSpecification<CartItem>(c => c.UserId == request.UserId && request.CartItemIds.Contains(c.Id))
+        var cartItems = await _readDbContext.Set<CartItem>(tracking: true)
+            .Where(c => c.UserId == request.UserId && request.CartItemIds.Contains(c.Id))
             .Include(c => c.Food)
             .Include(c => c.Food.Images)
-            .Include(c => c.Customisations);
-        var cartItems = (await _cartItemRepository.FilterByExpressionAsync(cartItemSpecification)).ToList();
+            .Include(c => c.Customisations)
+            .ToListAsync();
 
         if (cartItems.Count == 0)
         {

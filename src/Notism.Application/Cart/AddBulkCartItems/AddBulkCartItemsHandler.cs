@@ -1,13 +1,13 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Domain.Cart.Repositories;
 using Notism.Domain.Common.Persistence;
-using Notism.Domain.Common.Repositories;
-using Notism.Domain.Common.Specifications;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Cart.AddBulkCartItems;
@@ -15,7 +15,7 @@ namespace Notism.Application.Cart.AddBulkCartItems;
 public class AddBulkCartItemsHandler : IRequestHandler<AddBulkCartItemsRequest, AddBulkCartItemsResponse>
 {
     private readonly ICartItemRepository _cartItemRepository;
-    private readonly IRepository<Domain.Food.Food> _foodRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly IStorageService _storageService;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<AddBulkCartItemsHandler> _logger;
@@ -24,14 +24,14 @@ public class AddBulkCartItemsHandler : IRequestHandler<AddBulkCartItemsRequest, 
 
     public AddBulkCartItemsHandler(
         ICartItemRepository cartItemRepository,
-        IRepository<Domain.Food.Food> foodRepository,
+        IReadDbContext readDbContext,
         IStorageService storageService,
         IUnitOfWork unitOfWork,
         ILogger<AddBulkCartItemsHandler> logger,
         IMessages messages)
     {
         _cartItemRepository = cartItemRepository;
-        _foodRepository = foodRepository;
+        _readDbContext = readDbContext;
         _storageService = storageService;
         _unitOfWork = unitOfWork;
         _logger = logger;
@@ -69,10 +69,11 @@ public class AddBulkCartItemsHandler : IRequestHandler<AddBulkCartItemsRequest, 
     private async Task<Dictionary<Guid, Domain.Food.Food>> FetchFoodsAsync()
     {
         var foodIds = _request!.Items.Select(i => i.FoodId).Distinct().ToList();
-        var foodSpecification = new FilterSpecification<Domain.Food.Food>(f => foodIds.Contains(f.Id))
+        var foods = await _readDbContext.Set<Domain.Food.Food>(tracking: true)
+            .Where(f => foodIds.Contains(f.Id))
             .Include(f => f.Category!)
-            .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1));
-        var foods = await _foodRepository.FilterByExpressionAsync(foodSpecification);
+            .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1))
+            .ToListAsync();
 
         return foods.ToDictionary(f => f.Id);
     }

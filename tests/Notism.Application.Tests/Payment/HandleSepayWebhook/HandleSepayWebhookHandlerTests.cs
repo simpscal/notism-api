@@ -7,40 +7,35 @@ using Microsoft.Extensions.Logging;
 using Notism.Application.Common.Services;
 using Notism.Application.Order.CreateOrder;
 using Notism.Application.Payment.HandleSepayWebhook;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.Order;
+using Notism.Application.Tests.Common;
 using Notism.Domain.Order.Enums;
-using Notism.Domain.Order.Repositories;
 using Notism.Domain.Payment;
-using Notism.Domain.Payment.Repositories;
+using Notism.Infrastructure.Repositories;
 
 using NSubstitute;
 
 namespace Notism.Application.Tests.Payment.HandleSepayWebhook;
 
-public class HandleSepayWebhookHandlerTests
+public class HandleSepayWebhookHandlerTests : IDisposable
 {
-    private readonly IBankingCheckoutRepository _bankingCheckoutRepository;
-    private readonly IOrderRepository _orderRepository;
+    private readonly WriteHandlerContext _context;
     private readonly ISender _sender;
     private readonly IPaymentNotifier _paymentNotifier;
-    private readonly ILogger<HandleSepayWebhookHandler> _logger;
     private readonly HandleSepayWebhookHandler _handler;
 
     public HandleSepayWebhookHandlerTests()
     {
-        _bankingCheckoutRepository = Substitute.For<IBankingCheckoutRepository>();
-        _orderRepository = Substitute.For<IOrderRepository>();
+        _context = new WriteHandlerContext();
         _sender = Substitute.For<ISender>();
         _paymentNotifier = Substitute.For<IPaymentNotifier>();
-        _logger = Substitute.For<ILogger<HandleSepayWebhookHandler>>();
 
         _handler = new HandleSepayWebhookHandler(
-            _bankingCheckoutRepository,
-            _orderRepository,
+            new BankingCheckoutRepository(_context.DbContext),
+            new OrderRepository(_context.DbContext),
+            _context.DbContext,
             _sender,
             _paymentNotifier,
-            _logger);
+            Substitute.For<ILogger<HandleSepayWebhookHandler>>());
     }
 
     [Fact]
@@ -55,37 +50,28 @@ public class HandleSepayWebhookHandlerTests
         var checkout = BankingCheckout.Create(userId, cartItemIds, totalAmount);
         checkout.Id = checkoutId;
 
-        var orderId = Guid.NewGuid();
         var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, cartItemIds);
-
-        _bankingCheckoutRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<BankingCheckout>>())
-            .Returns(checkout);
+        await _context.SeedAsync(checkout, order);
 
         _sender
             .Send(Arg.Any<CreateOrderRequest>(), Arg.Any<CancellationToken>())
-            .Returns(new CreateOrderResponse { OrderId = orderId });
+            .Returns(new CreateOrderResponse { OrderId = order.Id });
 
-        _orderRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Order.Order>>())
-            .Returns(order);
-
-        var hex32 = checkoutId.ToString("N");
         var request = new HandleSepayWebhookRequest
         {
             TransactionId = "99001",
             Amount = totalAmount,
-            Content = hex32,
+            Content = checkoutId.ToString("N"),
             TransferredAt = transferredAt,
         };
 
         await _handler.Handle(request, CancellationToken.None);
 
-        order.PaymentStatus.Should().Be(Domain.Payment.Enums.PaymentStatus.Paid);
-        order.PaidAt.Should().Be(transferredAt);
-        checkout.IsUsed.Should().BeTrue();
-        await _orderRepository.Received(1).SaveChangesAsync();
-        await _bankingCheckoutRepository.Received(1).SaveChangesAsync();
+        _context.DbContext.ChangeTracker.Clear();
+        var persistedOrder = _context.DbContext.Orders.Single(o => o.Id == order.Id);
+        persistedOrder.PaymentStatus.Should().Be(Domain.Payment.Enums.PaymentStatus.Paid);
+        persistedOrder.PaidAt.Should().Be(transferredAt);
+        _context.DbContext.BankingCheckouts.Single(c => c.Id == checkoutId).IsUsed.Should().BeTrue();
     }
 
     [Fact]
@@ -101,31 +87,23 @@ public class HandleSepayWebhookHandlerTests
 
         await _handler.Handle(request, CancellationToken.None);
 
-        await _bankingCheckoutRepository.DidNotReceive().FindByExpressionAsync(Arg.Any<FilterSpecification<BankingCheckout>>());
-        await _bankingCheckoutRepository.DidNotReceive().SaveChangesAsync();
+        await _sender.DidNotReceive().Send(Arg.Any<CreateOrderRequest>(), Arg.Any<CancellationToken>());
     }
 
     [Fact]
     public async Task Handle_WhenCheckoutNotFound_ReturnsWithoutCreatingOrder()
     {
-        var checkoutId = Guid.NewGuid();
-
-        _bankingCheckoutRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<BankingCheckout>>())
-            .Returns((BankingCheckout?)null);
-
         var request = new HandleSepayWebhookRequest
         {
             TransactionId = "99003",
             Amount = 50_000m,
-            Content = checkoutId.ToString("N"),
+            Content = Guid.NewGuid().ToString("N"),
             TransferredAt = DateTime.UtcNow,
         };
 
         await _handler.Handle(request, CancellationToken.None);
 
         await _sender.DidNotReceive().Send(Arg.Any<CreateOrderRequest>(), Arg.Any<CancellationToken>());
-        await _bankingCheckoutRepository.DidNotReceive().SaveChangesAsync();
     }
 
     [Fact]
@@ -136,10 +114,7 @@ public class HandleSepayWebhookHandlerTests
         var checkout = BankingCheckout.Create(userId, new List<Guid>(), 100_000m);
         checkout.Id = checkoutId;
         checkout.MarkAsUsed();
-
-        _bankingCheckoutRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<BankingCheckout>>())
-            .Returns(checkout);
+        await _context.SeedAsync(checkout);
 
         var request = new HandleSepayWebhookRequest
         {
@@ -152,7 +127,6 @@ public class HandleSepayWebhookHandlerTests
         await _handler.Handle(request, CancellationToken.None);
 
         await _sender.DidNotReceive().Send(Arg.Any<CreateOrderRequest>(), Arg.Any<CancellationToken>());
-        await _bankingCheckoutRepository.DidNotReceive().SaveChangesAsync();
     }
 
     [Fact]
@@ -162,10 +136,7 @@ public class HandleSepayWebhookHandlerTests
         var checkoutId = Guid.NewGuid();
         var checkout = BankingCheckout.Create(userId, new List<Guid> { Guid.NewGuid() }, 150_000m);
         checkout.Id = checkoutId;
-
-        _bankingCheckoutRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<BankingCheckout>>())
-            .Returns(checkout);
+        await _context.SeedAsync(checkout);
 
         var request = new HandleSepayWebhookRequest
         {
@@ -182,6 +153,8 @@ public class HandleSepayWebhookHandlerTests
             userId,
             Arg.Any<CancellationToken>());
         await _sender.DidNotReceive().Send(Arg.Any<CreateOrderRequest>(), Arg.Any<CancellationToken>());
-        await _bankingCheckoutRepository.DidNotReceive().SaveChangesAsync();
     }
+
+    public void Dispose()
+        => _context.Dispose();
 }

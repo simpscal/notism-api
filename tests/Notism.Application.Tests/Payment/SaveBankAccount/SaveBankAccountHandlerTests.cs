@@ -3,25 +3,25 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Payment.SaveBankAccount;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.Payment;
-using Notism.Domain.Payment.Repositories;
+using Notism.Application.Tests.Common;
+using Notism.Infrastructure.Repositories;
 
 using NSubstitute;
 
 namespace Notism.Application.Tests.Payment.SaveBankAccount;
 
-public class SaveBankAccountHandlerTests
+public class SaveBankAccountHandlerTests : IDisposable
 {
-    private readonly IPaymentRepository _paymentRepository;
-    private readonly ILogger<SaveBankAccountHandler> _logger;
+    private readonly WriteHandlerContext _context;
     private readonly SaveBankAccountHandler _handler;
 
     public SaveBankAccountHandlerTests()
     {
-        _paymentRepository = Substitute.For<IPaymentRepository>();
-        _logger = Substitute.For<ILogger<SaveBankAccountHandler>>();
-        _handler = new SaveBankAccountHandler(_paymentRepository, _logger);
+        _context = new WriteHandlerContext();
+        _handler = new SaveBankAccountHandler(
+            new PaymentRepository(_context.DbContext),
+            _context.DbContext,
+            Substitute.For<ILogger<SaveBankAccountHandler>>());
     }
 
     [Fact]
@@ -36,19 +36,13 @@ public class SaveBankAccountHandlerTests
             AccountHolderName = "Nguyen Van A",
         };
 
-        _paymentRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Payment.Payment>>())
-            .Returns((Domain.Payment.Payment?)null);
-
         await _handler.Handle(request, CancellationToken.None);
 
-        _paymentRepository.Received(1).Add(Arg.Is<Domain.Payment.Payment>(p =>
-            p.StorerId == storerId &&
-            p.BankCode == "Vietcombank" &&
-            p.AccountNumber == "123456789" &&
-            p.AccountHolderName == "Nguyen Van A"));
-
-        await _paymentRepository.Received(1).SaveChangesAsync();
+        _context.DbContext.ChangeTracker.Clear();
+        var persisted = _context.DbContext.Payments.Single(p => p.StorerId == storerId);
+        persisted.BankCode.Should().Be("Vietcombank");
+        persisted.AccountNumber.Should().Be("123456789");
+        persisted.AccountHolderName.Should().Be("Nguyen Van A");
     }
 
     [Fact]
@@ -56,6 +50,8 @@ public class SaveBankAccountHandlerTests
     {
         var storerId = Guid.NewGuid();
         var existing = Domain.Payment.Payment.Create(storerId, "OldBank", "000", "Old Name");
+        await _context.SeedAsync(existing);
+
         var request = new SaveBankAccountRequest
         {
             StorerId = storerId,
@@ -64,17 +60,16 @@ public class SaveBankAccountHandlerTests
             AccountHolderName = "Tran Thi B",
         };
 
-        _paymentRepository
-            .FindByExpressionAsync(Arg.Any<FilterSpecification<Domain.Payment.Payment>>())
-            .Returns(existing);
-
         await _handler.Handle(request, CancellationToken.None);
 
-        existing.BankCode.Should().Be("Techcombank");
-        existing.AccountNumber.Should().Be("987654321");
-        existing.AccountHolderName.Should().Be("Tran Thi B");
-
-        _paymentRepository.DidNotReceive().Add(Arg.Any<Domain.Payment.Payment>());
-        await _paymentRepository.Received(1).SaveChangesAsync();
+        _context.DbContext.ChangeTracker.Clear();
+        var persisted = _context.DbContext.Payments.Single(p => p.StorerId == storerId);
+        persisted.BankCode.Should().Be("Techcombank");
+        persisted.AccountNumber.Should().Be("987654321");
+        persisted.AccountHolderName.Should().Be("Tran Thi B");
+        _context.DbContext.Payments.Should().ContainSingle(p => p.StorerId == storerId);
     }
+
+    public void Dispose()
+        => _context.Dispose();
 }

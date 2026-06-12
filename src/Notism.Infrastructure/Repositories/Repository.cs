@@ -1,12 +1,8 @@
-using System.Linq.Expressions;
-
 using Microsoft.EntityFrameworkCore;
 
 using Notism.Application.Common.Constants;
 using Notism.Domain.Common.Repositories;
-using Notism.Domain.Common.Specifications;
 using Notism.Infrastructure.Persistence;
-using Notism.Shared.Models;
 
 namespace Notism.Infrastructure.Repositories;
 
@@ -14,102 +10,6 @@ public class Repository<T>(AppDbContext appDbContext) : IRepository<T>
     where T : class
 {
     protected readonly DbSet<T> _dbSet = appDbContext.Set<T>();
-
-    public Task<T?> FindByExpressionAsync(ISpecification<T> specification)
-    {
-        var queryable = _dbSet.AsQueryable();
-
-        foreach (var include in specification.Includes)
-        {
-            queryable = queryable.Include(include);
-        }
-
-        foreach (var stringInclude in specification.StringIncludes)
-        {
-            queryable = queryable.Include(stringInclude);
-        }
-
-        queryable = queryable.Where(specification.ToExpression());
-        queryable = specification.ApplyOrdering(queryable);
-
-        return queryable.FirstOrDefaultAsync();
-    }
-
-    public async Task<TProjection?> FindByExpressionAsync<TProjection>(ISpecification<T> specification, Expression<Func<T, TProjection>> select)
-    {
-        var queryable = _dbSet.AsQueryable();
-        queryable = queryable.Where(specification.ToExpression());
-        queryable = specification.ApplyOrdering(queryable);
-        return await queryable.Select(select).FirstOrDefaultAsync();
-    }
-
-    public async Task<IEnumerable<T>> FilterByExpressionAsync(ISpecification<T> specification)
-    {
-        var queryable = _dbSet.AsQueryable();
-
-        foreach (var include in specification.Includes)
-        {
-            queryable = queryable.Include(include);
-        }
-
-        foreach (var stringInclude in specification.StringIncludes)
-        {
-            queryable = queryable.Include(stringInclude);
-        }
-
-        queryable = queryable.Where(specification.ToExpression());
-
-        queryable = specification.ApplyOrdering(queryable);
-
-        return await queryable.ToListAsync();
-    }
-
-    public async Task<IEnumerable<TProjection>> FilterByExpressionAsync<TProjection>(ISpecification<T> specification, Expression<Func<T, TProjection>> select)
-    {
-        var queryable = _dbSet.AsQueryable();
-        queryable = queryable.Where(specification.ToExpression());
-        queryable = specification.ApplyOrdering(queryable);
-        return await queryable.Select(select).ToListAsync();
-    }
-
-    public async Task<PagedResult<T>> FilterPagedByExpressionAsync(
-        ISpecification<T> specification,
-        Pagination pagination)
-    {
-        var queryable = _dbSet.AsQueryable();
-
-        foreach (var include in specification.Includes)
-        {
-            queryable = queryable.Include(include);
-        }
-
-        foreach (var stringInclude in specification.StringIncludes)
-        {
-            queryable = queryable.Include(stringInclude);
-        }
-
-        queryable = queryable.Where(specification.ToExpression());
-        queryable = specification.ApplyOrdering(queryable);
-        var totalCount = await queryable.CountAsync();
-
-        queryable = queryable.Skip(pagination.Skip).Take(pagination.Take);
-        var items = await queryable.ToListAsync();
-
-        return new PagedResult<T>() { TotalCount = totalCount, Items = items, };
-    }
-
-    public async Task<PagedResult<TProjection>> FilterPagedByExpressionAsync<TProjection>(
-        ISpecification<T> specification,
-        Pagination pagination,
-        Expression<Func<T, TProjection>> select)
-    {
-        var queryable = _dbSet.AsQueryable();
-        queryable = queryable.Where(specification.ToExpression());
-        queryable = specification.ApplyOrdering(queryable);
-        var totalCount = await queryable.CountAsync();
-        var items = await queryable.Skip(pagination.Skip).Take(pagination.Take).Select(select).ToListAsync();
-        return new PagedResult<TProjection>() { TotalCount = totalCount, Items = items };
-    }
 
     public async Task<T> AddAsync(T entity)
     {

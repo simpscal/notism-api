@@ -1,23 +1,25 @@
 using MediatR;
 
-using Notism.Application.Payment.Common;
-using Notism.Domain.Payment;
-using Notism.Domain.Payment.Repositories;
+using Microsoft.EntityFrameworkCore;
+
+using Notism.Application.Common.Persistence;
+
+using DomainPayment = Notism.Domain.Payment.Payment;
 
 namespace Notism.Application.Payment.GetBankAccount;
 
 public class GetBankAccountHandler : IRequestHandler<GetBankAccountRequest, GetBankAccountResponse?>
 {
-    private readonly IPaymentRepository _paymentRepository;
+    private readonly IReadDbContext _readDbContext;
 
-    public GetBankAccountHandler(IPaymentRepository paymentRepository)
+    public GetBankAccountHandler(IReadDbContext readDbContext)
     {
-        _paymentRepository = paymentRepository;
+        _readDbContext = readDbContext;
     }
 
     public async Task<GetBankAccountResponse?> Handle(GetBankAccountRequest request, CancellationToken cancellationToken)
     {
-        var payment = await _paymentRepository.FindByExpressionAsync(new BankAccountSpecification());
+        var payment = await _readDbContext.Set<DomainPayment>().FirstOrDefaultAsync(cancellationToken);
 
         if (payment is null)
         {

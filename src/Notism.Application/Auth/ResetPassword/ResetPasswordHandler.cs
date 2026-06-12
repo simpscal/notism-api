@@ -1,32 +1,32 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
+
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Domain.Common.Persistence;
-using Notism.Domain.Common.Repositories;
-using Notism.Domain.Common.Specifications;
 using Notism.Domain.User;
 using Notism.Shared.Exceptions;
+
+using DomainUser = Notism.Domain.User.User;
 
 namespace Notism.Application.Auth.ResetPassword;
 
 public class ResetPasswordHandler : IRequestHandler<ResetPasswordRequest, ResetPasswordResponse>
 {
-    private readonly IRepository<Domain.User.User> _userRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly IPasswordService _passwordService;
-    private readonly IRepository<PasswordResetToken> _passwordResetTokenRepository;
     private readonly IUnitOfWork _unitOfWork;
     private readonly IMessages _messages;
 
     public ResetPasswordHandler(
-        IRepository<Domain.User.User> userRepository,
+        IReadDbContext readDbContext,
         IPasswordService passwordService,
-        IRepository<PasswordResetToken> passwordResetTokenRepository,
         IUnitOfWork unitOfWork,
         IMessages messages)
     {
-        _userRepository = userRepository;
+        _readDbContext = readDbContext;
         _passwordService = passwordService;
-        _passwordResetTokenRepository = passwordResetTokenRepository;
         _unitOfWork = unitOfWork;
         _messages = messages;
     }
@@ -35,8 +35,9 @@ public class ResetPasswordHandler : IRequestHandler<ResetPasswordRequest, ResetP
         ResetPasswordRequest request,
         CancellationToken cancellationToken)
     {
-        var tokenSpec = new FilterSpecification<PasswordResetToken>(t => t.Token == request.Token && !t.IsUsed && t.ExpiresAt > DateTime.UtcNow);
-        var resetToken = await _passwordResetTokenRepository.FindByExpressionAsync(tokenSpec)
+        var resetToken = await _readDbContext.Set<PasswordResetToken>(tracking: true)
+                .Where(t => t.Token == request.Token && !t.IsUsed && t.ExpiresAt > DateTime.UtcNow)
+                .FirstOrDefaultAsync(cancellationToken)
             ?? throw new ResultFailureException(_messages.InvalidOrExpiredResetToken);
 
         if (!resetToken.IsValid())
@@ -46,8 +47,10 @@ public class ResetPasswordHandler : IRequestHandler<ResetPasswordRequest, ResetP
 
         await _unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            var userSpec = new FilterSpecification<Domain.User.User>(u => u.Id == resetToken.UserId);
-            var user = await _userRepository.FindByExpressionAsync(userSpec) ?? throw new ResultFailureException(_messages.UserNotFound);
+            var user = await _readDbContext.Set<DomainUser>(tracking: true)
+                    .Where(u => u.Id == resetToken.UserId)
+                    .FirstOrDefaultAsync(cancellationToken)
+                ?? throw new ResultFailureException(_messages.UserNotFound);
 
             var hashedPassword = _passwordService.HashPassword(request.NewPassword);
             user.ResetPassword(hashedPassword);

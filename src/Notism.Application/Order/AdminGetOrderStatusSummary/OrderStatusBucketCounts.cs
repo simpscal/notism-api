@@ -1,4 +1,4 @@
-namespace Notism.Domain.Order.Repositories;
+namespace Notism.Application.Order.AdminGetOrderStatusSummary;
 
 /// <summary>
 /// Order counts folded into the dashboard delivery-status taxonomy.

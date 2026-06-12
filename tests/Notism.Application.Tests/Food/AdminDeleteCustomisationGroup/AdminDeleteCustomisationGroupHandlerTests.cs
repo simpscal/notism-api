@@ -4,8 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
 using Notism.Application.Food.AdminDeleteCustomisationGroup;
-using Notism.Domain.Common.Repositories;
-using Notism.Domain.Common.Specifications;
+using Notism.Application.Tests.Common;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
 using Notism.Shared.Exceptions;
@@ -16,23 +15,22 @@ namespace Notism.Application.Tests.Food.AdminDeleteCustomisationGroup;
 
 public class AdminDeleteCustomisationGroupHandlerTests
 {
-    private readonly IRepository<Domain.Food.Food> _foodRepository;
-    private readonly ILogger<AdminDeleteCustomisationGroupHandler> _logger;
+    private readonly WriteHandlerContext _context;
     private readonly IMessages _messages;
     private readonly AdminDeleteCustomisationGroupHandler _handler;
 
     public AdminDeleteCustomisationGroupHandlerTests()
     {
-        _foodRepository = Substitute.For<IRepository<Domain.Food.Food>>();
-        _logger = Substitute.For<ILogger<AdminDeleteCustomisationGroupHandler>>();
+        _context = new WriteHandlerContext();
         _messages = Substitute.For<IMessages>();
 
         _messages.FoodNotFound.Returns("Food not found.");
         _messages.CustomisationGroupNotFound.Returns("Customisation group not found.");
 
         _handler = new AdminDeleteCustomisationGroupHandler(
-            _foodRepository,
-            _logger,
+            _context.RepositoryFor<Domain.Food.Food>(),
+            _context.DbContext,
+            Substitute.For<ILogger<AdminDeleteCustomisationGroupHandler>>(),
             _messages);
     }
 
@@ -49,10 +47,7 @@ public class AdminDeleteCustomisationGroupHandlerTests
 
         var group = FoodCustomisationGroup.Create(food.Id, "Size", isRequired: true, displayOrder: 1);
         food.AddCustomisationGroup(group);
-
-        _foodRepository
-            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Food.Food>>())
-            .Returns(food);
+        await _context.SeedAsync(food);
 
         var request = new AdminDeleteCustomisationGroupRequest
         {
@@ -62,17 +57,15 @@ public class AdminDeleteCustomisationGroupHandlerTests
 
         await _handler.Handle(request, CancellationToken.None);
 
-        food.CustomisationGroups.Should().BeEmpty();
-        await _foodRepository.Received(1).SaveChangesAsync();
+        _context.DbContext.ChangeTracker.Clear();
+        _context.DbContext.FoodCustomisationGroups
+            .Where(g => g.FoodId == food.Id)
+            .Should().BeEmpty();
     }
 
     [Fact]
     public async Task Handle_WhenFoodNotFound_ThrowsNotFoundException()
     {
-        _foodRepository
-            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Food.Food>>())
-            .Returns((Domain.Food.Food?)null);
-
         var request = new AdminDeleteCustomisationGroupRequest
         {
             FoodId = Guid.NewGuid(),
@@ -95,14 +88,10 @@ public class AdminDeleteCustomisationGroupHandlerTests
             Guid.NewGuid(),
             QuantityUnit.Grams,
             5);
+        await _context.SeedAsync(food);
 
         // Group belongs to a different food — not added to this food
-        var otherFoodId = Guid.NewGuid();
-        var group = FoodCustomisationGroup.Create(otherFoodId, "Toppings", isRequired: false, displayOrder: 1);
-
-        _foodRepository
-            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Food.Food>>())
-            .Returns(food);
+        var group = FoodCustomisationGroup.Create(Guid.NewGuid(), "Toppings", isRequired: false, displayOrder: 1);
 
         var request = new AdminDeleteCustomisationGroupRequest
         {

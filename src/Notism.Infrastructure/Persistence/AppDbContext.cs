@@ -22,7 +22,7 @@ using Notism.Shared.Extensions;
 
 namespace Notism.Infrastructure.Persistence;
 
-public class AppDbContext(DbContextOptions<AppDbContext> options, IMediator mediator) : DbContext(options)
+public partial class AppDbContext(DbContextOptions<AppDbContext> options, IMediator mediator) : DbContext(options)
 {
     public DbSet<User> Users { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }

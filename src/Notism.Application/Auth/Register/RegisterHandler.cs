@@ -1,29 +1,35 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
+
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.User;
 using Notism.Domain.User.Enums;
 using Notism.Domain.User.Repositories;
 using Notism.Domain.User.ValueObjects;
 using Notism.Shared.Exceptions;
+
+using DomainUser = Notism.Domain.User.User;
 
 namespace Notism.Application.Auth.Register;
 
 public class RegisterHandler : IRequestHandler<RegisterRequest, (RegisterResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
 {
     private readonly IUserRepository _userRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly ITokenService _tokenService;
     private readonly IPasswordService _passwordService;
     private readonly IMessages _messages;
 
     public RegisterHandler(
         IUserRepository userRepository,
+        IReadDbContext readDbContext,
         ITokenService tokenService,
         IPasswordService passwordService,
         IMessages messages)
     {
         _userRepository = userRepository;
+        _readDbContext = readDbContext;
         _tokenService = tokenService;
         _passwordService = passwordService;
         _messages = messages;
@@ -31,17 +37,16 @@ public class RegisterHandler : IRequestHandler<RegisterRequest, (RegisterRespons
 
     public async Task<(RegisterResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)> Handle(RegisterRequest request, CancellationToken cancellationToken)
     {
-        // 1. Check if user already exists
         var email = Email.Create(request.Email);
-        var specification = new FilterSpecification<Domain.User.User>(u => u.Email.Equals(email));
-        var existingUser = await _userRepository.FindByExpressionAsync(specification);
+        var existingUser = await _readDbContext.Set<DomainUser>()
+            .Where(u => u.Email.Equals(email))
+            .AnyAsync(cancellationToken);
 
-        if (existingUser != null)
+        if (existingUser)
         {
             throw new ResultFailureException(_messages.UserAlreadyExists);
         }
 
-        // 2. Create new user with hashed password
         var hashedPassword = _passwordService.HashPassword(request.Password);
         var user = Domain.User.User.Create(request.Email, hashedPassword, UserRole.User, request.FirstName, request.LastName);
 
@@ -52,10 +57,7 @@ public class RegisterHandler : IRequestHandler<RegisterRequest, (RegisterRespons
             throw new ResultFailureException(_messages.ErrorCreatingUser);
         }
 
-        // 3. Generate JWT token
         var token = await _tokenService.GenerateTokenAsync(user);
-
-        // 4. Map to response
         var response = RegisterResponse.FromDomain(user, token);
 
         return (response, token.RefreshToken, token.RefreshTokenExpiresAt);

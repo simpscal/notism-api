@@ -1,13 +1,12 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
-using Notism.Application.Cart.Common;
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Domain.Cart.Repositories;
-using Notism.Domain.Common.Repositories;
-using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Shared.Exceptions;
 
@@ -16,18 +15,18 @@ namespace Notism.Application.Cart.UpdateCartItemCustomisations;
 public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartItemCustomisationsRequest, UpdateCartItemCustomisationsResponse>
 {
     private readonly ICartItemRepository _cartItemRepository;
-    private readonly IRepository<FoodCustomisationOption> _optionRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly ILogger<UpdateCartItemCustomisationsHandler> _logger;
     private readonly IMessages _messages;
 
     public UpdateCartItemCustomisationsHandler(
         ICartItemRepository cartItemRepository,
-        IRepository<FoodCustomisationOption> optionRepository,
+        IReadDbContext readDbContext,
         ILogger<UpdateCartItemCustomisationsHandler> logger,
         IMessages messages)
     {
         _cartItemRepository = cartItemRepository;
-        _optionRepository = optionRepository;
+        _readDbContext = readDbContext;
         _logger = logger;
         _messages = messages;
     }
@@ -36,8 +35,14 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
         UpdateCartItemCustomisationsRequest request,
         CancellationToken cancellationToken)
     {
-        var cartItemSpec = new CartItemDetailSpecification(c => c.Id == request.CartItemId);
-        var cartItem = await _cartItemRepository.FindByExpressionAsync(cartItemSpec)
+        var cartItem = await _readDbContext.Set<CartItem>(tracking: true)
+            .Where(c => c.Id == request.CartItemId)
+            .Include(c => c.Food)
+            .Include("Food.Category")
+            .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1))
+            .Include("Food.CustomisationGroups.Options")
+            .Include(c => c.Customisations)
+            .FirstOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException(_messages.CartItemNotFound);
 
         if (cartItem.UserId != request.UserId)
@@ -45,12 +50,11 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
             throw new ForbiddenException(_messages.CartItemNotBelongToUser);
         }
 
-        // Resolve all options in a single query
         var requestedOptionIds = request.Customisations.Select(c => c.OptionId).ToList();
-        var optionSpec = new FilterSpecification<FoodCustomisationOption>(
-            o => requestedOptionIds.Contains(o.Id) && o.Group.FoodId == cartItem.FoodId)
-            .Include(o => o.Group);
-        var fetchedOptions = (await _optionRepository.FilterByExpressionAsync(optionSpec))
+        var fetchedOptions = (await _readDbContext.Set<FoodCustomisationOption>(tracking: true)
+            .Where(o => requestedOptionIds.Contains(o.Id) && o.Group.FoodId == cartItem.FoodId)
+            .Include(o => o.Group)
+            .ToListAsync(cancellationToken))
             .ToDictionary(o => o.Id);
 
         var resolvedOptions = new List<(FoodCustomisationOption Option, string GroupLabel)>();

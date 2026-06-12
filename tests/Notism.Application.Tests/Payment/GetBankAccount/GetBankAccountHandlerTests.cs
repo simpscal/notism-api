@@ -1,34 +1,32 @@
 using FluentAssertions;
 
 using Notism.Application.Payment.GetBankAccount;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.Payment;
-using Notism.Domain.Payment.Repositories;
+using Notism.Application.Tests.Common;
+using Notism.Infrastructure.Persistence;
 
-using NSubstitute;
+using DomainPayment = Notism.Domain.Payment.Payment;
 
 namespace Notism.Application.Tests.Payment.GetBankAccount;
 
 public class GetBankAccountHandlerTests
 {
-    private readonly IPaymentRepository _paymentRepository;
+    private readonly AppDbContext _dbContext;
     private readonly GetBankAccountHandler _handler;
 
     public GetBankAccountHandlerTests()
     {
-        _paymentRepository = Substitute.For<IPaymentRepository>();
-        _handler = new GetBankAccountHandler(_paymentRepository);
+        _dbContext = ReadDbContextFactory.Create();
+        _handler = new GetBankAccountHandler(_dbContext);
     }
 
     [Fact]
     public async Task Handle_WhenPaymentExists_ReturnsResponse()
     {
-        var storerId = Guid.NewGuid();
-        var payment = Domain.Payment.Payment.Create(storerId, "Vietcombank", "123456789", "Nguyen Van A");
-
-        _paymentRepository
-            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Payment.Payment>>())
-            .Returns(payment);
+        var payment = DomainPayment.Create(Guid.NewGuid(), "Vietcombank", "123456789", "Nguyen Van A");
+        payment.ClearDomainEvents();
+        _dbContext.Payments.Add(payment);
+        await _dbContext.SaveChangesAsync();
+        _dbContext.ChangeTracker.Clear();
 
         var result = await _handler.Handle(new GetBankAccountRequest(), CancellationToken.None);
 
@@ -41,10 +39,6 @@ public class GetBankAccountHandlerTests
     [Fact]
     public async Task Handle_WhenNoPayment_ReturnsNull()
     {
-        _paymentRepository
-            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Payment.Payment>>())
-            .Returns((Domain.Payment.Payment?)null);
-
         var result = await _handler.Handle(new GetBankAccountRequest(), CancellationToken.None);
 
         result.Should().BeNull();

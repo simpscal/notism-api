@@ -1,23 +1,25 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Food.Common;
-using Notism.Domain.Food;
-using Notism.Domain.Food.Repositories;
+
+using DomainCategory = Notism.Domain.Food.Category;
 
 namespace Notism.Application.Food.AdminGetCategories;
 
 public class AdminGetCategoriesHandler : IRequestHandler<AdminGetCategoriesRequest, AdminGetCategoriesResponse>
 {
-    private readonly ICategoryRepository _categoryRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly ILogger<AdminGetCategoriesHandler> _logger;
 
     public AdminGetCategoriesHandler(
-        ICategoryRepository categoryRepository,
+        IReadDbContext readDbContext,
         ILogger<AdminGetCategoriesHandler> logger)
     {
-        _categoryRepository = categoryRepository;
+        _readDbContext = readDbContext;
         _logger = logger;
     }
 
@@ -25,8 +27,10 @@ public class AdminGetCategoriesHandler : IRequestHandler<AdminGetCategoriesReque
         AdminGetCategoriesRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new AdminGetCategoriesSpecification();
-        var categories = await _categoryRepository.FilterByExpressionAsync(specification);
+        var categories = await _readDbContext.Set<DomainCategory>()
+            .Where(c => !c.IsDeleted)
+            .OrderBy(c => c.Name)
+            .ToListAsync(cancellationToken);
         var items = categories
             .Select(CategoryResponse.FromDomain)
             .ToList();

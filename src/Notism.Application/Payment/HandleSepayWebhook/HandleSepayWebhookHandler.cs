@@ -1,14 +1,16 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Application.Order.CreateOrder;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.Order;
 using Notism.Domain.Order.Repositories;
-using Notism.Domain.Payment;
 using Notism.Domain.Payment.Repositories;
+
+using DomainBankingCheckout = Notism.Domain.Payment.BankingCheckout;
+using DomainOrder = Notism.Domain.Order.Order;
 
 namespace Notism.Application.Payment.HandleSepayWebhook;
 
@@ -16,6 +18,7 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
 {
     private readonly IBankingCheckoutRepository _bankingCheckoutRepository;
     private readonly IOrderRepository _orderRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly ISender _sender;
     private readonly IPaymentNotifier _paymentNotifier;
     private readonly ILogger<HandleSepayWebhookHandler> _logger;
@@ -23,12 +26,14 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
     public HandleSepayWebhookHandler(
         IBankingCheckoutRepository bankingCheckoutRepository,
         IOrderRepository orderRepository,
+        IReadDbContext readDbContext,
         ISender sender,
         IPaymentNotifier paymentNotifier,
         ILogger<HandleSepayWebhookHandler> logger)
     {
         _bankingCheckoutRepository = bankingCheckoutRepository;
         _orderRepository = orderRepository;
+        _readDbContext = readDbContext;
         _sender = sender;
         _paymentNotifier = paymentNotifier;
         _logger = logger;
@@ -44,8 +49,9 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
             return;
         }
 
-        var checkout = await _bankingCheckoutRepository.FindByExpressionAsync(
-            new FilterSpecification<BankingCheckout>(c => c.Id == checkoutId));
+        var checkout = await _readDbContext.Set<DomainBankingCheckout>(tracking: true)
+            .Where(c => c.Id == checkoutId)
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (checkout is null)
         {
@@ -81,8 +87,9 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
             },
             CancellationToken.None);
 
-        var order = await _orderRepository.FindByExpressionAsync(
-            new FilterSpecification<Domain.Order.Order>(o => o.Id == createOrderResponse.OrderId));
+        var order = await _readDbContext.Set<DomainOrder>(tracking: true)
+            .Where(o => o.Id == createOrderResponse.OrderId)
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (order is null)
         {

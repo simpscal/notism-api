@@ -1,9 +1,10 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Specifications;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
 using Notism.Domain.Food.Repositories;
@@ -15,20 +16,20 @@ namespace Notism.Application.Food.AdminUpdateFood;
 public class AdminUpdateFoodHandler : IRequestHandler<AdminUpdateFoodRequest, AdminUpdateFoodResponse>
 {
     private readonly IFoodRepository _foodRepository;
-    private readonly ICategoryRepository _categoryRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly IStorageService _storageService;
     private readonly ILogger<AdminUpdateFoodHandler> _logger;
     private readonly IMessages _messages;
 
     public AdminUpdateFoodHandler(
         IFoodRepository foodRepository,
-        ICategoryRepository categoryRepository,
+        IReadDbContext readDbContext,
         IStorageService storageService,
         ILogger<AdminUpdateFoodHandler> logger,
         IMessages messages)
     {
         _foodRepository = foodRepository;
-        _categoryRepository = categoryRepository;
+        _readDbContext = readDbContext;
         _storageService = storageService;
         _logger = logger;
         _messages = messages;
@@ -38,10 +39,11 @@ public class AdminUpdateFoodHandler : IRequestHandler<AdminUpdateFoodRequest, Ad
         AdminUpdateFoodRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new FilterSpecification<Notism.Domain.Food.Food>(f => f.Id == request.FoodId && !f.IsDeleted)
+        var food = await _readDbContext.Set<Domain.Food.Food>(tracking: true)
+            .Where(f => f.Id == request.FoodId && !f.IsDeleted)
             .Include(f => f.Images)
-            .Include(f => f.Category!);
-        var food = await _foodRepository.FindByExpressionAsync(specification);
+            .Include(f => f.Category!)
+            .FirstOrDefaultAsync(cancellationToken);
         if (food == null)
         {
             throw new ResultFailureException(_messages.FoodNotFound);
@@ -55,9 +57,9 @@ public class AdminUpdateFoodHandler : IRequestHandler<AdminUpdateFoodRequest, Ad
         if (!string.IsNullOrWhiteSpace(request.Category))
         {
             var categoryName = request.Category.Trim();
-            var categorySpec = new FilterSpecification<Domain.Food.Category>(
-                c => c.Name == categoryName && !c.IsDeleted);
-            category = await _categoryRepository.FindByExpressionAsync(categorySpec)
+            category = await _readDbContext.Set<Category>()
+                    .Where(c => c.Name == categoryName && !c.IsDeleted)
+                    .FirstOrDefaultAsync(cancellationToken)
                 ?? throw new ResultFailureException(_messages.CategoryNotFound);
         }
 

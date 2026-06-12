@@ -1,34 +1,36 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
 using Notism.Domain.Food.Repositories;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Extensions;
+
+using DomainCategory = Notism.Domain.Food.Category;
 
 namespace Notism.Application.Food.AdminAddFood;
 
 public class AdminAddFoodHandler : IRequestHandler<AdminAddFoodRequest, AdminAddFoodResponse>
 {
     private readonly IFoodRepository _foodRepository;
-    private readonly ICategoryRepository _categoryRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly IStorageService _storageService;
     private readonly ILogger<AdminAddFoodHandler> _logger;
     private readonly IMessages _messages;
 
     public AdminAddFoodHandler(
         IFoodRepository foodRepository,
-        ICategoryRepository categoryRepository,
+        IReadDbContext readDbContext,
         IStorageService storageService,
         ILogger<AdminAddFoodHandler> logger,
         IMessages messages)
     {
         _foodRepository = foodRepository;
-        _categoryRepository = categoryRepository;
+        _readDbContext = readDbContext;
         _storageService = storageService;
         _logger = logger;
         _messages = messages;
@@ -39,9 +41,9 @@ public class AdminAddFoodHandler : IRequestHandler<AdminAddFoodRequest, AdminAdd
         CancellationToken cancellationToken)
     {
         var categoryName = request.Category.Trim();
-        var categorySpec = new FilterSpecification<Domain.Food.Category>(
-            c => c.Name == categoryName && !c.IsDeleted);
-        var category = await _categoryRepository.FindByExpressionAsync(categorySpec)
+        var category = await _readDbContext.Set<DomainCategory>()
+                .Where(c => c.Name == categoryName && !c.IsDeleted)
+                .FirstOrDefaultAsync(cancellationToken)
             ?? throw new ResultFailureException(_messages.CategoryNotFound);
 
         var quantityUnit = request.QuantityUnit.ToEnum<QuantityUnit>();

@@ -1,16 +1,13 @@
-using System.Linq.Expressions;
-
 using FluentAssertions;
 
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
 using Notism.Application.Food.GetFoods;
-using Notism.Domain.Common.Specifications;
+using Notism.Application.Tests.Common;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
-using Notism.Domain.Food.Repositories;
-using Notism.Shared.Models;
+using Notism.Infrastructure.Persistence;
 
 using NSubstitute;
 
@@ -18,173 +15,133 @@ namespace Notism.Application.Tests.Food.GetFoods;
 
 public class GetFoodsHandlerTests
 {
-    private readonly IFoodRepository _foodRepository;
+    private readonly AppDbContext _dbContext;
     private readonly IStorageService _storageService;
-    private readonly ILogger<GetFoodsHandler> _logger;
     private readonly GetFoodsHandler _handler;
 
     public GetFoodsHandlerTests()
     {
-        _foodRepository = Substitute.For<IFoodRepository>();
+        _dbContext = ReadDbContextFactory.Create();
         _storageService = Substitute.For<IStorageService>();
-        _logger = Substitute.For<ILogger<GetFoodsHandler>>();
-
         _storageService
             .GetPublicUrl(Arg.Any<string>(), Arg.Any<string>())
             .Returns(call => $"https://cdn.test/{call.ArgAt<string>(0)}");
 
         _handler = new GetFoodsHandler(
-            _foodRepository,
+            _dbContext,
             _storageService,
-            _logger);
+            Substitute.For<ILogger<GetFoodsHandler>>());
     }
 
     [Fact]
-    public async Task Handle_WhenKeywordMatchesName_FoodSatisfiesSpecification()
+    public async Task Handle_WhenKeywordMatchesName_ReturnsFood()
     {
-        var request = new GetFoodsRequest { Keyword = "BUR" };
+        await SeedAsync(CreateFood(name: "Burger Deluxe", description: "no match here"));
 
-        var specification = await CaptureSpecificationAsync(request);
+        var result = await _handler.Handle(new GetFoodsRequest { Keyword = "BUR" }, CancellationToken.None);
 
-        var matching = CreateFood(name: "Burger Deluxe", description: "no match here");
-        specification.IsSatisfiedBy(matching).Should().BeTrue();
+        result.Items.Should().ContainSingle(i => i.Name == "Burger Deluxe");
     }
 
     [Fact]
-    public async Task Handle_WhenKeywordMatchesDescription_FoodSatisfiesSpecification()
+    public async Task Handle_WhenKeywordMatchesDescription_ReturnsFood()
     {
-        var request = new GetFoodsRequest { Keyword = "spicy" };
+        await SeedAsync(CreateFood(name: "Wings", description: "Extra SPICY chicken wings"));
 
-        var specification = await CaptureSpecificationAsync(request);
+        var result = await _handler.Handle(new GetFoodsRequest { Keyword = "spicy" }, CancellationToken.None);
 
-        var matching = CreateFood(name: "Wings", description: "Extra SPICY chicken wings");
-        specification.IsSatisfiedBy(matching).Should().BeTrue();
+        result.Items.Should().ContainSingle(i => i.Name == "Wings");
     }
 
     [Fact]
-    public async Task Handle_WhenKeywordMatchesNeitherNameNorDescription_FoodDoesNotSatisfySpecification()
+    public async Task Handle_WhenKeywordMatchesNeitherNameNorDescription_ExcludesFood()
     {
-        var request = new GetFoodsRequest { Keyword = "pizza" };
+        await SeedAsync(CreateFood(name: "Burger", description: "A beef sandwich"));
 
-        var specification = await CaptureSpecificationAsync(request);
+        var result = await _handler.Handle(new GetFoodsRequest { Keyword = "pizza" }, CancellationToken.None);
 
-        var nonMatching = CreateFood(name: "Burger", description: "A beef sandwich");
-        specification.IsSatisfiedBy(nonMatching).Should().BeFalse();
+        result.Items.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task Handle_WhenNoKeyword_AllNonDeletedFoodsSatisfySpecification()
+    public async Task Handle_WhenNoKeyword_ReturnsAllNonDeletedFoods()
     {
-        var request = new GetFoodsRequest();
+        await SeedAsync(CreateFood(name: "Anything", description: "Whatever"));
 
-        var specification = await CaptureSpecificationAsync(request);
+        var result = await _handler.Handle(new GetFoodsRequest(), CancellationToken.None);
 
-        var anyFood = CreateFood(name: "Anything", description: "Whatever");
-        specification.IsSatisfiedBy(anyFood).Should().BeTrue();
+        result.Items.Should().ContainSingle(i => i.Name == "Anything");
     }
 
     [Fact]
-    public async Task Handle_WhenCategoryFilterProvided_OnlyMatchingCategorySatisfiesSpecification()
+    public async Task Handle_WhenCategoryFilterProvided_ReturnsOnlyMatchingCategory()
     {
-        var request = new GetFoodsRequest { Category = "Drinks" };
+        await SeedAsync(
+            CreateFood(name: "Cola", categoryName: "Drinks"),
+            CreateFood(name: "Steak", categoryName: "Mains"));
 
-        var specification = await CaptureSpecificationAsync(request);
+        var result = await _handler.Handle(new GetFoodsRequest { Category = "Drinks" }, CancellationToken.None);
 
-        var matching = CreateFood(categoryName: "Drinks");
-        var nonMatching = CreateFood(categoryName: "Mains");
-
-        specification.IsSatisfiedBy(matching).Should().BeTrue();
-        specification.IsSatisfiedBy(nonMatching).Should().BeFalse();
+        result.Items.Should().ContainSingle(i => i.Name == "Cola");
     }
 
     [Fact]
-    public async Task Handle_WhenIsAvailableFilterTrue_OnlyAvailableFoodsSatisfySpecification()
+    public async Task Handle_WhenIsAvailableFilterTrue_ReturnsOnlyAvailableFoods()
     {
-        var request = new GetFoodsRequest { IsAvailable = true };
+        await SeedAsync(
+            CreateFood(name: "Available", isAvailable: true),
+            CreateFood(name: "Unavailable", isAvailable: false));
 
-        var specification = await CaptureSpecificationAsync(request);
+        var result = await _handler.Handle(new GetFoodsRequest { IsAvailable = true }, CancellationToken.None);
 
-        var available = CreateFood(isAvailable: true);
-        var unavailable = CreateFood(isAvailable: false);
-
-        specification.IsSatisfiedBy(available).Should().BeTrue();
-        specification.IsSatisfiedBy(unavailable).Should().BeFalse();
+        result.Items.Should().ContainSingle(i => i.Name == "Available");
     }
 
     [Fact]
-    public async Task Handle_WhenIsAvailableFilterFalse_OnlyUnavailableFoodsSatisfySpecification()
+    public async Task Handle_WhenIsAvailableFilterFalse_ReturnsOnlyUnavailableFoods()
     {
-        var request = new GetFoodsRequest { IsAvailable = false };
+        await SeedAsync(
+            CreateFood(name: "Available", isAvailable: true),
+            CreateFood(name: "Unavailable", isAvailable: false));
 
-        var specification = await CaptureSpecificationAsync(request);
+        var result = await _handler.Handle(new GetFoodsRequest { IsAvailable = false }, CancellationToken.None);
 
-        var available = CreateFood(isAvailable: true);
-        var unavailable = CreateFood(isAvailable: false);
-
-        specification.IsSatisfiedBy(available).Should().BeFalse();
-        specification.IsSatisfiedBy(unavailable).Should().BeTrue();
+        result.Items.Should().ContainSingle(i => i.Name == "Unavailable");
     }
 
     [Fact]
-    public async Task Handle_WhenFoodIsDeleted_FoodDoesNotSatisfySpecification()
+    public async Task Handle_WhenFoodIsDeleted_ExcludesFood()
     {
-        var request = new GetFoodsRequest();
-
-        var specification = await CaptureSpecificationAsync(request);
-
-        var deleted = CreateFood();
+        var deleted = CreateFood(name: "Deleted");
         deleted.MarkAsDeleted();
+        await SeedAsync(deleted);
 
-        specification.IsSatisfiedBy(deleted).Should().BeFalse();
+        var result = await _handler.Handle(new GetFoodsRequest(), CancellationToken.None);
+
+        result.Items.Should().BeEmpty();
     }
 
     [Fact]
-    public async Task Handle_WhenRepositoryReturnsProjections_MapsToResponseItems()
+    public async Task Handle_WhenFoodHasImage_MapsProjectionToResponse()
     {
-        SetupRepositoryReturning(new FoodListProjection
-        {
-            Id = Guid.NewGuid(),
-            Name = "Burger",
-            Description = "A delicious burger",
-            Price = 50000m,
-            DiscountPrice = 40000m,
-            CategoryName = "Mains",
-            IsAvailable = true,
-            QuantityUnit = QuantityUnit.Grams,
-            StockQuantity = 10,
-            ImageKeys = new List<ImageKeyOrder> { new("foods/burger.jpg", 0) },
-        });
+        var food = CreateFood(name: "Burger", description: "A delicious burger", categoryName: "Mains");
+        food.AddImage("foods/burger.jpg", 0, null);
+        await SeedAsync(food);
 
         var result = await _handler.Handle(new GetFoodsRequest { Keyword = "burger" }, CancellationToken.None);
 
         result.TotalCount.Should().Be(1);
-        result.Items.Should().HaveCount(1);
-
         var item = result.Items.Single();
         item.Name.Should().Be("Burger");
         item.Description.Should().Be("A delicious burger");
         item.Category.Should().Be("Mains");
-        item.Price.Should().Be(50000m);
-        item.DiscountPrice.Should().Be(40000m);
         item.ImageUrl.Should().Be("https://cdn.test/foods/burger.jpg");
     }
 
     [Fact]
     public async Task Handle_WhenProjectionHasNoImages_ImageUrlIsEmpty()
     {
-        SetupRepositoryReturning(new FoodListProjection
-        {
-            Id = Guid.NewGuid(),
-            Name = "Water",
-            Description = "Bottled water",
-            Price = 10000m,
-            DiscountPrice = null,
-            CategoryName = "Drinks",
-            IsAvailable = true,
-            QuantityUnit = QuantityUnit.Milliliters,
-            StockQuantity = 100,
-            ImageKeys = new List<ImageKeyOrder>(),
-        });
+        await SeedAsync(CreateFood(name: "Water", categoryName: "Drinks"));
 
         var result = await _handler.Handle(new GetFoodsRequest(), CancellationToken.None);
 
@@ -194,36 +151,41 @@ public class GetFoodsHandlerTests
     [Fact]
     public async Task Handle_WhenKeywordProvided_KeywordIsLowercasedBeforeMatching()
     {
-        // Handler lowercases the keyword; spec compares against col.ToLower().
-        var request = new GetFoodsRequest { Keyword = "BURGER" };
+        await SeedAsync(CreateFood(name: "Double Burger", description: "no match"));
 
-        var specification = await CaptureSpecificationAsync(request);
+        var result = await _handler.Handle(new GetFoodsRequest { Keyword = "BURGER" }, CancellationToken.None);
 
-        var matching = CreateFood(name: "Double Burger", description: "no match");
-        specification.IsSatisfiedBy(matching).Should().BeTrue();
+        result.Items.Should().ContainSingle(i => i.Name == "Double Burger");
     }
 
-    private static Domain.Food.Food CreateFood(
+    private async Task SeedAsync(params Domain.Food.Food[] foods)
+    {
+        foreach (var food in foods)
+        {
+            food.ClearDomainEvents();
+            _dbContext.Foods.Add(food);
+        }
+
+        await _dbContext.SaveChangesAsync();
+        _dbContext.ChangeTracker.Clear();
+    }
+
+    private Domain.Food.Food CreateFood(
         string name = "Burger",
         string description = "A delicious burger",
         string? categoryName = null,
         bool isAvailable = true)
     {
+        var category = Category.Create(categoryName ?? $"Category-{Guid.NewGuid():N}");
+        _dbContext.Categories.Add(category);
+
         var food = Domain.Food.Food.Create(
             name,
             description,
             50000m,
-            Guid.NewGuid(),
+            category.Id,
             QuantityUnit.Grams,
             10);
-
-        if (categoryName is not null)
-        {
-            var category = Category.Create(categoryName);
-            typeof(Domain.Food.Food)
-                .GetProperty(nameof(Domain.Food.Food.Category))!
-                .SetValue(food, category);
-        }
 
         if (!isAvailable)
         {
@@ -231,40 +193,5 @@ public class GetFoodsHandlerTests
         }
 
         return food;
-    }
-
-    private void SetupRepositoryReturning(params FoodListProjection[] projections)
-    {
-        _foodRepository
-            .FilterPagedByExpressionAsync(
-                Arg.Any<ISpecification<Domain.Food.Food>>(),
-                Arg.Any<Pagination>(),
-                Arg.Any<Expression<Func<Domain.Food.Food, FoodListProjection>>>())
-            .Returns(new PagedResult<FoodListProjection>
-            {
-                TotalCount = projections.Length,
-                Items = projections,
-            });
-    }
-
-    private async Task<ISpecification<Domain.Food.Food>> CaptureSpecificationAsync(GetFoodsRequest request)
-    {
-        ISpecification<Domain.Food.Food>? captured = null;
-
-        _foodRepository
-            .FilterPagedByExpressionAsync(
-                Arg.Do<ISpecification<Domain.Food.Food>>(spec => captured = spec),
-                Arg.Any<Pagination>(),
-                Arg.Any<Expression<Func<Domain.Food.Food, FoodListProjection>>>())
-            .Returns(new PagedResult<FoodListProjection>
-            {
-                TotalCount = 0,
-                Items = Array.Empty<FoodListProjection>(),
-            });
-
-        await _handler.Handle(request, CancellationToken.None);
-
-        captured.Should().NotBeNull();
-        return captured!;
     }
 }

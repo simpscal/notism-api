@@ -1,11 +1,12 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Domain.Cart.Repositories;
-using Notism.Domain.Common.Specifications;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Cart.RemoveCartItem;
@@ -13,15 +14,18 @@ namespace Notism.Application.Cart.RemoveCartItem;
 public class RemoveCartItemHandler : IRequestHandler<RemoveCartItemRequest>
 {
     private readonly ICartItemRepository _cartItemRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly ILogger<RemoveCartItemHandler> _logger;
     private readonly IMessages _messages;
 
     public RemoveCartItemHandler(
         ICartItemRepository cartItemRepository,
+        IReadDbContext readDbContext,
         ILogger<RemoveCartItemHandler> logger,
         IMessages messages)
     {
         _cartItemRepository = cartItemRepository;
+        _readDbContext = readDbContext;
         _logger = logger;
         _messages = messages;
     }
@@ -30,8 +34,9 @@ public class RemoveCartItemHandler : IRequestHandler<RemoveCartItemRequest>
         RemoveCartItemRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new FilterSpecification<CartItem>(c => c.Id == request.CartItemId);
-        var cartItem = await _cartItemRepository.FindByExpressionAsync(specification)
+        var cartItem = await _readDbContext.Set<CartItem>(tracking: true)
+                .Where(c => c.Id == request.CartItemId)
+                .FirstOrDefaultAsync(cancellationToken)
             ?? throw new ResultFailureException(_messages.CartItemNotFound);
 
         if (cartItem.UserId != request.UserId)

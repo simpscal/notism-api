@@ -5,8 +5,7 @@
 1. [Architecture Overview](#architecture-overview)
 2. [Layer Definitions](#layer-definitions)
 3. [Dependency Rules](#dependency-rules)
-4. [Implementation Guidelines](#implementation-guidelines)
-5. [Folder Structure](#folder-structure)
+4. [Folder Structure](#folder-structure)
 
 ---
 
@@ -113,7 +112,7 @@ Request → Validator → Handler → Domain Operations → Repository → Respo
 | Do                                                     | Don't                             |
 | ------------------------------------------------------ | --------------------------------- |
 | Keep handlers thin and focused                         | Put business logic in handlers    |
-| Use specifications for queries                         | Write raw query logic in handlers |
+| Compose reads inline over `IReadDbContext`             | Add read methods to repositories  |
 | Throw `ResultFailureException` for business violations | Return error codes or null        |
 | Map domain entities to DTOs                            | Return domain entities directly   |
 | Use `EnumConverter` for string↔enum conversion         | Hard-code enum string values      |
@@ -204,7 +203,7 @@ Handler → Repository Interface (Domain) → Repository Implementation (Infrast
 | Use `Include()` for aggregate children  | Lazy load across aggregate boundaries     |
 | Dispatch events after successful save   | Fire events before persistence            |
 | One repository per aggregate root       | Create repositories for entities          |
-| Use specifications for query logic      | Duplicate query logic across repositories |
+| Keep repositories write-only            | Add read/projection methods to repositories |
 
 ---
 
@@ -236,56 +235,6 @@ Handler → Repository Interface (Domain) → Repository Implementation (Infrast
 | Use for Result pattern, Pagination    | Put entity definitions here     |
 | Keep dependencies minimal             | Reference Domain or Application |
 | Make utilities generic and reusable   | Create single-use helpers       |
-
----
-
-## Implementation Guidelines
-
-### Adding a New Feature Checklist
-
-1. **Domain Layer**
-   - [ ] Define/update aggregate root with business methods
-   - [ ] Create value objects if needed
-   - [ ] Add domain events for important state changes
-   - [ ] Define repository interface if new aggregate
-   - [ ] Add specifications for query patterns
-
-2. **Application Layer**
-   - [ ] Create feature folder (e.g., `Order/CreateOrder/`)
-   - [ ] Define Request with `IRequest<Result<Response>>`
-   - [ ] Create Validator with FluentValidation rules
-   - [ ] Implement Handler orchestrating domain operations
-   - [ ] Define Response DTO
-   - [ ] Add mapping profile if using AutoMapper
-
-3. **Infrastructure Layer**
-   - [ ] Implement repository if new aggregate
-   - [ ] Add entity configuration for EF Core
-   - [ ] Create migration if schema changed
-   - [ ] Implement external service if needed
-
-4. **API Layer**
-   - [ ] Add endpoint in appropriate feature file
-   - [ ] Configure route, HTTP method, authorization
-   - [ ] Add OpenAPI documentation attributes
-
-### Error Handling Strategy
-
-| Layer          | Error Type              | Approach                                  |
-| -------------- | ----------------------- | ----------------------------------------- |
-| Domain         | Business Rule Violation | Throw domain exception or return failure  |
-| Application    | Validation/Business     | Throw `ResultFailureException`            |
-| Infrastructure | External Service        | Wrap in domain-meaningful exception       |
-| API            | HTTP                    | `ResultFailureMiddleware` converts to 400 |
-
-### Testing Strategy
-
-| Layer          | Test Focus                 | Examples                              |
-| -------------- | -------------------------- | ------------------------------------- |
-| Domain         | Business rules, invariants | Aggregate creation, state transitions |
-| Application    | Handler orchestration      | Mock repositories, verify flow        |
-| Infrastructure | Data access                | Integration tests with test DB        |
-| API            | HTTP contracts             | Integration tests with test server    |
 
 ---
 
@@ -332,9 +281,7 @@ notism-api/
 │   │   │   ├── Interfaces/
 │   │   │   │   ├── IDomainEvent.cs
 │   │   │   │   ├── IRepository.cs
-│   │   │   │   ├── ISpecification.cs
 │   │   │   │   └── IUnitOfWork.cs
-│   │   │   └── Specifications/
 │   │   │
 │   │   ├── User/                                  # User Aggregate
 │   │   │   ├── User.cs                            # Aggregate Root
@@ -410,15 +357,14 @@ notism-api/
 │   │   │   │   ├── GetFoodsHandler.cs
 │   │   │   │   ├── GetFoodsRequest.cs
 │   │   │   │   ├── GetFoodsResponse.cs
-│   │   │   │   └── GetFoodsSpecification.cs        # Specification in Application layer
+│   │   │   │   └── FoodListProjection.cs           # Read projection type
 │   │   │   └── ...
 │   │   │
 │   │   ├── Order/                                 # Order Management Features
 │   │   │   ├── GetAdminOrdersForKanban/
 │   │   │   │   ├── GetAdminOrdersForKanbanHandler.cs
 │   │   │   │   ├── GetAdminOrdersForKanbanRequest.cs
-│   │   │   │   ├── GetAdminOrdersForKanbanResponse.cs
-│   │   │   │   └── GetAdminOrdersForKanbanSpecification.cs
+│   │   │   │   └── GetAdminOrdersForKanbanResponse.cs
 │   │   │   └── ...
 │   │   │
 │   │   ├── DependencyInjection.cs
@@ -490,8 +436,7 @@ notism-api/
         ├── User/
         │   ├── UserTests.cs                        # User aggregate tests
         │   ├── EmailTests.cs                       # Email value object tests
-        │   ├── PasswordTests.cs                    # Password value object tests
-        │   └── UserSpecificationTests.cs           # Specification pattern tests
+        │   └── PasswordTests.cs                    # Password value object tests
         └── Notism.Domain.Tests.csproj
 ```
 
@@ -501,7 +446,7 @@ notism-api/
 - **Aggregates**: User and RefreshToken with clear boundaries
 - **Value Objects**: Email and Password with business validation
 - **Domain Events**: Comprehensive event handling for business actions
-- **Specifications**: Encapsulated query logic located in Application layer feature folders
+- **Reads**: Composed inline over `IReadDbContext` in each read handler — no shared query layer
 
 #### 🔧 **CQRS Implementation**
 - **Handlers**: Separate command and query handlers for each feature
@@ -544,7 +489,7 @@ These files serve as canonical examples of each pattern. When implementing a new
 | **Domain Event**                     | `src/Notism.Domain/User/Events/UserCreatedEvent.cs`             |
 | **Repository**                       | `src/Notism.Infrastructure/Users/UserRepository.cs`             |
 | **API Endpoint Group**               | `src/Notism.Api/Endpoints/AuthEndpoints.cs`                     |
-| **Specification (complex)**          | `src/Notism.Application/Food/GetFoods/GetFoodsSpecification.cs` |
-| **Specification (simple/inline)**    | Uses `FilterSpecification<T>` directly in handler               |
+| **Read (inline over `IReadDbContext`)** | `src/Notism.Application/Food/AdminGetCategories/AdminGetCategoriesHandler.cs` |
+| **Reporting read (raw SQL)**         | `src/Notism.Application/Order/AdminGetRevenueSeries/AdminGetRevenueSeriesHandler.cs` |
 
 Use these as templates: examine the full file structure, naming patterns, validation approach, and handler orchestration from these examples.

@@ -14,8 +14,9 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         CancellationToken cancellationToken)
     {
         // 1. Load aggregates
-        var food = await _foodRepository.FindByExpressionAsync(
-            new FoodByIdSpecification(request.FoodId))
+        var food = await _readDbContext.Set<Domain.Food.Food>()
+            .Where(f => f.Id == request.FoodId)
+            .FirstOrDefaultAsync(cancellationToken)
         ?? throw new ResultFailureException("Food not found");
 
         // 2. Validate business rules
@@ -142,8 +143,9 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
 
     private async Task<Domain.Food.Food> ValidateAndFetchFoodAsync()
     {
-        var foodSpecification = new FilterSpecification<Domain.Food.Food>(
-            f => f.Id == _request!.FoodId);
+        var food = await _readDbContext.Set<Domain.Food.Food>()
+            .Where(f => f.Id == _request!.FoodId)
+            .FirstOrDefaultAsync();
         // ...
     }
 }
@@ -194,10 +196,10 @@ private async Task ClearUserCartAsync()
 private async Task<Dictionary<Guid, Domain.Food.Food>> FetchFoodsAsync()
 {
     var foodIds = _request!.Items.Select(i => i.FoodId).Distinct().ToList();
-    var foodSpecification = new FilterSpecification<Domain.Food.Food>(
-        f => foodIds.Contains(f.Id))
-        .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1));
-    var foods = await _foodRepository.FilterByExpressionAsync(foodSpecification);
+    var foods = await _readDbContext.Set<Domain.Food.Food>()
+        .Where(f => foodIds.Contains(f.Id))
+        .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1))
+        .ToListAsync();
     return foods.ToDictionary(f => f.Id);
 }
 ```
@@ -223,10 +225,10 @@ Reduce database round trips by batching operations:
 private async Task<Dictionary<Guid, Domain.Food.Food>> FetchFoodsAsync()
 {
     var foodIds = _request!.Items.Select(i => i.FoodId).Distinct().ToList();
-    var foodSpecification = new FilterSpecification<Domain.Food.Food>(
-        f => foodIds.Contains(f.Id))
-        .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1));
-    var foods = await _foodRepository.FilterByExpressionAsync(foodSpecification);
+    var foods = await _readDbContext.Set<Domain.Food.Food>()
+        .Where(f => foodIds.Contains(f.Id))
+        .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1))
+        .ToListAsync();
     return foods.ToDictionary(f => f.Id);
 }
 ```
@@ -235,8 +237,10 @@ private async Task<Dictionary<Guid, Domain.Food.Food>> FetchFoodsAsync()
 
 ```csharp
 // Good: Load only first image instead of all images
-var foodSpecification = new FilterSpecification<Domain.Food.Food>(f => f.Id == foodId)
-    .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1));
+var food = await _readDbContext.Set<Domain.Food.Food>()
+    .Where(f => f.Id == foodId)
+    .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1))
+    .FirstOrDefaultAsync(cancellationToken);
 ```
 
 **✅ DO: Avoid Redundant Database Queries**
@@ -251,9 +255,12 @@ var food = await ValidateAndFetchFoodAsync(); // Includes images
 
 ```csharp
 // Bad: Fetches food twice
-var food = await _foodRepository.FindByExpressionAsync(...); // Without images
+var food = await _readDbContext.Set<Domain.Food.Food>()
+    .Where(f => f.Id == foodId).FirstOrDefaultAsync(cancellationToken); // Without images
 // ... validation ...
-var foodWithImages = await _foodRepository.FindByExpressionAsync(...); // With images
+var foodWithImages = await _readDbContext.Set<Domain.Food.Food>()
+    .Where(f => f.Id == foodId)
+    .Include(f => f.Images).FirstOrDefaultAsync(cancellationToken); // With images
 ```
 
 ### Transaction Management
@@ -276,20 +283,19 @@ public async Task<AddBulkCartItemsResponse> Handle(...)
 }
 ```
 
-**✅ DO: Defer Database Operations When Possible**
+**✅ DO: Encapsulate Bulk Writes in a Write-Side Repository Method**
 
-For operations that can be deferred until `SaveChangesAsync`, mark entities for deletion rather than executing immediately:
+A bulk mutation that the generic repository surface cannot express lives as a sanctioned
+write-side method on the derived repository (declared on the interface, implemented in
+Infrastructure):
 
 ```csharp
-// Good: Deferrable deletion
+// Good: write-side domain operation, set-based bulk delete
 public async Task ClearCart(Guid userId)
 {
-    var specification = new FilterSpecification<CartItem>(c => c.UserId == userId);
-    var cartItems = await FilterByExpressionAsync(specification);
-    foreach (var cartItem in cartItems)
-    {
-        Remove(cartItem); // Marks for deletion, executed on SaveChangesAsync
-    }
+    await _dbSet
+        .Where(c => c.UserId == userId)
+        .ExecuteDeleteAsync();
 }
 ```
 
@@ -395,6 +401,18 @@ Paginated responses derive from `Notism.Shared.Models.PagedResult<T>` (`{ TotalC
 
 System.Text.Json uses the default camelCase policy, so the serialized field name is derived from the C# property name. Never rename a response property (or change its `JsonPropertyName`) without treating it as a breaking API change.
 
+### Handler Logging
+
+Inject `ILogger<THandler>` where a handler performs a meaningful state change or a notable read. Log at `Information` for successful outcomes and `Warning`/`Error` for handled failure branches. Keep message templates structured (named placeholders), not interpolated strings:
+
+```csharp
+// ✅ Structured template with named placeholder
+_logger.LogInformation("Cleared existing items for user {UserId}", userId);
+
+// ❌ Interpolated string
+_logger.LogInformation($"Cleared existing items for user {userId}");
+```
+
 ### Summary
 
 - **Break down large handlers** into smaller, focused methods
@@ -406,6 +424,7 @@ System.Text.Json uses the default camelCase policy, so the serialized field name
 - **Inline simple mappings**, extract complex or reusable logic
 - **Write self-documenting code** without redundant comments
 - **Model responses as `sealed record`s** built through `FromDomain` factories, using `required` over nullable defaults
+- **Log through `ILogger<THandler>`** with structured, named-placeholder templates
 
 ---
 

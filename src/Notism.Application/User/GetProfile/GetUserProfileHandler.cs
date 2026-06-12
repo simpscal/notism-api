@@ -1,30 +1,32 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Constants;
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Repositories;
-using Notism.Domain.Common.Specifications;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Extensions;
+
+using DomainUser = Notism.Domain.User.User;
 
 namespace Notism.Application.User.GetProfile;
 
 public class GetUserProfileHandler : IRequestHandler<GetUserProfileRequest, GetUserProfileResponse>
 {
-    private readonly IRepository<Domain.User.User> _userRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly IStorageService _storageService;
     private readonly ILogger<GetUserProfileHandler> _logger;
     private readonly IMessages _messages;
 
     public GetUserProfileHandler(
-        IRepository<Domain.User.User> userRepository,
+        IReadDbContext readDbContext,
         IStorageService storageService,
         ILogger<GetUserProfileHandler> logger,
         IMessages messages)
     {
-        _userRepository = userRepository;
+        _readDbContext = readDbContext;
         _storageService = storageService;
         _logger = logger;
         _messages = messages;
@@ -34,8 +36,9 @@ public class GetUserProfileHandler : IRequestHandler<GetUserProfileRequest, GetU
         GetUserProfileRequest request,
         CancellationToken cancellationToken)
     {
-        var specification = new FilterSpecification<Domain.User.User>(u => u.Id == request.UserId);
-        var user = await _userRepository.FindByExpressionAsync(specification)
+        var user = await _readDbContext.Set<DomainUser>()
+                .Where(u => u.Id == request.UserId)
+                .FirstOrDefaultAsync(cancellationToken)
             ?? throw new ResultFailureException(_messages.UserNotFound);
 
         string avatarUrl = user.AvatarUrl ?? string.Empty;

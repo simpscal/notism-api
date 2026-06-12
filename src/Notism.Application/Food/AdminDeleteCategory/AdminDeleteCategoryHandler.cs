@@ -1,46 +1,49 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.Food;
 using Notism.Domain.Food.Repositories;
 using Notism.Shared.Exceptions;
+
+using DomainCategory = Notism.Domain.Food.Category;
+using DomainFood = Notism.Domain.Food.Food;
 
 namespace Notism.Application.Food.AdminDeleteCategory;
 
 public class AdminDeleteCategoryHandler : IRequestHandler<AdminDeleteCategoryRequest>
 {
     private readonly ICategoryRepository _categoryRepository;
-    private readonly IFoodRepository _foodRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly ILogger<AdminDeleteCategoryHandler> _logger;
     private readonly IMessages _messages;
 
     public AdminDeleteCategoryHandler(
         ICategoryRepository categoryRepository,
-        IFoodRepository foodRepository,
+        IReadDbContext readDbContext,
         ILogger<AdminDeleteCategoryHandler> logger,
         IMessages messages)
     {
         _categoryRepository = categoryRepository;
-        _foodRepository = foodRepository;
+        _readDbContext = readDbContext;
         _logger = logger;
         _messages = messages;
     }
 
     public async Task Handle(AdminDeleteCategoryRequest request, CancellationToken cancellationToken)
     {
-        var specification = new FilterSpecification<Domain.Food.Category>(
-            c => c.Id == request.CategoryId && !c.IsDeleted);
-        var category = await _categoryRepository.FindByExpressionAsync(specification)
+        var category = await _readDbContext.Set<DomainCategory>(tracking: true)
+                .Where(c => c.Id == request.CategoryId && !c.IsDeleted)
+                .FirstOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException(_messages.CategoryNotFound);
 
         category.MarkAsDeleted();
 
-        var foodsInCategorySpec = new FilterSpecification<Domain.Food.Food>(
-            f => f.CategoryId == request.CategoryId && !f.IsDeleted);
-        var foodsInCategory = (await _foodRepository.FilterByExpressionAsync(foodsInCategorySpec)).ToList();
+        var foodsInCategory = await _readDbContext.Set<DomainFood>(tracking: true)
+            .Where(f => f.CategoryId == request.CategoryId && !f.IsDeleted)
+            .ToListAsync(cancellationToken);
         foreach (var food in foodsInCategory)
         {
             food.MarkAsDeleted();

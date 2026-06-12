@@ -4,9 +4,7 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
 using Notism.Application.Food.AdminAddCustomisationGroup;
-using Notism.Domain.Common.Repositories;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.Food;
+using Notism.Application.Tests.Common;
 using Notism.Domain.Food.Enums;
 using Notism.Shared.Exceptions;
 
@@ -16,22 +14,21 @@ namespace Notism.Application.Tests.Food.AdminAddCustomisationGroup;
 
 public class AdminAddCustomisationGroupHandlerTests
 {
-    private readonly IRepository<Domain.Food.Food> _foodRepository;
-    private readonly ILogger<AdminAddCustomisationGroupHandler> _logger;
+    private readonly WriteHandlerContext _context;
     private readonly IMessages _messages;
     private readonly AdminAddCustomisationGroupHandler _handler;
 
     public AdminAddCustomisationGroupHandlerTests()
     {
-        _foodRepository = Substitute.For<IRepository<Domain.Food.Food>>();
-        _logger = Substitute.For<ILogger<AdminAddCustomisationGroupHandler>>();
+        _context = new WriteHandlerContext();
         _messages = Substitute.For<IMessages>();
 
         _messages.FoodNotFound.Returns("Food not found.");
 
         _handler = new AdminAddCustomisationGroupHandler(
-            _foodRepository,
-            _logger,
+            _context.RepositoryFor<Domain.Food.Food>(),
+            _context.DbContext,
+            Substitute.For<ILogger<AdminAddCustomisationGroupHandler>>(),
             _messages);
     }
 
@@ -45,10 +42,7 @@ public class AdminAddCustomisationGroupHandlerTests
             Guid.NewGuid(),
             QuantityUnit.Grams,
             5);
-
-        _foodRepository
-            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Food.Food>>())
-            .Returns(food);
+        await _context.SeedAsync(food);
 
         var request = new AdminAddCustomisationGroupRequest
         {
@@ -66,16 +60,16 @@ public class AdminAddCustomisationGroupHandlerTests
         result.IsRequired.Should().BeTrue();
         result.DisplayOrder.Should().Be(1);
 
-        await _foodRepository.Received(1).SaveChangesAsync();
+        _context.DbContext.ChangeTracker.Clear();
+        var persisted = _context.DbContext.FoodCustomisationGroups
+            .Where(g => g.FoodId == food.Id)
+            .ToList();
+        persisted.Should().ContainSingle(g => g.Label == "Size");
     }
 
     [Fact]
     public async Task Handle_WhenFoodNotFound_ThrowsNotFoundException()
     {
-        _foodRepository
-            .FindByExpressionAsync(Arg.Any<ISpecification<Domain.Food.Food>>())
-            .Returns((Domain.Food.Food?)null);
-
         var request = new AdminAddCustomisationGroupRequest
         {
             FoodId = Guid.NewGuid(),

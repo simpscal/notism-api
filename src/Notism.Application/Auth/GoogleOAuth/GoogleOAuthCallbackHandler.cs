@@ -2,19 +2,23 @@ using System.Security.Cryptography;
 
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
+
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
-using Notism.Domain.Common.Specifications;
-using Notism.Domain.User;
 using Notism.Domain.User.Enums;
 using Notism.Domain.User.Repositories;
 using Notism.Domain.User.ValueObjects;
 using Notism.Shared.Exceptions;
+
+using DomainUser = Notism.Domain.User.User;
 
 namespace Notism.Application.Auth.GoogleOAuth;
 
 public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackRequest, (GoogleOAuthCallbackResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)>
 {
     private readonly IUserRepository _userRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly ITokenService _tokenService;
     private readonly IPasswordService _passwordService;
     private readonly IGoogleOAuthService _googleOAuthService;
@@ -22,12 +26,14 @@ public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackReq
 
     public GoogleOAuthCallbackHandler(
         IUserRepository userRepository,
+        IReadDbContext readDbContext,
         ITokenService tokenService,
         IPasswordService passwordService,
         IGoogleOAuthService googleOAuthService,
         IMessages messages)
     {
         _userRepository = userRepository;
+        _readDbContext = readDbContext;
         _tokenService = tokenService;
         _passwordService = passwordService;
         _googleOAuthService = googleOAuthService;
@@ -47,12 +53,13 @@ public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackReq
             cancellationToken);
 
         var email = Email.Create(userInfo.Email!);
-        var specification = new FilterSpecification<Domain.User.User>(u => u.Email.Equals(email));
-        var user = await _userRepository.FindByExpressionAsync(specification);
+        var user = await _readDbContext.Set<DomainUser>()
+            .Where(u => u.Email.Equals(email))
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (user == null)
         {
-            // Create new user with a random password (OAuth users don't need password)
+            // OAuth users authenticate externally; the local password is never used.
             var randomPassword = GenerateRandomPassword();
             var hashedPassword = _passwordService.HashPassword(randomPassword);
             user = Domain.User.User.Create(

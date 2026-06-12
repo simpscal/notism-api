@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Domain.Cart.Repositories;
@@ -38,6 +39,8 @@ public static class DependencyInjection
             ServiceLifetime.Scoped);
 
         services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+
+        services.AddScoped<IReadDbContext>(sp => sp.GetRequiredService<AppDbContext>());
 
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 

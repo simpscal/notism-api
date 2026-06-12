@@ -1,7 +1,6 @@
 using FluentAssertions;
 
 using Notism.Application.Payment.CreateBankingCheckout;
-using Notism.Domain.Common.Specifications;
 using Notism.Domain.Payment;
 using Notism.Domain.Payment.Repositories;
 

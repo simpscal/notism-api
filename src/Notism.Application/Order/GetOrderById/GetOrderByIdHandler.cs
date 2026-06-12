@@ -1,42 +1,39 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Application.Order.Common;
-using Notism.Application.Payment.Common;
-using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
-using Notism.Domain.Order.Repositories;
-using Notism.Domain.Payment;
 using Notism.Domain.Payment.Enums;
-using Notism.Domain.Payment.Repositories;
 using Notism.Domain.User.Enums;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Extensions;
+
+using DomainOrder = Notism.Domain.Order.Order;
+using DomainPayment = Notism.Domain.Payment.Payment;
 
 namespace Notism.Application.Order.GetOrderById;
 
 public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrderByIdResponse>
 {
-    private readonly IOrderRepository _orderRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly IStorageService _storageService;
     private readonly ILogger<GetOrderByIdHandler> _logger;
     private readonly IMessages _messages;
-    private readonly IPaymentRepository _paymentRepository;
 
     public GetOrderByIdHandler(
-        IOrderRepository orderRepository,
+        IReadDbContext readDbContext,
         IStorageService storageService,
         ILogger<GetOrderByIdHandler> logger,
-        IMessages messages,
-        IPaymentRepository paymentRepository)
+        IMessages messages)
     {
-        _orderRepository = orderRepository;
+        _readDbContext = readDbContext;
         _storageService = storageService;
         _logger = logger;
         _messages = messages;
-        _paymentRepository = paymentRepository;
     }
 
     public async Task<GetOrderByIdResponse> Handle(
@@ -46,15 +43,16 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
         var userRole = request.Role.FromCamelCase<UserRole>() ?? UserRole.User;
         var isAdmin = userRole == UserRole.Admin;
 
-        var specification = new OrderDetailSpecification(o =>
-            o.SlugId == request.SlugId &&
-            (o.UserId == request.UserId || isAdmin));
-        var order = await _orderRepository.FindByExpressionAsync(specification)
+        var order = await _readDbContext.Set<DomainOrder>()
+                .Where(o => o.SlugId == request.SlugId && (o.UserId == request.UserId || isAdmin))
+                .Include("Items.Food.Images")
+                .Include(o => o.StatusHistory)
+                .FirstOrDefaultAsync(cancellationToken)
             ?? throw new ResultFailureException(_messages.OrderNotFound);
 
         _logger.LogInformation("Retrieved order {SlugId} for user {UserId} (Admin: {IsAdmin})", request.SlugId, request.UserId, isAdmin);
 
-        var payment = await _paymentRepository.FindByExpressionAsync(new BankAccountSpecification());
+        var payment = await _readDbContext.Set<DomainPayment>().FirstOrDefaultAsync(cancellationToken);
         var bankAccountConfigured = payment != null;
 
         PaymentQrResponse? paymentQr = null;
