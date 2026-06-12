@@ -60,8 +60,6 @@ public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetR
             };
         }
 
-        // Loaded TRACKED so the mutation below is persisted by the repository SaveChanges
-        // on the same context.
         var existingToken = await _readDbContext.Set<PasswordResetToken>(tracking: true)
             .Where(t => t.UserId == user.Id && !t.IsUsed && t.ExpiresAt > DateTime.UtcNow)
             .FirstOrDefaultAsync(cancellationToken);

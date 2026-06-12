@@ -35,8 +35,6 @@ public class ResetPasswordHandler : IRequestHandler<ResetPasswordRequest, ResetP
         ResetPasswordRequest request,
         CancellationToken cancellationToken)
     {
-        // Both loads are TRACKED so the mutations persist via the unit-of-work
-        // SaveChanges on the same context.
         var resetToken = await _readDbContext.Set<PasswordResetToken>(tracking: true)
                 .Where(t => t.Token == request.Token && !t.IsUsed && t.ExpiresAt > DateTime.UtcNow)
                 .FirstOrDefaultAsync(cancellationToken)

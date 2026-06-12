@@ -17,11 +17,6 @@ using NSubstitute;
 
 namespace Notism.Application.Tests.Cart.UpdateCartItemCustomisations;
 
-/// <summary>
-/// Exercises the handler over an EF InMemory database: the cart item graph and the
-/// customisation options are loaded TRACKED through the read port, and the clear/re-add
-/// customisation mutations persist via the repository SaveChanges on the same context.
-/// </summary>
 public class UpdateCartItemCustomisationsHandlerTests : IDisposable
 {
     private readonly WriteHandlerContext _context;

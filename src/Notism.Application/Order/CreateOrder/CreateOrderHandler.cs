@@ -67,8 +67,6 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
 
     private async Task<List<CartItem>> ValidateAndFetchCartItemsAsync(CreateOrderRequest request)
     {
-        // Loaded TRACKED: cart items are removed and each food's stock is deducted, all
-        // persisted by the unit-of-work SaveChanges on the same context.
         var cartItems = await _readDbContext.Set<CartItem>(tracking: true)
             .Where(c => c.UserId == request.UserId && request.CartItemIds.Contains(c.Id))
             .Include(c => c.Food)

@@ -12,11 +12,6 @@ using NSubstitute;
 
 namespace Notism.Application.Tests.Food.AdminAddCustomisationGroup;
 
-/// <summary>
-/// Exercises the handler over an EF InMemory database: the food is loaded TRACKED through
-/// the read port and the new group persists via the repository SaveChanges on the same
-/// context.
-/// </summary>
 public class AdminAddCustomisationGroupHandlerTests
 {
     private readonly WriteHandlerContext _context;

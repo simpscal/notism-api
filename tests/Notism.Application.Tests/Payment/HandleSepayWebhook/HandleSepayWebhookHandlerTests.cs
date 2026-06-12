@@ -16,11 +16,6 @@ using NSubstitute;
 
 namespace Notism.Application.Tests.Payment.HandleSepayWebhook;
 
-/// <summary>
-/// Exercises the handler over an EF InMemory database: the checkout and the created order are
-/// loaded TRACKED through the read port and the paid/used mutations persist via the
-/// repository SaveChanges on the same context.
-/// </summary>
 public class HandleSepayWebhookHandlerTests : IDisposable
 {
     private readonly WriteHandlerContext _context;

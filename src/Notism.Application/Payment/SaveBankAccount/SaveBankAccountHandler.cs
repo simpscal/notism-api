@@ -28,8 +28,6 @@ public class SaveBankAccountHandler : IRequestHandler<SaveBankAccountRequest>
 
     public async Task Handle(SaveBankAccountRequest request, CancellationToken cancellationToken)
     {
-        // Loaded TRACKED: when an account already exists it is updated in place and
-        // persisted by the repository SaveChanges on the same context.
         var existing = await _readDbContext.Set<DomainPayment>(tracking: true)
             .Where(p => p.StorerId == request.StorerId)
             .FirstOrDefaultAsync(cancellationToken);

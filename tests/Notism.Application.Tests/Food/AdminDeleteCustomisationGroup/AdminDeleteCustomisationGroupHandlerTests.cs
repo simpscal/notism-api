@@ -13,11 +13,6 @@ using NSubstitute;
 
 namespace Notism.Application.Tests.Food.AdminDeleteCustomisationGroup;
 
-/// <summary>
-/// Exercises the handler over an EF InMemory database: the food graph is loaded TRACKED
-/// through the read port and the group removal persists via the repository SaveChanges on
-/// the same context.
-/// </summary>
 public class AdminDeleteCustomisationGroupHandlerTests
 {
     private readonly WriteHandlerContext _context;

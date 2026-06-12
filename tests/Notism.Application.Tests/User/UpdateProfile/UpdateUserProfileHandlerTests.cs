@@ -13,10 +13,6 @@ using NSubstitute;
 
 namespace Notism.Application.Tests.User.UpdateProfile;
 
-/// <summary>
-/// Exercises the handler over an EF InMemory database: the user is loaded TRACKED through
-/// the read port, mutated, and persisted via the repository SaveChanges on the same context.
-/// </summary>
 public class UpdateUserProfileHandlerTests : IDisposable
 {
     private readonly WriteHandlerContext _context;

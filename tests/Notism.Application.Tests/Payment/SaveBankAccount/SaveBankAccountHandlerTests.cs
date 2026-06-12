@@ -10,11 +10,6 @@ using NSubstitute;
 
 namespace Notism.Application.Tests.Payment.SaveBankAccount;
 
-/// <summary>
-/// Exercises the handler over an EF InMemory database: an existing account is loaded
-/// TRACKED through the read port and updated in place, or a new one is added — either way
-/// persisted via the repository SaveChanges on the same context.
-/// </summary>
 public class SaveBankAccountHandlerTests : IDisposable
 {
     private readonly WriteHandlerContext _context;
