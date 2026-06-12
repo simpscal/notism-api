@@ -401,6 +401,18 @@ Paginated responses derive from `Notism.Shared.Models.PagedResult<T>` (`{ TotalC
 
 System.Text.Json uses the default camelCase policy, so the serialized field name is derived from the C# property name. Never rename a response property (or change its `JsonPropertyName`) without treating it as a breaking API change.
 
+### Handler Logging
+
+Inject `ILogger<THandler>` where a handler performs a meaningful state change or a notable read. Log at `Information` for successful outcomes and `Warning`/`Error` for handled failure branches. Keep message templates structured (named placeholders), not interpolated strings:
+
+```csharp
+// ✅ Structured template with named placeholder
+_logger.LogInformation("Cleared existing items for user {UserId}", userId);
+
+// ❌ Interpolated string
+_logger.LogInformation($"Cleared existing items for user {userId}");
+```
+
 ### Summary
 
 - **Break down large handlers** into smaller, focused methods
@@ -412,6 +424,7 @@ System.Text.Json uses the default camelCase policy, so the serialized field name
 - **Inline simple mappings**, extract complex or reusable logic
 - **Write self-documenting code** without redundant comments
 - **Model responses as `sealed record`s** built through `FromDomain` factories, using `required` over nullable defaults
+- **Log through `ILogger<THandler>`** with structured, named-placeholder templates
 
 ---
 

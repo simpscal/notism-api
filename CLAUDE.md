@@ -98,7 +98,6 @@ File location: `tests/Notism.Application.Tests/{Feature}/{Operation}/{Operation}
 | Topic | Location |
 |-------|----------|
 | Architecture | `docs/rules/architecture.md` |
-| Best practices index | `docs/rules/best-practices.md` |
 | Repository Pattern (write boundary) | `docs/rules/repository-pattern.md` |
 | Read Queries (inline reads over IReadDbContext) | `docs/rules/read-queries.md` |
 | Domain Events | `docs/rules/domain-events.md` |
