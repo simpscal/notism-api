@@ -1,9 +1,13 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
+
 using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Domain.User.ValueObjects;
 using Notism.Shared.Exceptions;
+
+using DomainUser = Notism.Domain.User.User;
 
 namespace Notism.Application.Auth.Login;
 
@@ -30,7 +34,9 @@ public class LoginHandler : IRequestHandler<LoginRequest, (LoginResponse Respons
     {
         // 1. Find user by email
         var email = Email.Create(request.Email);
-        var user = await new GetUserByEmailQuery(_readDbContext).ExecuteAsync(email, cancellationToken)
+        var user = await _readDbContext.Set<DomainUser>()
+                .Where(u => u.Email.Equals(email))
+                .FirstOrDefaultAsync(cancellationToken)
             ?? throw new ResultFailureException(_messages.InvalidCredentials);
 
         // 2. Verify password

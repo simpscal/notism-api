@@ -2,6 +2,7 @@ using System.Security.Cryptography;
 
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Persistence;
@@ -11,6 +12,8 @@ using Notism.Domain.Common.Repositories;
 using Notism.Domain.User;
 using Notism.Domain.User.ValueObjects;
 using Notism.Shared.Exceptions;
+
+using DomainUser = Notism.Domain.User.User;
 
 namespace Notism.Application.Auth.RequestPasswordReset;
 
@@ -44,7 +47,9 @@ public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetR
         CancellationToken cancellationToken)
     {
         var email = Email.Create(request.Email);
-        var user = await new GetUserByEmailQuery(_readDbContext).ExecuteAsync(email, cancellationToken);
+        var user = await _readDbContext.Set<DomainUser>()
+            .Where(u => u.Email.Equals(email))
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (user is null)
         {
@@ -55,9 +60,11 @@ public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetR
             };
         }
 
-        // Check if there's already an active token for this user
-        var existingToken = await _passwordResetTokenRepository.GetForUpdateAsync(
-            t => t.UserId == user.Id && !t.IsUsed && t.ExpiresAt > DateTime.UtcNow);
+        // Check if there's already an active token for this user. Loaded TRACKED so the
+        // mutation below is persisted by the repository SaveChanges on the same context.
+        var existingToken = await _readDbContext.Set<PasswordResetToken>(tracking: true)
+            .Where(t => t.UserId == user.Id && !t.IsUsed && t.ExpiresAt > DateTime.UtcNow)
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (existingToken is not null && existingToken.IsValid())
         {

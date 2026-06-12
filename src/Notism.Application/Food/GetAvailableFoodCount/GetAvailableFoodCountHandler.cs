@@ -1,6 +1,10 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
+
 using Notism.Application.Common.Persistence;
+
+using DomainFood = Notism.Domain.Food.Food;
 
 namespace Notism.Application.Food.GetAvailableFoodCount;
 
@@ -17,8 +21,13 @@ public class GetAvailableFoodCountHandler : IRequestHandler<GetAvailableFoodCoun
         GetAvailableFoodCountRequest request,
         CancellationToken cancellationToken)
     {
-        var count = await new GetAvailableFoodCountQuery(_readDbContext)
-            .ExecuteAsync(request.Category?.Trim(), cancellationToken);
+        var category = request.Category?.Trim();
+
+        var count = await _readDbContext.Set<DomainFood>()
+            .Where(f => !f.IsDeleted
+                && f.IsAvailable
+                && (string.IsNullOrWhiteSpace(category) || (f.Category != null && f.Category.Name == category)))
+            .CountAsync(cancellationToken);
 
         return new GetAvailableFoodCountResponse { Count = count };
     }

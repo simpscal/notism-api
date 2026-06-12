@@ -1,8 +1,10 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Persistence;
+using Notism.Domain.Cart;
 
 namespace Notism.Application.Cart.GetCartItemCount;
 
@@ -23,7 +25,10 @@ public class GetCartItemCountHandler : IRequestHandler<GetCartItemCountRequest, 
         GetCartItemCountRequest request,
         CancellationToken cancellationToken)
     {
-        var quantities = await new GetCartItemCountQuery(_readDbContext).ExecuteAsync(request.UserId, cancellationToken);
+        var quantities = await _readDbContext.Set<CartItem>()
+            .Where(c => c.UserId == request.UserId)
+            .Select(c => c.Quantity)
+            .ToListAsync(cancellationToken);
 
         var totalQuantity = quantities.Sum();
         var itemCount = quantities.Count;

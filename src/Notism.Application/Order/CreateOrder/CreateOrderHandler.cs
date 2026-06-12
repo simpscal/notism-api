@@ -1,7 +1,9 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Domain.Cart.Repositories;
@@ -18,6 +20,7 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
 {
     private readonly ICartItemRepository _cartItemRepository;
     private readonly IOrderRepository _orderRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly IUnitOfWork _unitOfWork;
     private readonly ILogger<CreateOrderHandler> _logger;
     private readonly IMessages _messages;
@@ -25,12 +28,14 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
     public CreateOrderHandler(
         ICartItemRepository cartItemRepository,
         IOrderRepository orderRepository,
+        IReadDbContext readDbContext,
         IUnitOfWork unitOfWork,
         ILogger<CreateOrderHandler> logger,
         IMessages messages)
     {
         _cartItemRepository = cartItemRepository;
         _orderRepository = orderRepository;
+        _readDbContext = readDbContext;
         _unitOfWork = unitOfWork;
         _logger = logger;
         _messages = messages;
@@ -62,12 +67,16 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
 
     private async Task<List<CartItem>> ValidateAndFetchCartItemsAsync(CreateOrderRequest request)
     {
-        var cartItems = await _cartItemRepository.ListForUpdateAsync(
-            c => c.UserId == request.UserId && request.CartItemIds.Contains(c.Id),
-            includes => includes
-                .Include(c => c.Food)
-                .Include(c => c.Food.Images)
-                .Include(c => c.Customisations));
+        // Loaded TRACKED: cart items are removed and each food's stock is deducted, all
+        // persisted by the unit-of-work SaveChanges on the same context.
+        var cartItems = await _readDbContext.BuildGraphQuery<CartItem>(
+                c => c.UserId == request.UserId && request.CartItemIds.Contains(c.Id),
+                includes => includes
+                    .Include(c => c.Food)
+                    .Include(c => c.Food.Images)
+                    .Include(c => c.Customisations),
+                tracking: true)
+            .ToListAsync();
 
         if (cartItems.Count == 0)
         {

@@ -1,10 +1,13 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Shared.Exceptions;
+
+using DomainFood = Notism.Domain.Food.Food;
 
 namespace Notism.Application.Food.GetFoodById;
 
@@ -31,7 +34,13 @@ public class GetFoodByIdHandler : IRequestHandler<GetFoodByIdRequest, GetFoodByI
         GetFoodByIdRequest request,
         CancellationToken cancellationToken)
     {
-        var food = await new GetFoodByIdQuery(_readDbContext).ExecuteAsync(request.FoodId, cancellationToken);
+        var food = await _readDbContext.BuildGraphQuery<DomainFood>(
+                f => f.Id == request.FoodId && !f.IsDeleted,
+                includes => includes
+                    .Include(f => f.Images)
+                    .Include(f => f.Category!)
+                    .Include("CustomisationGroups.Options"))
+            .FirstOrDefaultAsync(cancellationToken);
         if (food == null)
         {
             throw new ResultFailureException(_messages.FoodNotFound);

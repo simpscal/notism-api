@@ -2,6 +2,7 @@ using System.Linq.Expressions;
 
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Persistence;
@@ -47,8 +48,27 @@ public class GetOrdersHandler : IRequestHandler<GetOrdersRequest, GetOrdersRespo
                           o.PaymentStatus == paymentStatus;
         }
 
-        var (totalCount, orders) = await new GetOrdersQuery(_readDbContext)
-            .ExecuteAsync(filter, request.Skip, request.Take, cancellationToken);
+        var totalCount = await _readDbContext.BuildGraphQuery<DomainOrder>(
+                filter,
+                includes => includes
+                    .Include("Items.Food.Images")
+                    .Include(o => o.StatusHistory),
+                query => query
+                    .OrderByDescending(o => o.CreatedAt)
+                    .ThenByDescending(o => o.Id))
+            .CountAsync(cancellationToken);
+
+        var orders = await _readDbContext.BuildGraphQuery<DomainOrder>(
+                filter,
+                request.Skip,
+                request.Take,
+                includes => includes
+                    .Include("Items.Food.Images")
+                    .Include(o => o.StatusHistory),
+                query => query
+                    .OrderByDescending(o => o.CreatedAt)
+                    .ThenByDescending(o => o.Id))
+            .ToListAsync(cancellationToken);
 
         _logger.LogInformation(
             "Retrieved {Count} of {TotalCount} orders for user {UserId}",

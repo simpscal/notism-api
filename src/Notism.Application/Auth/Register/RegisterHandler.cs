@@ -1,11 +1,15 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
+
 using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Domain.User.Enums;
 using Notism.Domain.User.Repositories;
 using Notism.Domain.User.ValueObjects;
 using Notism.Shared.Exceptions;
+
+using DomainUser = Notism.Domain.User.User;
 
 namespace Notism.Application.Auth.Register;
 
@@ -35,7 +39,9 @@ public class RegisterHandler : IRequestHandler<RegisterRequest, (RegisterRespons
     {
         // 1. Check if user already exists
         var email = Email.Create(request.Email);
-        var existingUser = await new UserExistsByEmailQuery(_readDbContext).ExecuteAsync(email, cancellationToken);
+        var existingUser = await _readDbContext.Set<DomainUser>()
+            .Where(u => u.Email.Equals(email))
+            .AnyAsync(cancellationToken);
 
         if (existingUser)
         {

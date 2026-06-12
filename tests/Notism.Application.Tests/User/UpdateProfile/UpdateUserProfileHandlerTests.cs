@@ -1,38 +1,40 @@
-using System.Linq.Expressions;
-
 using FluentAssertions;
 
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Services;
+using Notism.Application.Tests.Common;
 using Notism.Application.User.UpdateProfile;
-using Notism.Domain.Common.Repositories;
 using Notism.Domain.User.Enums;
-using Notism.Domain.User.Repositories;
+using Notism.Infrastructure.Repositories;
 using Notism.Shared.Exceptions;
 
 using NSubstitute;
 
 namespace Notism.Application.Tests.User.UpdateProfile;
 
-public class UpdateUserProfileHandlerTests
+/// <summary>
+/// Exercises the handler over an EF InMemory database: the user is loaded TRACKED through
+/// the read port, mutated, and persisted via the repository SaveChanges on the same context.
+/// </summary>
+public class UpdateUserProfileHandlerTests : IDisposable
 {
-    private readonly IUserRepository _userRepository;
-    private readonly ILogger<UpdateUserProfileHandler> _logger;
+    private readonly WriteHandlerContext _context;
     private readonly IMessages _messages;
     private readonly UpdateUserProfileHandler _handler;
 
     public UpdateUserProfileHandlerTests()
     {
-        _userRepository = Substitute.For<IUserRepository>();
-        _logger = Substitute.For<ILogger<UpdateUserProfileHandler>>();
+        _context = new WriteHandlerContext();
         _messages = Substitute.For<IMessages>();
-
         _messages.UserNotFound.Returns("User not found.");
 
+        var userRepository = new UserRepository(_context.DbContext, Substitute.For<IPasswordService>());
+
         _handler = new UpdateUserProfileHandler(
-            _userRepository,
-            _logger,
+            userRepository,
+            _context.DbContext,
+            Substitute.For<ILogger<UpdateUserProfileHandler>>(),
             _messages);
     }
 
@@ -40,10 +42,7 @@ public class UpdateUserProfileHandlerTests
     public async Task Handle_WhenLocationProvided_UpdatesLocationAndReturnsIt()
     {
         var user = Domain.User.User.Create("test@example.com", "hashedpassword", UserRole.User, "John", "Doe");
-
-        _userRepository
-            .GetForUpdateAsync(Arg.Any<Expression<Func<Domain.User.User, bool>>>(), Arg.Any<Action<IncludeBuilder<Domain.User.User>>?>())
-            .Returns(user);
+        await _context.SeedAsync(user);
 
         var request = new UpdateUserProfileRequest
         {
@@ -57,7 +56,10 @@ public class UpdateUserProfileHandlerTests
 
         result.Should().NotBeNull();
         result.Location.Should().Be("456 Nguyen Hue, Ho Chi Minh City");
-        await _userRepository.Received(1).SaveChangesAsync();
+
+        _context.DbContext.ChangeTracker.Clear();
+        _context.DbContext.Users.Single(u => u.Id == user.Id).Location
+            .Should().Be("456 Nguyen Hue, Ho Chi Minh City");
     }
 
     [Fact]
@@ -65,10 +67,7 @@ public class UpdateUserProfileHandlerTests
     {
         var user = Domain.User.User.Create("test@example.com", "hashedpassword", UserRole.User, "John", "Doe");
         user.UpdateProfile("John", "Doe", null, "Old address");
-
-        _userRepository
-            .GetForUpdateAsync(Arg.Any<Expression<Func<Domain.User.User, bool>>>(), Arg.Any<Action<IncludeBuilder<Domain.User.User>>?>())
-            .Returns(user);
+        await _context.SeedAsync(user);
 
         var request = new UpdateUserProfileRequest
         {
@@ -87,10 +86,6 @@ public class UpdateUserProfileHandlerTests
     [Fact]
     public async Task Handle_WhenUserNotFound_ThrowsResultFailureException()
     {
-        _userRepository
-            .GetForUpdateAsync(Arg.Any<Expression<Func<Domain.User.User, bool>>>(), Arg.Any<Action<IncludeBuilder<Domain.User.User>>?>())
-            .Returns((Domain.User.User?)null);
-
         var request = new UpdateUserProfileRequest
         {
             UserId = Guid.NewGuid(),
@@ -102,4 +97,7 @@ public class UpdateUserProfileHandlerTests
 
         await act.Should().ThrowAsync<ResultFailureException>();
     }
+
+    public void Dispose()
+        => _context.Dispose();
 }

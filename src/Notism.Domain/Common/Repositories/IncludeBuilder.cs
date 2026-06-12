@@ -3,13 +3,10 @@ using System.Linq.Expressions;
 namespace Notism.Domain.Common.Repositories;
 
 /// <summary>
-/// Declarative include set for the tracked write-path loads on
-/// <see cref="IRepository{T}"/>. A write handler describes the navigation graph it
-/// needs to load and mutate (typed lambdas and/or string navigation paths); the
-/// repository applies them when materialising the tracked aggregate.
-/// <para>This is the write boundary's only graph concern. Read projections live in
-/// the Application query objects over <c>IReadDbContext</c> and never go through
-/// here.</para>
+/// Declarative include set for graph loads composed over the read port. A handler
+/// describes the navigation graph it needs (typed lambdas and/or string navigation
+/// paths); the read port's <c>BuildGraphQuery</c> applies them when building the
+/// queryable, in tracking or no-tracking mode.
 /// </summary>
 public sealed class IncludeBuilder<T>
     where T : class

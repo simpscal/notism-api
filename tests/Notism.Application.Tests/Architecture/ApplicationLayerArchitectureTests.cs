@@ -7,10 +7,11 @@ using NetArchTest.Rules;
 namespace Notism.Application.Tests.Architecture;
 
 /// <summary>
-/// Guards the read/write boundary: the Application layer composes its reads through the
-/// <c>IReadDbContext</c> port and never reaches into persistence. It must depend on
-/// neither <c>Notism.Infrastructure</c> nor Entity Framework Core, so query execution
-/// stays entirely in Infrastructure.
+/// Guards the layering boundary: the Application layer composes its persistence over the
+/// <c>IReadDbContext</c> port and the <c>IRepository</c> write boundary, executing reads with
+/// Entity Framework Core operators directly. It may reference EF Core, but it must NOT depend
+/// on <c>Notism.Infrastructure</c> — query execution composes over ports, never over an
+/// Infrastructure type.
 /// </summary>
 public class ApplicationLayerArchitectureTests
 {
@@ -27,19 +28,6 @@ public class ApplicationLayerArchitectureTests
 
         result.IsSuccessful.Should().BeTrue(
             "the Application layer must not depend on Infrastructure: {0}",
-            string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
-    }
-
-    [Fact]
-    public void Application_ShouldNotReference_EntityFrameworkCore()
-    {
-        var result = Types.InAssembly(ApplicationAssembly)
-            .ShouldNot()
-            .HaveDependencyOn("Microsoft.EntityFrameworkCore")
-            .GetResult();
-
-        result.IsSuccessful.Should().BeTrue(
-            "the Application layer must not depend on Entity Framework Core: {0}",
             string.Join(", ", result.FailingTypeNames ?? Array.Empty<string>()));
     }
 }

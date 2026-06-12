@@ -1,5 +1,3 @@
-using System.Linq.Expressions;
-
 using Microsoft.EntityFrameworkCore;
 
 using Notism.Application.Common.Constants;
@@ -12,20 +10,6 @@ public class Repository<T>(AppDbContext appDbContext) : IRepository<T>
     where T : class
 {
     protected readonly DbSet<T> _dbSet = appDbContext.Set<T>();
-
-    public Task<T?> GetForUpdateAsync(Expression<Func<T, bool>> predicate, Action<IncludeBuilder<T>>? includes = null)
-    {
-        return ApplyIncludes(includes)
-            .Where(predicate)
-            .FirstOrDefaultAsync();
-    }
-
-    public Task<List<T>> ListForUpdateAsync(Expression<Func<T, bool>> predicate, Action<IncludeBuilder<T>>? includes = null)
-    {
-        return ApplyIncludes(includes)
-            .Where(predicate)
-            .ToListAsync();
-    }
 
     public async Task<T> AddAsync(T entity)
     {
@@ -54,30 +38,5 @@ public class Repository<T>(AppDbContext appDbContext) : IRepository<T>
         }
 
         return result;
-    }
-
-    private IQueryable<T> ApplyIncludes(Action<IncludeBuilder<T>>? includes)
-    {
-        var queryable = _dbSet.AsQueryable();
-
-        if (includes is null)
-        {
-            return queryable;
-        }
-
-        var builder = new IncludeBuilder<T>();
-        includes(builder);
-
-        foreach (var include in builder.ExpressionIncludes)
-        {
-            queryable = queryable.Include(include);
-        }
-
-        foreach (var stringInclude in builder.StringIncludes)
-        {
-            queryable = queryable.Include(stringInclude);
-        }
-
-        return queryable;
     }
 }

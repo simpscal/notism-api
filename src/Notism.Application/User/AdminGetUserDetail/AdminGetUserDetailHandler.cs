@@ -1,10 +1,13 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Shared.Exceptions;
+
+using DomainUser = Notism.Domain.User.User;
 
 namespace Notism.Application.User.AdminGetUserDetail;
 
@@ -28,7 +31,9 @@ public class AdminGetUserDetailHandler : IRequestHandler<AdminGetUserDetailReque
         AdminGetUserDetailRequest request,
         CancellationToken cancellationToken)
     {
-        var user = await new GetUserByIdQuery(_readDbContext).ExecuteAsync(request.UserId, cancellationToken)
+        var user = await _readDbContext.Set<DomainUser>()
+                .Where(u => u.Id == request.UserId)
+                .FirstOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException(_messages.UserNotFound);
 
         _logger.LogInformation("Admin retrieved detail for user {UserId}", request.UserId);

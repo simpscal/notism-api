@@ -1,5 +1,6 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Persistence;
@@ -10,6 +11,9 @@ using Notism.Domain.Payment.Enums;
 using Notism.Domain.User.Enums;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Extensions;
+
+using DomainOrder = Notism.Domain.Order.Order;
+using DomainPayment = Notism.Domain.Payment.Payment;
 
 namespace Notism.Application.Order.GetOrderById;
 
@@ -39,13 +43,17 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
         var userRole = request.Role.FromCamelCase<UserRole>() ?? UserRole.User;
         var isAdmin = userRole == UserRole.Admin;
 
-        var order = await new GetOrderByIdQuery(_readDbContext)
-                .ExecuteAsync(request.SlugId, request.UserId, isAdmin, cancellationToken)
+        var order = await _readDbContext.BuildGraphQuery<DomainOrder>(
+                o => o.SlugId == request.SlugId && (o.UserId == request.UserId || isAdmin),
+                includes => includes
+                    .Include("Items.Food.Images")
+                    .Include(o => o.StatusHistory))
+                .FirstOrDefaultAsync(cancellationToken)
             ?? throw new ResultFailureException(_messages.OrderNotFound);
 
         _logger.LogInformation("Retrieved order {SlugId} for user {UserId} (Admin: {IsAdmin})", request.SlugId, request.UserId, isAdmin);
 
-        var payment = await new GetBankAccountQuery(_readDbContext).ExecuteAsync(cancellationToken);
+        var payment = await _readDbContext.Set<DomainPayment>().FirstOrDefaultAsync(cancellationToken);
         var bankAccountConfigured = payment != null;
 
         PaymentQrResponse? paymentQr = null;

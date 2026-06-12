@@ -1,10 +1,12 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
+using Notism.Domain.Cart;
 using Notism.Domain.Cart.Repositories;
-using Notism.Domain.Common.Repositories;
 using Notism.Domain.Food;
 using Notism.Shared.Exceptions;
 
@@ -13,18 +15,18 @@ namespace Notism.Application.Cart.UpdateCartItemCustomisations;
 public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartItemCustomisationsRequest, UpdateCartItemCustomisationsResponse>
 {
     private readonly ICartItemRepository _cartItemRepository;
-    private readonly IRepository<FoodCustomisationOption> _optionRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly ILogger<UpdateCartItemCustomisationsHandler> _logger;
     private readonly IMessages _messages;
 
     public UpdateCartItemCustomisationsHandler(
         ICartItemRepository cartItemRepository,
-        IRepository<FoodCustomisationOption> optionRepository,
+        IReadDbContext readDbContext,
         ILogger<UpdateCartItemCustomisationsHandler> logger,
         IMessages messages)
     {
         _cartItemRepository = cartItemRepository;
-        _optionRepository = optionRepository;
+        _readDbContext = readDbContext;
         _logger = logger;
         _messages = messages;
     }
@@ -33,14 +35,18 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
         UpdateCartItemCustomisationsRequest request,
         CancellationToken cancellationToken)
     {
-        var cartItem = await _cartItemRepository.GetForUpdateAsync(
+        // Loaded TRACKED so the clear/re-add customisation mutations persist on
+        // SaveChanges via the same context.
+        var cartItem = await _readDbContext.BuildGraphQuery<CartItem>(
                 c => c.Id == request.CartItemId,
                 includes => includes
                     .Include(c => c.Food)
                     .Include("Food.Category")
                     .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1))
                     .Include("Food.CustomisationGroups.Options")
-                    .Include(c => c.Customisations))
+                    .Include(c => c.Customisations),
+                tracking: true)
+            .FirstOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException(_messages.CartItemNotFound);
 
         if (cartItem.UserId != request.UserId)
@@ -50,9 +56,11 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
 
         // Resolve all options in a single query
         var requestedOptionIds = request.Customisations.Select(c => c.OptionId).ToList();
-        var fetchedOptions = (await _optionRepository.ListForUpdateAsync(
+        var fetchedOptions = (await _readDbContext.BuildGraphQuery<FoodCustomisationOption>(
                 o => requestedOptionIds.Contains(o.Id) && o.Group.FoodId == cartItem.FoodId,
-                includes => includes.Include(o => o.Group)))
+                includes => includes.Include(o => o.Group),
+                tracking: true)
+            .ToListAsync(cancellationToken))
             .ToDictionary(o => o.Id);
 
         var resolvedOptions = new List<(FoodCustomisationOption Option, string GroupLabel)>();

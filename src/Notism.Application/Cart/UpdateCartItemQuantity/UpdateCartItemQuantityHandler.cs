@@ -1,10 +1,12 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
+using Notism.Domain.Cart;
 using Notism.Domain.Cart.Repositories;
-using Notism.Domain.Common.Repositories;
 using Notism.Shared.Exceptions;
 
 namespace Notism.Application.Cart.UpdateCartItemQuantity;
@@ -12,18 +14,18 @@ namespace Notism.Application.Cart.UpdateCartItemQuantity;
 public class UpdateCartItemQuantityHandler : IRequestHandler<UpdateCartItemQuantityRequest, UpdateCartItemQuantityResponse>
 {
     private readonly ICartItemRepository _cartItemRepository;
-    private readonly IRepository<Domain.Food.Food> _foodRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly ILogger<UpdateCartItemQuantityHandler> _logger;
     private readonly IMessages _messages;
 
     public UpdateCartItemQuantityHandler(
         ICartItemRepository cartItemRepository,
-        IRepository<Domain.Food.Food> foodRepository,
+        IReadDbContext readDbContext,
         ILogger<UpdateCartItemQuantityHandler> logger,
         IMessages messages)
     {
         _cartItemRepository = cartItemRepository;
-        _foodRepository = foodRepository;
+        _readDbContext = readDbContext;
         _logger = logger;
         _messages = messages;
     }
@@ -32,7 +34,10 @@ public class UpdateCartItemQuantityHandler : IRequestHandler<UpdateCartItemQuant
         UpdateCartItemQuantityRequest request,
         CancellationToken cancellationToken)
     {
-        var cartItem = await _cartItemRepository.GetForUpdateAsync(c => c.Id == request.CartItemId)
+        // Loaded TRACKED so the quantity mutation persists on SaveChanges via the same context.
+        var cartItem = await _readDbContext.Set<CartItem>(tracking: true)
+                .Where(c => c.Id == request.CartItemId)
+                .FirstOrDefaultAsync(cancellationToken)
             ?? throw new ResultFailureException(_messages.CartItemNotFound);
 
         // Verify the cart item belongs to the user
@@ -41,8 +46,10 @@ public class UpdateCartItemQuantityHandler : IRequestHandler<UpdateCartItemQuant
             throw new ResultFailureException(_messages.CartItemNotBelongToUser);
         }
 
-        // Check if food is still available
-        var food = await _foodRepository.GetForUpdateAsync(f => f.Id == cartItem.FoodId)
+        // Check if food is still available (read-only lookup)
+        var food = await _readDbContext.Set<Domain.Food.Food>()
+                .Where(f => f.Id == cartItem.FoodId)
+                .FirstOrDefaultAsync(cancellationToken)
             ?? throw new ResultFailureException(_messages.FoodNotFound);
 
         if (!food.IsAvailable)

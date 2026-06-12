@@ -2,12 +2,16 @@ using System.Security.Cryptography;
 
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
+
 using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Domain.User.Enums;
 using Notism.Domain.User.Repositories;
 using Notism.Domain.User.ValueObjects;
 using Notism.Shared.Exceptions;
+
+using DomainUser = Notism.Domain.User.User;
 
 namespace Notism.Application.Auth.GoogleOAuth;
 
@@ -49,7 +53,9 @@ public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackReq
             cancellationToken);
 
         var email = Email.Create(userInfo.Email!);
-        var user = await new GetUserByEmailQuery(_readDbContext).ExecuteAsync(email, cancellationToken);
+        var user = await _readDbContext.Set<DomainUser>()
+            .Where(u => u.Email.Equals(email))
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (user == null)
         {

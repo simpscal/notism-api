@@ -1,5 +1,6 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Constants;
@@ -7,6 +8,8 @@ using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Extensions;
+
+using DomainUser = Notism.Domain.User.User;
 
 namespace Notism.Application.User.GetProfile;
 
@@ -33,7 +36,9 @@ public class GetUserProfileHandler : IRequestHandler<GetUserProfileRequest, GetU
         GetUserProfileRequest request,
         CancellationToken cancellationToken)
     {
-        var user = await new GetUserByIdQuery(_readDbContext).ExecuteAsync(request.UserId, cancellationToken)
+        var user = await _readDbContext.Set<DomainUser>()
+                .Where(u => u.Id == request.UserId)
+                .FirstOrDefaultAsync(cancellationToken)
             ?? throw new ResultFailureException(_messages.UserNotFound);
 
         string avatarUrl = user.AvatarUrl ?? string.Empty;

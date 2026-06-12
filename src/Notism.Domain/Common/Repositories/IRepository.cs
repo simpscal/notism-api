@@ -1,30 +1,14 @@
-using System.Linq.Expressions;
-
 namespace Notism.Domain.Common.Repositories;
 
 /// <summary>
-/// Command/write boundary for an aggregate. Exposes tracked predicate-based loads
-/// (for read-modify-write), entity add/remove, and SaveChanges. Read-only and
-/// projection queries do NOT live here — they are Application query objects over
-/// <c>IReadDbContext</c>.
+/// Write boundary for an aggregate: entity add/remove and SaveChanges, plus any sanctioned
+/// bulk mutations declared on a derived repository. Retrieval — read projections and the
+/// tracked read-modify-write loads — does NOT live here; it is composed over
+/// <c>IReadDbContext</c> in the Application handlers.
 /// </summary>
 public interface IRepository<T>
     where T : class
 {
-    /// <summary>
-    /// Loads a single TRACKED aggregate matching <paramref name="predicate"/>, with the
-    /// navigation graph described by <paramref name="includes"/>. Used by the
-    /// read-modify-write handlers to load, mutate, then SaveChanges.
-    /// </summary>
-    Task<T?> GetForUpdateAsync(Expression<Func<T, bool>> predicate, Action<IncludeBuilder<T>>? includes = null);
-
-    /// <summary>
-    /// Loads every TRACKED aggregate matching <paramref name="predicate"/>, with the
-    /// navigation graph described by <paramref name="includes"/>. Used by the bulk
-    /// read-modify-write handlers.
-    /// </summary>
-    Task<List<T>> ListForUpdateAsync(Expression<Func<T, bool>> predicate, Action<IncludeBuilder<T>>? includes = null);
-
     Task<T> AddAsync(T entity);
     T Add(T entity);
     void Remove(T entity);

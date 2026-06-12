@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using System.Reflection;
 
 using FluentAssertions;
@@ -7,30 +6,31 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Cart.UpdateCartItemCustomisations;
 using Notism.Application.Common.Services;
+using Notism.Application.Tests.Common;
 using Notism.Domain.Cart;
-using Notism.Domain.Cart.Repositories;
-using Notism.Domain.Common.Repositories;
 using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
+using Notism.Infrastructure.Repositories;
 using Notism.Shared.Exceptions;
 
 using NSubstitute;
 
 namespace Notism.Application.Tests.Cart.UpdateCartItemCustomisations;
 
-public class UpdateCartItemCustomisationsHandlerTests
+/// <summary>
+/// Exercises the handler over an EF InMemory database: the cart item graph and the
+/// customisation options are loaded TRACKED through the read port, and the clear/re-add
+/// customisation mutations persist via the repository SaveChanges on the same context.
+/// </summary>
+public class UpdateCartItemCustomisationsHandlerTests : IDisposable
 {
-    private readonly ICartItemRepository _cartItemRepository;
-    private readonly IRepository<FoodCustomisationOption> _optionRepository;
-    private readonly ILogger<UpdateCartItemCustomisationsHandler> _logger;
+    private readonly WriteHandlerContext _context;
     private readonly IMessages _messages;
     private readonly UpdateCartItemCustomisationsHandler _handler;
 
     public UpdateCartItemCustomisationsHandlerTests()
     {
-        _cartItemRepository = Substitute.For<ICartItemRepository>();
-        _optionRepository = Substitute.For<IRepository<FoodCustomisationOption>>();
-        _logger = Substitute.For<ILogger<UpdateCartItemCustomisationsHandler>>();
+        _context = new WriteHandlerContext();
         _messages = Substitute.For<IMessages>();
 
         _messages.CartItemNotFound.Returns("Cart item not found");
@@ -38,9 +38,9 @@ public class UpdateCartItemCustomisationsHandlerTests
         _messages.CartItemNotBelongToUser.Returns("Cart item does not belong to the user");
 
         _handler = new UpdateCartItemCustomisationsHandler(
-            _cartItemRepository,
-            _optionRepository,
-            _logger,
+            new CartItemRepository(_context.DbContext),
+            _context.DbContext,
+            Substitute.For<ILogger<UpdateCartItemCustomisationsHandler>>(),
             _messages);
     }
 
@@ -52,17 +52,10 @@ public class UpdateCartItemCustomisationsHandlerTests
         var group = FoodCustomisationGroup.Create(food.Id, "Size", true, 1);
         group.AddOption("Large", 5000m, 1);
         food.AddCustomisationGroup(group);
-        var cartItem = CreateCartItemWithFood(userId, food);
+        var cartItem = CreateCartItem(userId, food);
+        await _context.SeedAsync(food, cartItem);
 
         var option = group.Options.First();
-
-        _cartItemRepository
-            .GetForUpdateAsync(Arg.Any<Expression<Func<CartItem, bool>>>(), Arg.Any<Action<IncludeBuilder<CartItem>>?>())
-            .Returns(cartItem);
-
-        _optionRepository
-            .ListForUpdateAsync(Arg.Any<Expression<Func<FoodCustomisationOption, bool>>>(), Arg.Any<Action<IncludeBuilder<FoodCustomisationOption>>?>())
-            .Returns(new List<FoodCustomisationOption> { option });
 
         var request = new UpdateCartItemCustomisationsRequest
         {
@@ -78,19 +71,17 @@ public class UpdateCartItemCustomisationsHandlerTests
 
         result.Should().NotBeNull();
         result.Id.Should().Be(cartItem.Id);
-        cartItem.Customisations.Should().HaveCount(1);
-        cartItem.Customisations.First().CustomisationOptionId.Should().Be(option.Id);
 
-        await _cartItemRepository.Received(1).SaveChangesAsync();
+        _context.DbContext.ChangeTracker.Clear();
+        var persisted = _context.DbContext.CartItemCustomisations
+            .Where(c => c.CartItemId == cartItem.Id)
+            .ToList();
+        persisted.Should().ContainSingle(c => c.CustomisationOptionId == option.Id);
     }
 
     [Fact]
     public async Task Handle_WhenCartItemNotFound_ThrowsNotFoundException()
     {
-        _cartItemRepository
-            .GetForUpdateAsync(Arg.Any<Expression<Func<CartItem, bool>>>(), Arg.Any<Action<IncludeBuilder<CartItem>>?>())
-            .Returns((CartItem?)null);
-
         var request = new UpdateCartItemCustomisationsRequest
         {
             CartItemId = Guid.NewGuid(),
@@ -109,12 +100,9 @@ public class UpdateCartItemCustomisationsHandlerTests
     [Fact]
     public async Task Handle_WhenCartItemBelongsToDifferentUser_ThrowsForbiddenException()
     {
-        var foodId = Guid.NewGuid();
-        var cartItem = CreateCartItem(Guid.NewGuid(), foodId);
-
-        _cartItemRepository
-            .GetForUpdateAsync(Arg.Any<Expression<Func<CartItem, bool>>>(), Arg.Any<Action<IncludeBuilder<CartItem>>?>())
-            .Returns(cartItem);
+        var food = CreateFood();
+        var cartItem = CreateCartItem(Guid.NewGuid(), food);
+        await _context.SeedAsync(food, cartItem);
 
         var request = new UpdateCartItemCustomisationsRequest
         {
@@ -135,15 +123,9 @@ public class UpdateCartItemCustomisationsHandlerTests
     public async Task Handle_WhenOptionNotFound_ThrowsNotFoundException()
     {
         var userId = Guid.NewGuid();
-        var cartItem = CreateCartItem(userId, Guid.NewGuid());
-
-        _cartItemRepository
-            .GetForUpdateAsync(Arg.Any<Expression<Func<CartItem, bool>>>(), Arg.Any<Action<IncludeBuilder<CartItem>>?>())
-            .Returns(cartItem);
-
-        _optionRepository
-            .ListForUpdateAsync(Arg.Any<Expression<Func<FoodCustomisationOption, bool>>>(), Arg.Any<Action<IncludeBuilder<FoodCustomisationOption>>?>())
-            .Returns(new List<FoodCustomisationOption>());
+        var food = CreateFood();
+        var cartItem = CreateCartItem(userId, food);
+        await _context.SeedAsync(food, cartItem);
 
         var request = new UpdateCartItemCustomisationsRequest
         {
@@ -184,22 +166,20 @@ public class UpdateCartItemCustomisationsHandlerTests
         result.Errors.Should().Contain(e => e.ErrorMessage == "Duplicate group IDs are not allowed in a single request");
     }
 
+    public void Dispose()
+        => _context.Dispose();
+
     private static Domain.Food.Food CreateFood()
         => Domain.Food.Food.Create("Pizza", "Delicious pizza", 100000m, Guid.NewGuid(), QuantityUnit.Grams, 5);
 
-    private static CartItem CreateCartItem(Guid userId, Guid foodId)
-    {
-        var cartItem = CartItem.Create(userId, foodId, 1);
-        return cartItem;
-    }
-
-    private static CartItem CreateCartItemWithFood(Guid userId, Domain.Food.Food food)
+    // EF InMemory inner-joins a required reference Include; link the cart item's Food
+    // navigation so the seeded item survives the handler's graph load.
+    private static CartItem CreateCartItem(Guid userId, Domain.Food.Food food)
     {
         var cartItem = CartItem.Create(userId, food.Id, 1);
-
-        // Set the Food navigation property via reflection so handler mapping works in tests
-        var foodProp = typeof(CartItem).GetProperty(nameof(CartItem.Food), BindingFlags.Public | BindingFlags.Instance)!;
-        foodProp.SetValue(cartItem, food);
+        typeof(CartItem)
+            .GetProperty(nameof(CartItem.Food), BindingFlags.Public | BindingFlags.Instance)!
+            .SetValue(cartItem, food);
         return cartItem;
     }
 }

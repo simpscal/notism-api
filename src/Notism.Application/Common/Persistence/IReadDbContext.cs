@@ -5,62 +5,52 @@ using Notism.Domain.Common.Repositories;
 namespace Notism.Application.Common.Persistence;
 
 /// <summary>
-/// Read-only persistence port for the Application layer's query objects.
-/// <para>Every <see cref="Set{T}"/> query is no-tracking and is composed with BCL
-/// <c>System.Linq</c> operators (<c>Where</c>/<c>OrderBy</c>/<c>Select</c>) inside a
-/// per-handler query object, then materialised through the async methods on this
-/// port. The Application layer never calls an Entity Framework <c>IQueryable</c>
-/// extension directly — query execution lives entirely in the Infrastructure
-/// implementation. Reads project straight to their response/projection shape; there
-/// is no <c>Include</c> on this port. Command/write loads stay in the repositories.</para>
+/// Persistence port for the Application layer. Every retrieval — read projections and the
+/// tracked read-modify-write loads — composes over this port and executes with Entity
+/// Framework Core async/LINQ operators directly in the per-handler query logic.
+/// <para><see cref="Set{T}"/> returns a composable queryable that is no-tracking by
+/// default (tracking on request); <see cref="BuildGraphQuery{T}(Expression{Func{T, bool}}, Action{IncludeBuilder{T}}, Func{IQueryable{T}, IQueryable{T}}?, bool)"/>
+/// applies the declared navigation graph (the <c>Include</c> calls live in the
+/// Infrastructure implementation). A handler that mutates an aggregate loads it in tracking
+/// mode and persists it through the repository's <c>SaveChangesAsync</c> — the read port and
+/// the repository share the same context instance, so the tracked entity is saved. Reporting
+/// reads whose aggregation is expressed in database-native SQL use <see cref="SqlQuery{T}"/>.</para>
 /// </summary>
 public interface IReadDbContext
 {
     /// <summary>
-    /// Returns a no-tracking queryable over the entity set, the composition root for
-    /// every read query object.
+    /// Returns a composable queryable over the entity set, the composition root for every
+    /// read. No-tracking by default; pass <paramref name="tracking"/> <c>true</c> to obtain a
+    /// tracked queryable for a read-modify-write load.
     /// </summary>
-    IQueryable<T> Set<T>()
+    IQueryable<T> Set<T>(bool tracking = false)
         where T : class;
 
     /// <summary>
-    /// Materialises a single no-tracking entity together with the navigation graph the
-    /// read maps over. A read whose response builds off the entity's navigations declares
-    /// the required graph (typed lambdas and/or string paths) and the Infrastructure
-    /// implementation loads it — the Application layer never calls EF's <c>Include</c>.
-    /// Use this only for reads that map a full entity graph; projection reads compose a
-    /// <c>.Select()</c> over <see cref="Set{T}"/> instead.
+    /// Builds a composable queryable with the declared navigation graph applied (typed
+    /// lambdas and/or string paths; the <c>Include</c> calls are applied in Infrastructure),
+    /// the predicate filtered and optional ordering applied. No-tracking by default; pass
+    /// <paramref name="tracking"/> <c>true</c> for a read-modify-write load.
     /// </summary>
-    Task<T?> FirstWithGraphAsync<T>(
+    IQueryable<T> BuildGraphQuery<T>(
         Expression<Func<T, bool>> predicate,
         Action<IncludeBuilder<T>> includes,
         Func<IQueryable<T>, IQueryable<T>>? orderBy = null,
-        CancellationToken cancellationToken = default)
+        bool tracking = false)
         where T : class;
 
     /// <summary>
-    /// Materialises every matching no-tracking entity together with the declared
-    /// navigation graph, in the declared order. Includes are applied in Infrastructure.
+    /// Builds a paged composable queryable: the declared navigation graph, predicate and
+    /// ordering as in the non-paged overload, plus the <paramref name="skip"/>/<paramref name="take"/>
+    /// page window. No-tracking by default.
     /// </summary>
-    Task<List<T>> ListWithGraphAsync<T>(
-        Expression<Func<T, bool>> predicate,
-        Action<IncludeBuilder<T>> includes,
-        Func<IQueryable<T>, IQueryable<T>>? orderBy = null,
-        CancellationToken cancellationToken = default)
-        where T : class;
-
-    /// <summary>
-    /// Materialises a paged no-tracking entity graph: the filter, ordering, total count
-    /// and page window all execute server-side; the declared includes are applied in
-    /// Infrastructure.
-    /// </summary>
-    Task<(int TotalCount, List<T> Items)> PagedWithGraphAsync<T>(
+    IQueryable<T> BuildGraphQuery<T>(
         Expression<Func<T, bool>> predicate,
         int skip,
         int take,
         Action<IncludeBuilder<T>> includes,
         Func<IQueryable<T>, IQueryable<T>>? orderBy = null,
-        CancellationToken cancellationToken = default)
+        bool tracking = false)
         where T : class;
 
     /// <summary>
@@ -68,16 +58,4 @@ public interface IReadDbContext
     /// aggregation is expressed in database-native SQL.
     /// </summary>
     IQueryable<T> SqlQuery<T>(FormattableString sql);
-
-    Task<List<T>> ToListAsync<T>(IQueryable<T> queryable, CancellationToken cancellationToken = default);
-
-    Task<T?> FirstOrDefaultAsync<T>(IQueryable<T> queryable, CancellationToken cancellationToken = default);
-
-    Task<int> CountAsync<T>(IQueryable<T> queryable, CancellationToken cancellationToken = default);
-
-    Task<bool> AnyAsync<T>(IQueryable<T> queryable, CancellationToken cancellationToken = default);
-
-    Task<int> SumAsync<T>(IQueryable<T> queryable, Expression<Func<T, int>> selector, CancellationToken cancellationToken = default);
-
-    Task<decimal> SumAsync<T>(IQueryable<T> queryable, Expression<Func<T, decimal?>> selector, CancellationToken cancellationToken = default);
 }

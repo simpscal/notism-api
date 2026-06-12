@@ -1,7 +1,11 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
+
 using Notism.Application.Common.Persistence;
 using Notism.Application.Food.Common;
+
+using DomainCategory = Notism.Domain.Food.Category;
 
 namespace Notism.Application.Food.GetCategories;
 
@@ -18,7 +22,10 @@ public class GetCategoriesHandler : IRequestHandler<GetCategoriesRequest, GetCat
         GetCategoriesRequest request,
         CancellationToken cancellationToken)
     {
-        var categories = await new GetCategoriesQuery(_readDbContext).ExecuteAsync(cancellationToken);
+        var categories = await _readDbContext.Set<DomainCategory>()
+            .Where(c => !c.IsDeleted)
+            .OrderBy(c => c.Name)
+            .ToListAsync(cancellationToken);
         var items = categories
             .Select(CategoryResponse.FromDomain)
             .ToList();

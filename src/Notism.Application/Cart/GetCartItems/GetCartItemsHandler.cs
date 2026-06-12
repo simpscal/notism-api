@@ -1,9 +1,11 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
+using Notism.Domain.Cart;
 
 namespace Notism.Application.Cart.GetCartItems;
 
@@ -27,7 +29,15 @@ public class GetCartItemsHandler : IRequestHandler<GetCartItemsRequest, GetCartI
         GetCartItemsRequest request,
         CancellationToken cancellationToken)
     {
-        var cartItems = await new GetCartItemsQuery(_readDbContext).ExecuteAsync(request.UserId, cancellationToken);
+        var cartItems = await _readDbContext.BuildGraphQuery<CartItem>(
+                c => c.UserId == request.UserId,
+                includes => includes
+                    .Include(c => c.Food)
+                    .Include("Food.Category")
+                    .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1))
+                    .Include("Food.CustomisationGroups.Options")
+                    .Include(c => c.Customisations))
+            .ToListAsync(cancellationToken);
 
         _logger.LogInformation("Retrieved {Count} cart items for user {UserId}", cartItems.Count, request.UserId);
 

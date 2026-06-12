@@ -1,6 +1,10 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
+
 using Notism.Application.Common.Persistence;
+
+using DomainPayment = Notism.Domain.Payment.Payment;
 
 namespace Notism.Application.Payment.GetBankAccount;
 
@@ -15,7 +19,7 @@ public class GetBankAccountHandler : IRequestHandler<GetBankAccountRequest, GetB
 
     public async Task<GetBankAccountResponse?> Handle(GetBankAccountRequest request, CancellationToken cancellationToken)
     {
-        var payment = await new GetBankAccountQuery(_readDbContext).ExecuteAsync(cancellationToken);
+        var payment = await _readDbContext.Set<DomainPayment>().FirstOrDefaultAsync(cancellationToken);
 
         if (payment is null)
         {

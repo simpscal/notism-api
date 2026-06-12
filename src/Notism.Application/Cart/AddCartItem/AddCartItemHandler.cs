@@ -1,11 +1,12 @@
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
+using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Domain.Cart.Repositories;
-using Notism.Domain.Common.Repositories;
 using Notism.Domain.Food;
 using Notism.Shared.Exceptions;
 
@@ -14,8 +15,7 @@ namespace Notism.Application.Cart.AddCartItem;
 public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartItemResponse>
 {
     private readonly ICartItemRepository _cartItemRepository;
-    private readonly IRepository<Domain.Food.Food> _foodRepository;
-    private readonly IRepository<FoodCustomisationOption> _optionRepository;
+    private readonly IReadDbContext _readDbContext;
     private readonly IStorageService _storageService;
     private readonly ILogger<AddCartItemHandler> _logger;
     private readonly IMessages _messages;
@@ -23,15 +23,13 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
 
     public AddCartItemHandler(
         ICartItemRepository cartItemRepository,
-        IRepository<Domain.Food.Food> foodRepository,
-        IRepository<FoodCustomisationOption> optionRepository,
+        IReadDbContext readDbContext,
         IStorageService storageService,
         ILogger<AddCartItemHandler> logger,
         IMessages messages)
     {
         _cartItemRepository = cartItemRepository;
-        _foodRepository = foodRepository;
-        _optionRepository = optionRepository;
+        _readDbContext = readDbContext;
         _storageService = storageService;
         _logger = logger;
         _messages = messages;
@@ -56,12 +54,16 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
 
     private async Task<Domain.Food.Food> ValidateAndFetchFoodAsync()
     {
-        var food = await _foodRepository.GetForUpdateAsync(
+        // Loaded TRACKED: the food's customisation graph is reused when building the cart
+        // item, and a tracked load keeps a single identity for the food across this scope.
+        var food = await _readDbContext.BuildGraphQuery<Domain.Food.Food>(
                 f => f.Id == _request!.FoodId,
                 includes => includes
                     .Include(f => f.Category!)
                     .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1))
-                    .Include("CustomisationGroups.Options"))
+                    .Include("CustomisationGroups.Options"),
+                tracking: true)
+            .FirstOrDefaultAsync()
             ?? throw new ResultFailureException(_messages.FoodNotFound);
 
         if (!food.IsAvailable)
@@ -74,12 +76,16 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
 
     private async Task<CartItem?> GetExistingCartItemAsync()
     {
-        return await _cartItemRepository.GetForUpdateAsync(
-            c => c.UserId == _request!.UserId && c.FoodId == _request.FoodId,
-            includes => includes
-                .Include(c => c.Food)
-                .Include("Food.Category")
-                .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1)));
+        // Loaded TRACKED so the quantity/customisation mutations below persist on
+        // SaveChanges via the same context.
+        return await _readDbContext.BuildGraphQuery<CartItem>(
+                c => c.UserId == _request!.UserId && c.FoodId == _request.FoodId,
+                includes => includes
+                    .Include(c => c.Food)
+                    .Include("Food.Category")
+                    .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1)),
+                tracking: true)
+            .FirstOrDefaultAsync();
     }
 
     private async Task<List<FoodCustomisationOption>> ResolveCustomisationOptionsAsync(Guid foodId)
@@ -90,9 +96,11 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         }
 
         var requestedOptionIds = _request.Customisations.Select(c => c.OptionId).ToList();
-        var fetched = (await _optionRepository.ListForUpdateAsync(
+        var fetched = (await _readDbContext.BuildGraphQuery<FoodCustomisationOption>(
                 o => requestedOptionIds.Contains(o.Id) && o.Group.FoodId == foodId,
-                includes => includes.Include(o => o.Group)))
+                includes => includes.Include(o => o.Group),
+                tracking: true)
+            .ToListAsync())
             .ToDictionary(o => o.Id);
 
         var resolved = new List<FoodCustomisationOption>();
