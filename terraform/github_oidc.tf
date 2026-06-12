@@ -20,13 +20,13 @@ resource "aws_iam_openid_connect_provider" "github_actions" {
 # notism-api deploy role
 #
 # Assumed by GitHub Actions for the simpscal/notism-api repo to deploy the API
-# (ECS/ECR/CloudFront) and — via the inline policy below — start the API EC2
+# (ECR/CloudFront) and — via the inline policy below — start the API EC2
 # instance for the deploy auto-start step.
 # ------------------------------------------------------------------------------
 
 resource "aws_iam_role" "api_deploy" {
   name        = "notism-api-deploy-role"
-  description = "GitHub Actions OIDC role for Notism API/Worker deploy (ECR, EC2, ECS, CloudFront)"
+  description = "GitHub Actions OIDC role for Notism API deploy (ECR, EC2, CloudFront)"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -62,11 +62,6 @@ resource "aws_iam_role_policy_attachment" "api_deploy_cloudfront" {
 resource "aws_iam_role_policy_attachment" "api_deploy_ecr" {
   role       = aws_iam_role.api_deploy.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
-}
-
-resource "aws_iam_role_policy_attachment" "api_deploy_ecs" {
-  role       = aws_iam_role.api_deploy.name
-  policy_arn = "arn:aws:iam::aws:policy/AmazonECS_FullAccess"
 }
 
 # NEW (the only intended apply-time change): grant the deploy role permission to
@@ -179,11 +174,6 @@ import {
 import {
   to = aws_iam_role_policy_attachment.api_deploy_ecr
   id = "notism-api-deploy-role/arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
-}
-
-import {
-  to = aws_iam_role_policy_attachment.api_deploy_ecs
-  id = "notism-api-deploy-role/arn:aws:iam::aws:policy/AmazonECS_FullAccess"
 }
 
 import {

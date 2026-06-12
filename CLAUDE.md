@@ -44,7 +44,6 @@ src/
   Notism.Domain/           # Aggregates, entities, domain events
   Notism.Infrastructure/    # EF Core, repositories, external services
   Notism.Shared/            # Result pattern, constants, extensions
-  Notism.Worker/            # Background services (token cleanup)
 tests/
   Notism.Api.Tests/         # API integration tests
   Notism.Application.Tests/  # Application unit tests
@@ -126,6 +125,5 @@ Resources: VPC, EC2 (t4g.micro), RDS PostgreSQL (optional), ECR, S3, CloudFront
 | Workflow | Target | Trigger |
 |----------|---------|---------|
 | `deploy.yml` | AWS EC2 (Docker Compose) | Push to main/dev |
-| `deploy-worker.yml` | AWS ECS | Push to main/dev when Worker/Domain/Infrastructure/Shared change |
 
 Branch → environment: `main` = prod, `dev` = dev

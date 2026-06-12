@@ -134,15 +134,6 @@ A `ngrok.yml` is included at the repo root to expose the local API over a public
 ./start-ngrok.sh
 ```
 
-### Running the Worker Service
-
-The worker service handles background tasks (e.g., token cleanup):
-
-```bash
-cd src/Notism.Worker
-dotnet run
-```
-
 ## Code Formatting
 
 This project uses **dotnet format** to automatically fix coding errors and enforce consistent code style. The project includes:
