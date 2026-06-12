@@ -56,9 +56,8 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
     {
         // Loaded TRACKED: the food's customisation graph is reused when building the cart
         // item, and a tracked load keeps a single identity for the food across this scope.
-        var food = await _readDbContext.BuildGraphQuery<Domain.Food.Food>(
-                f => f.Id == _request!.FoodId,
-                tracking: true)
+        var food = await _readDbContext.Set<Domain.Food.Food>(tracking: true)
+            .Where(f => f.Id == _request!.FoodId)
             .Include(f => f.Category!)
             .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1))
             .Include("CustomisationGroups.Options")
@@ -77,9 +76,8 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
     {
         // Loaded TRACKED so the quantity/customisation mutations below persist on
         // SaveChanges via the same context.
-        return await _readDbContext.BuildGraphQuery<CartItem>(
-                c => c.UserId == _request!.UserId && c.FoodId == _request.FoodId,
-                tracking: true)
+        return await _readDbContext.Set<CartItem>(tracking: true)
+            .Where(c => c.UserId == _request!.UserId && c.FoodId == _request.FoodId)
             .Include(c => c.Food)
             .Include("Food.Category")
             .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1))
@@ -94,9 +92,8 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         }
 
         var requestedOptionIds = _request.Customisations.Select(c => c.OptionId).ToList();
-        var fetched = (await _readDbContext.BuildGraphQuery<FoodCustomisationOption>(
-                o => requestedOptionIds.Contains(o.Id) && o.Group.FoodId == foodId,
-                tracking: true)
+        var fetched = (await _readDbContext.Set<FoodCustomisationOption>(tracking: true)
+            .Where(o => requestedOptionIds.Contains(o.Id) && o.Group.FoodId == foodId)
             .Include(o => o.Group)
             .ToListAsync())
             .ToDictionary(o => o.Id);

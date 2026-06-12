@@ -39,9 +39,8 @@ public class AdminUpdateFoodHandler : IRequestHandler<AdminUpdateFoodRequest, Ad
         AdminUpdateFoodRequest request,
         CancellationToken cancellationToken)
     {
-        var food = await _readDbContext.BuildGraphQuery<Domain.Food.Food>(
-                f => f.Id == request.FoodId && !f.IsDeleted,
-                tracking: true)
+        var food = await _readDbContext.Set<Domain.Food.Food>(tracking: true)
+            .Where(f => f.Id == request.FoodId && !f.IsDeleted)
             .Include(f => f.Images)
             .Include(f => f.Category!)
             .FirstOrDefaultAsync(cancellationToken);

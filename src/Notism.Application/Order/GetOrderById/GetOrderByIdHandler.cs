@@ -43,8 +43,8 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
         var userRole = request.Role.FromCamelCase<UserRole>() ?? UserRole.User;
         var isAdmin = userRole == UserRole.Admin;
 
-        var order = await _readDbContext.BuildGraphQuery<DomainOrder>(
-                o => o.SlugId == request.SlugId && (o.UserId == request.UserId || isAdmin))
+        var order = await _readDbContext.Set<DomainOrder>()
+                .Where(o => o.SlugId == request.SlugId && (o.UserId == request.UserId || isAdmin))
                 .Include("Items.Food.Images")
                 .Include(o => o.StatusHistory)
                 .FirstOrDefaultAsync(cancellationToken)

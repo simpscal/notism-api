@@ -43,9 +43,9 @@ public class AdminOrdersForKanbanHandler : IRequestHandler<AdminOrdersForKanbanR
                 && (paymentStatus == null || order.PaymentStatus == paymentStatus);
 
         IQueryable<DomainOrder> BuildQuery() =>
-            _readDbContext.BuildGraphQuery<DomainOrder>(
-                    filter,
-                    query => query.OrderByDescending(o => o.CreatedAt))
+            _readDbContext.Set<DomainOrder>()
+                .Where(filter)
+                .OrderByDescending(o => o.CreatedAt)
                 .Include(o => o.User!)
                 .Include(o => o.Items);
 

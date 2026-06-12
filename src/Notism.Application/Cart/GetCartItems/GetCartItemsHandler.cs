@@ -29,7 +29,8 @@ public class GetCartItemsHandler : IRequestHandler<GetCartItemsRequest, GetCartI
         GetCartItemsRequest request,
         CancellationToken cancellationToken)
     {
-        var cartItems = await _readDbContext.BuildGraphQuery<CartItem>(c => c.UserId == request.UserId)
+        var cartItems = await _readDbContext.Set<CartItem>()
+            .Where(c => c.UserId == request.UserId)
             .Include(c => c.Food)
             .Include("Food.Category")
             .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1))

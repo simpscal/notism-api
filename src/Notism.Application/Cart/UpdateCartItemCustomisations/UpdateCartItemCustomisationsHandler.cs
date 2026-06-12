@@ -37,9 +37,8 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
     {
         // Loaded TRACKED so the clear/re-add customisation mutations persist on
         // SaveChanges via the same context.
-        var cartItem = await _readDbContext.BuildGraphQuery<CartItem>(
-                c => c.Id == request.CartItemId,
-                tracking: true)
+        var cartItem = await _readDbContext.Set<CartItem>(tracking: true)
+            .Where(c => c.Id == request.CartItemId)
             .Include(c => c.Food)
             .Include("Food.Category")
             .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1))
@@ -55,9 +54,8 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
 
         // Resolve all options in a single query
         var requestedOptionIds = request.Customisations.Select(c => c.OptionId).ToList();
-        var fetchedOptions = (await _readDbContext.BuildGraphQuery<FoodCustomisationOption>(
-                o => requestedOptionIds.Contains(o.Id) && o.Group.FoodId == cartItem.FoodId,
-                tracking: true)
+        var fetchedOptions = (await _readDbContext.Set<FoodCustomisationOption>(tracking: true)
+            .Where(o => requestedOptionIds.Contains(o.Id) && o.Group.FoodId == cartItem.FoodId)
             .Include(o => o.Group)
             .ToListAsync(cancellationToken))
             .ToDictionary(o => o.Id);

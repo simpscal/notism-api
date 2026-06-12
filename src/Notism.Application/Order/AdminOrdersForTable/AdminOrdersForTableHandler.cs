@@ -42,9 +42,10 @@ public class AdminOrdersForTableHandler : IRequestHandler<AdminOrdersForTableReq
         var filter = BuildFilter(request.Keyword, paymentStatus);
 
         IQueryable<DomainOrder> BuildQuery() =>
-            _readDbContext.BuildGraphQuery<DomainOrder>(
-                    filter,
-                    query => ApplyOrdering(query, request.SortBy, isDescending))
+            ApplyOrdering(
+                    _readDbContext.Set<DomainOrder>().Where(filter),
+                    request.SortBy,
+                    isDescending)
                 .Include(o => o.User!)
                 .Include(o => o.Items);
 

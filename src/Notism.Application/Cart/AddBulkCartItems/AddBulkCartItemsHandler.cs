@@ -69,9 +69,8 @@ public class AddBulkCartItemsHandler : IRequestHandler<AddBulkCartItemsRequest, 
     private async Task<Dictionary<Guid, Domain.Food.Food>> FetchFoodsAsync()
     {
         var foodIds = _request!.Items.Select(i => i.FoodId).Distinct().ToList();
-        var foods = await _readDbContext.BuildGraphQuery<Domain.Food.Food>(
-                f => foodIds.Contains(f.Id),
-                tracking: true)
+        var foods = await _readDbContext.Set<Domain.Food.Food>(tracking: true)
+            .Where(f => foodIds.Contains(f.Id))
             .Include(f => f.Category!)
             .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1))
             .ToListAsync();

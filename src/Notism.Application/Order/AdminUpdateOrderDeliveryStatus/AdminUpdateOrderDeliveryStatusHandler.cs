@@ -37,9 +37,8 @@ public class AdminUpdateOrderDeliveryStatusHandler : IRequestHandler<AdminUpdate
         AdminUpdateOrderDeliveryStatusRequest request,
         CancellationToken cancellationToken)
     {
-        var order = await _readDbContext.BuildGraphQuery<DomainOrder>(
-                o => o.Id == request.OrderId,
-                tracking: true)
+        var order = await _readDbContext.Set<DomainOrder>(tracking: true)
+            .Where(o => o.Id == request.OrderId)
             .Include(o => o.User!)
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new ResultFailureException(_messages.OrderNotFound);

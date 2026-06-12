@@ -34,8 +34,8 @@ public class GetFoodByIdHandler : IRequestHandler<GetFoodByIdRequest, GetFoodByI
         GetFoodByIdRequest request,
         CancellationToken cancellationToken)
     {
-        var food = await _readDbContext.BuildGraphQuery<DomainFood>(
-                f => f.Id == request.FoodId && !f.IsDeleted)
+        var food = await _readDbContext.Set<DomainFood>()
+            .Where(f => f.Id == request.FoodId && !f.IsDeleted)
             .Include(f => f.Images)
             .Include(f => f.Category!)
             .Include("CustomisationGroups.Options")

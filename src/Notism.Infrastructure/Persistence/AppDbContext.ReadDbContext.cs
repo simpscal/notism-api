@@ -1,5 +1,3 @@
-using System.Linq.Expressions;
-
 using Microsoft.EntityFrameworkCore;
 
 using Notism.Application.Common.Persistence;
@@ -18,22 +16,6 @@ public partial class AppDbContext : IReadDbContext
 {
     IQueryable<T> IReadDbContext.Set<T>(bool tracking)
         => tracking ? Set<T>() : Set<T>().AsNoTracking();
-
-    public IQueryable<T> BuildGraphQuery<T>(
-        Expression<Func<T, bool>> predicate,
-        Func<IQueryable<T>, IQueryable<T>>? orderBy = null,
-        bool tracking = false)
-        where T : class
-    {
-        var query = (tracking ? Set<T>() : Set<T>().AsNoTracking()).Where(predicate);
-
-        if (orderBy is not null)
-        {
-            query = orderBy(query);
-        }
-
-        return query;
-    }
 
     public IQueryable<T> SqlQuery<T>(FormattableString sql)
         => Database.SqlQuery<T>(sql);
