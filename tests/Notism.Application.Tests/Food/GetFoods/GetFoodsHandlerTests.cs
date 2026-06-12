@@ -13,11 +13,6 @@ using NSubstitute;
 
 namespace Notism.Application.Tests.Food.GetFoods;
 
-/// <summary>
-/// Exercises the <see cref="GetFoodsQuery"/> behind <see cref="GetFoodsHandler"/> against
-/// an EF InMemory database: the not-deleted / category / availability / keyword filters,
-/// the projection shape, and the keyword-lowercasing contract.
-/// </summary>
 public class GetFoodsHandlerTests
 {
     private readonly AppDbContext _dbContext;

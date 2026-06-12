@@ -6,13 +6,6 @@ using NetArchTest.Rules;
 
 namespace Notism.Application.Tests.Architecture;
 
-/// <summary>
-/// Guards the layering boundary: the Application layer composes its persistence over the
-/// <c>IReadDbContext</c> port and the <c>IRepository</c> write boundary, executing reads with
-/// Entity Framework Core operators directly. It may reference EF Core, but it must NOT depend
-/// on <c>Notism.Infrastructure</c> — query execution composes over ports, never over an
-/// Infrastructure type.
-/// </summary>
 public class ApplicationLayerArchitectureTests
 {
     private static readonly Assembly ApplicationAssembly =

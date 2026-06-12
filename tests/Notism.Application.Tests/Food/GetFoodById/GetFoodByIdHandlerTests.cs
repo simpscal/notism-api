@@ -14,11 +14,6 @@ using NSubstitute;
 
 namespace Notism.Application.Tests.Food.GetFoodById;
 
-/// <summary>
-/// Exercises the <see cref="GetFoodByIdQuery"/> behind <see cref="GetFoodByIdHandler"/>
-/// against an EF InMemory database: the by-id/not-deleted predicate, the
-/// customisation-group/option graph projection, and the display-order/surcharge mapping.
-/// </summary>
 public class GetFoodByIdHandlerTests
 {
     private readonly AppDbContext _dbContext;

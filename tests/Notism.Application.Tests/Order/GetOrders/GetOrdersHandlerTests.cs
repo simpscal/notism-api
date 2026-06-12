@@ -15,12 +15,6 @@ using DomainOrder = Notism.Domain.Order.Order;
 
 namespace Notism.Application.Tests.Order.GetOrders;
 
-/// <summary>
-/// Exercises the <see cref="GetOrdersQuery"/> behind <see cref="GetOrdersHandler"/>
-/// against an EF InMemory database: paging/total, the not-cancelled + payment-status
-/// filter, the most-recent-first (CreatedAt desc, Id desc) ordering, and paid/unpaid
-/// response mapping.
-/// </summary>
 public class GetOrdersHandlerTests
 {
     private readonly AppDbContext _dbContext;

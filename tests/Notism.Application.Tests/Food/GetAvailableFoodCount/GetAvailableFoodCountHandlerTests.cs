@@ -8,11 +8,6 @@ using Notism.Infrastructure.Persistence;
 
 namespace Notism.Application.Tests.Food.GetAvailableFoodCount;
 
-/// <summary>
-/// Flexibility proof: a brand-new read (counting available foods) was added with its own
-/// self-contained query object and inline predicate, needing zero new repository methods.
-/// Exercised against an EF InMemory database.
-/// </summary>
 public class GetAvailableFoodCountHandlerTests
 {
     private readonly AppDbContext _dbContext;

@@ -15,13 +15,6 @@ using DomainOrder = Notism.Domain.Order.Order;
 
 namespace Notism.Application.Tests.Order.AdminGetTodaySales;
 
-/// <summary>
-/// Exercises the <see cref="GetWindowAggregateQuery"/> behind
-/// <see cref="AdminGetTodaySalesHandler"/> against an EF InMemory database: revenue sums
-/// Paid orders by their PaidAt window while order count counts orders by their CreatedAt
-/// window (the two predicates are intentionally distinct), with empty sets coalescing to
-/// zero.
-/// </summary>
 public class AdminGetTodaySalesHandlerTests
 {
     private static readonly DateTime StartUtc = new(2026, 6, 9, 17, 0, 0, DateTimeKind.Utc);

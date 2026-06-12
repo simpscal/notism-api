@@ -8,10 +8,6 @@ using DomainPayment = Notism.Domain.Payment.Payment;
 
 namespace Notism.Application.Tests.Payment.GetBankAccount;
 
-/// <summary>
-/// Exercises the <see cref="GetBankAccountQuery"/> behind <see cref="GetBankAccountHandler"/>
-/// against an EF InMemory database: the single-row bank-account lookup.
-/// </summary>
 public class GetBankAccountHandlerTests
 {
     private readonly AppDbContext _dbContext;

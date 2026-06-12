@@ -16,14 +16,6 @@ using DomainOrder = Notism.Domain.Order.Order;
 
 namespace Notism.Application.Tests.Order.AdminGetRevenueSeries;
 
-/// <summary>
-/// Exercises the raw-SQL bucketing inside <see cref="AdminGetRevenueSeriesHandler"/> against
-/// a REAL PostgreSQL container: the <c>width_bucket</c> half-open bucketing of Paid revenue
-/// and the handler's zero-fill of absent buckets into a dense, label-ordered series.
-/// <para>NOT EXECUTED where Docker is unavailable: the Testcontainers Postgres container
-/// fails to start and these tests are skipped at the infrastructure layer. The SQL and
-/// zero-fill logic are still verified here when a Docker daemon is present.</para>
-/// </summary>
 public sealed class AdminGetRevenueSeriesHandlerTests : IClassFixture<PostgresReadDbContextFixture>, IAsyncLifetime
 {
     private static readonly DateTime SeriesStart = new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc);

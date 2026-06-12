@@ -14,12 +14,6 @@ using DomainOrder = Notism.Domain.Order.Order;
 
 namespace Notism.Application.Tests.Order.AdminGetOrderStatusSummary;
 
-/// <summary>
-/// Exercises the <see cref="GetDeliveryStatusBucketCountsQuery"/> behind
-/// <see cref="AdminGetOrderStatusSummaryHandler"/> against an EF InMemory database: the
-/// fold of raw delivery statuses into the New / InProgress / Completed dashboard buckets,
-/// with cancelled orders excluded and empty buckets defaulting to zero.
-/// </summary>
 public class AdminGetOrderStatusSummaryHandlerTests
 {
     private readonly AppDbContext _dbContext;

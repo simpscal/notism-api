@@ -17,11 +17,6 @@ using DomainPayment = Notism.Domain.Payment.Payment;
 
 namespace Notism.Application.Tests.Order.GetOrderById;
 
-/// <summary>
-/// Exercises the <see cref="GetOrderByIdQuery"/> and bank-account lookup behind
-/// <see cref="GetOrderByIdHandler"/> against an EF InMemory database: payment-QR surfacing
-/// rules and paid/unpaid response mapping.
-/// </summary>
 public class GetOrderByIdHandlerTests
 {
     private readonly AppDbContext _dbContext;

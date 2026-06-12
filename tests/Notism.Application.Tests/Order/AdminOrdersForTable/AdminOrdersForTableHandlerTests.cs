@@ -14,11 +14,6 @@ using DomainOrder = Notism.Domain.Order.Order;
 
 namespace Notism.Application.Tests.Order.AdminOrdersForTable;
 
-/// <summary>
-/// Exercises the <see cref="AdminOrdersForTableQuery"/> behind
-/// <see cref="AdminOrdersForTableHandler"/> against an EF InMemory database: payment-status
-/// and delivery-status mapping, user projection, and keyword/sort behaviour.
-/// </summary>
 public class AdminOrdersForTableHandlerTests
 {
     private readonly AppDbContext _dbContext;

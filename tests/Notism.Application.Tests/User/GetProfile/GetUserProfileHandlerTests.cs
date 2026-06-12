@@ -13,10 +13,6 @@ using NSubstitute;
 
 namespace Notism.Application.Tests.User.GetProfile;
 
-/// <summary>
-/// Exercises the <see cref="GetUserByIdQuery"/> behind <see cref="GetUserProfileHandler"/>
-/// against an EF InMemory database: the by-id lookup and location mapping.
-/// </summary>
 public class GetUserProfileHandlerTests
 {
     private readonly AppDbContext _dbContext;
