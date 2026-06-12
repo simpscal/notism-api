@@ -5,8 +5,7 @@
 1. [Architecture Overview](#architecture-overview)
 2. [Layer Definitions](#layer-definitions)
 3. [Dependency Rules](#dependency-rules)
-4. [Implementation Guidelines](#implementation-guidelines)
-5. [Folder Structure](#folder-structure)
+4. [Folder Structure](#folder-structure)
 
 ---
 
@@ -236,55 +235,6 @@ Handler → Repository Interface (Domain) → Repository Implementation (Infrast
 | Use for Result pattern, Pagination    | Put entity definitions here     |
 | Keep dependencies minimal             | Reference Domain or Application |
 | Make utilities generic and reusable   | Create single-use helpers       |
-
----
-
-## Implementation Guidelines
-
-### Adding a New Feature Checklist
-
-1. **Domain Layer**
-   - [ ] Define/update aggregate root with business methods
-   - [ ] Create value objects if needed
-   - [ ] Add domain events for important state changes
-   - [ ] Define repository interface if new aggregate (write-only surface)
-
-2. **Application Layer**
-   - [ ] Create feature folder (e.g., `Order/CreateOrder/`)
-   - [ ] Define Request with `IRequest<Result<Response>>`
-   - [ ] Create Validator with FluentValidation rules
-   - [ ] Implement Handler orchestrating domain operations
-   - [ ] Define Response DTO
-   - [ ] Add mapping profile if using AutoMapper
-
-3. **Infrastructure Layer**
-   - [ ] Implement repository if new aggregate
-   - [ ] Add entity configuration for EF Core
-   - [ ] Create migration if schema changed
-   - [ ] Implement external service if needed
-
-4. **API Layer**
-   - [ ] Add endpoint in appropriate feature file
-   - [ ] Configure route, HTTP method, authorization
-   - [ ] Add OpenAPI documentation attributes
-
-### Error Handling Strategy
-
-| Layer          | Error Type              | Approach                                  |
-| -------------- | ----------------------- | ----------------------------------------- |
-| Domain         | Business Rule Violation | Throw domain exception or return failure  |
-| Application    | Validation/Business     | Throw `ResultFailureException`            |
-| Infrastructure | External Service        | Wrap in domain-meaningful exception       |
-| API            | HTTP                    | `ResultFailureMiddleware` converts to 400 |
-
-### Testing Strategy
-
-| Layer          | Test Focus                 | Examples                              |
-| -------------- | -------------------------- | ------------------------------------- |
-| Domain         | Business rules, invariants | Aggregate creation, state transitions |
-| Application    | Handler orchestration      | Mock repositories, verify flow        |
-| Infrastructure | Data access                | Integration tests with test DB        |
-| API            | HTTP contracts             | Integration tests with test server    |
 
 ---
 
