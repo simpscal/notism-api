@@ -37,7 +37,6 @@ public class RegisterHandler : IRequestHandler<RegisterRequest, (RegisterRespons
 
     public async Task<(RegisterResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)> Handle(RegisterRequest request, CancellationToken cancellationToken)
     {
-        // 1. Check if user already exists
         var email = Email.Create(request.Email);
         var existingUser = await _readDbContext.Set<DomainUser>()
             .Where(u => u.Email.Equals(email))
@@ -48,7 +47,6 @@ public class RegisterHandler : IRequestHandler<RegisterRequest, (RegisterRespons
             throw new ResultFailureException(_messages.UserAlreadyExists);
         }
 
-        // 2. Create new user with hashed password
         var hashedPassword = _passwordService.HashPassword(request.Password);
         var user = Domain.User.User.Create(request.Email, hashedPassword, UserRole.User, request.FirstName, request.LastName);
 
@@ -59,10 +57,7 @@ public class RegisterHandler : IRequestHandler<RegisterRequest, (RegisterRespons
             throw new ResultFailureException(_messages.ErrorCreatingUser);
         }
 
-        // 3. Generate JWT token
         var token = await _tokenService.GenerateTokenAsync(user);
-
-        // 4. Map to response
         var response = RegisterResponse.FromDomain(user, token);
 
         return (response, token.RefreshToken, token.RefreshTokenExpiresAt);

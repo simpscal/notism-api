@@ -104,6 +104,6 @@ public class AdminGetRevenueSeriesHandler
             .ToList();
     }
 
-    // Row shape of the bucket aggregate. Mapped by column alias.
+    // Materialised from the SqlQuery by column alias.
     private sealed record RevenueBucketRow(int BucketIndex, decimal Revenue);
 }

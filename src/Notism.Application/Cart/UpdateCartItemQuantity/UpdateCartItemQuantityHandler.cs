@@ -39,13 +39,11 @@ public class UpdateCartItemQuantityHandler : IRequestHandler<UpdateCartItemQuant
                 .FirstOrDefaultAsync(cancellationToken)
             ?? throw new ResultFailureException(_messages.CartItemNotFound);
 
-        // Verify the cart item belongs to the user
         if (cartItem.UserId != request.UserId)
         {
             throw new ResultFailureException(_messages.CartItemNotBelongToUser);
         }
 
-        // Check if food is still available
         var food = await _readDbContext.Set<Domain.Food.Food>()
                 .Where(f => f.Id == cartItem.FoodId)
                 .FirstOrDefaultAsync(cancellationToken)

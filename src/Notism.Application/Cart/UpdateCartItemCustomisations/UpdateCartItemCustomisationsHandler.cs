@@ -50,7 +50,6 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
             throw new ForbiddenException(_messages.CartItemNotBelongToUser);
         }
 
-        // Resolve all options in a single query
         var requestedOptionIds = request.Customisations.Select(c => c.OptionId).ToList();
         var fetchedOptions = (await _readDbContext.Set<FoodCustomisationOption>(tracking: true)
             .Where(o => requestedOptionIds.Contains(o.Id) && o.Group.FoodId == cartItem.FoodId)

@@ -59,7 +59,7 @@ public class GoogleOAuthCallbackHandler : IRequestHandler<GoogleOAuthCallbackReq
 
         if (user == null)
         {
-            // Create new user with a random password (OAuth users don't need password)
+            // OAuth users authenticate externally; the local password is never used.
             var randomPassword = GenerateRandomPassword();
             var hashedPassword = _passwordService.HashPassword(randomPassword);
             user = Domain.User.User.Create(

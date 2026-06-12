@@ -65,7 +65,6 @@ public class TokenService : ITokenService
         var tokenHandler = new JwtSecurityTokenHandler();
         var tokenString = tokenHandler.WriteToken(token);
 
-        // Generate refresh token
         var refreshToken = GenerateRefreshToken();
         var refreshTokenExpiresAt = DateTime.UtcNow.AddDays(refreshExpirationDays);
         var refreshTokenEntity = RefreshToken.Create(refreshToken, user.Id, refreshTokenExpiresAt);

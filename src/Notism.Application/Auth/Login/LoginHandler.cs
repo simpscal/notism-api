@@ -32,23 +32,18 @@ public class LoginHandler : IRequestHandler<LoginRequest, (LoginResponse Respons
 
     public async Task<(LoginResponse Response, string RefreshToken, DateTime RefreshTokenExpiresAt)> Handle(LoginRequest request, CancellationToken cancellationToken)
     {
-        // 1. Find user by email
         var email = Email.Create(request.Email);
         var user = await _readDbContext.Set<DomainUser>()
                 .Where(u => u.Email.Equals(email))
                 .FirstOrDefaultAsync(cancellationToken)
             ?? throw new ResultFailureException(_messages.InvalidCredentials);
 
-        // 2. Verify password
         if (!_passwordService.VerifyPassword(user.Password, request.Password))
         {
             throw new ResultFailureException(_messages.InvalidCredentials);
         }
 
-        // 3. Generate JWT token
         var token = await _tokenService.GenerateTokenAsync(user);
-
-        // 4. Map to response
         var response = LoginResponse.FromDomain(user, token);
 
         return (response, token.RefreshToken, token.RefreshTokenExpiresAt);

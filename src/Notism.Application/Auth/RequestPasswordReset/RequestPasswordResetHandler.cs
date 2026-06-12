@@ -60,8 +60,8 @@ public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetR
             };
         }
 
-        // Check if there's already an active token for this user. Loaded TRACKED so the
-        // mutation below is persisted by the repository SaveChanges on the same context.
+        // Loaded TRACKED so the mutation below is persisted by the repository SaveChanges
+        // on the same context.
         var existingToken = await _readDbContext.Set<PasswordResetToken>(tracking: true)
             .Where(t => t.UserId == user.Id && !t.IsUsed && t.ExpiresAt > DateTime.UtcNow)
             .FirstOrDefaultAsync(cancellationToken);
@@ -79,7 +79,6 @@ public class RequestPasswordResetHandler : IRequestHandler<RequestPasswordResetR
             var passwordResetToken = PasswordResetToken.Create(resetToken, user.Id, expiresAt);
             await _passwordResetTokenRepository.AddAsync(passwordResetToken);
 
-            // Add domain event to user
             user.RequestPasswordReset(resetToken, expiresAt);
 
             var result = await _passwordResetTokenRepository.SaveChangesAsync();

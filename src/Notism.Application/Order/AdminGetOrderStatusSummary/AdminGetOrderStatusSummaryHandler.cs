@@ -28,7 +28,6 @@ public class AdminGetOrderStatusSummaryHandler
         AdminGetOrderStatusSummaryRequest request,
         CancellationToken cancellationToken)
     {
-        // Single GROUP BY query: SQL returns at most one row per delivery status.
         var statusCounts = await _readDbContext.Set<DomainOrder>()
             .Where(o => o.DeliveryStatus != DeliveryStatus.Cancelled)
             .GroupBy(o => o.DeliveryStatus)
