@@ -1,5 +1,6 @@
 using FluentAssertions;
 
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Order.AdminGetRevenueSeries;
@@ -23,7 +24,7 @@ namespace Notism.Application.Tests.Order.AdminGetRevenueSeries;
 /// fails to start and these tests are skipped at the infrastructure layer. The SQL and
 /// zero-fill logic are still verified here when a Docker daemon is present.</para>
 /// </summary>
-public sealed class AdminGetRevenueSeriesHandlerTests : IClassFixture<PostgresReadDbContextFixture>
+public sealed class AdminGetRevenueSeriesHandlerTests : IClassFixture<PostgresReadDbContextFixture>, IAsyncLifetime
 {
     private static readonly DateTime SeriesStart = new(2026, 6, 1, 0, 0, 0, DateTimeKind.Utc);
 
@@ -37,6 +38,16 @@ public sealed class AdminGetRevenueSeriesHandlerTests : IClassFixture<PostgresRe
             _dbContext,
             Substitute.For<ILogger<AdminGetRevenueSeriesHandler>>());
     }
+
+    // The container is shared across the class; clear seeded orders before each test so
+    // revenue from one test never leaks into another.
+    public async Task InitializeAsync()
+    {
+        await _dbContext.Orders.ExecuteDeleteAsync();
+        _dbContext.ChangeTracker.Clear();
+    }
+
+    public Task DisposeAsync() => Task.CompletedTask;
 
     [Fact]
     public async Task Handle_ReturnsDenseOrderedSeries_OneLabelledPointPerBucket()

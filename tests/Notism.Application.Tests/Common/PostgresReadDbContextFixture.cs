@@ -4,6 +4,8 @@ using Microsoft.EntityFrameworkCore;
 
 using Notism.Infrastructure.Persistence;
 
+using Npgsql;
+
 using NSubstitute;
 
 using Testcontainers.PostgreSql;
@@ -31,8 +33,11 @@ public sealed class PostgresReadDbContextFixture : IAsyncLifetime
     {
         await _container.StartAsync();
 
+        var connectionString = _container.GetConnectionString();
+        await WaitForConnectionAsync(connectionString);
+
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql(_container.GetConnectionString())
+            .UseNpgsql(connectionString)
             .Options;
 
         DbContext = new AppDbContext(options, Substitute.For<IMediator>());
@@ -47,5 +52,26 @@ public sealed class PostgresReadDbContextFixture : IAsyncLifetime
         }
 
         await _container.DisposeAsync();
+    }
+
+    // Some Docker hosts (e.g. colima) report the container ready before host
+    // port-forwarding is wired, so the first connection can be refused. Retry until
+    // the mapped port accepts connections; on hosts that forward instantly the first
+    // attempt succeeds.
+    private static async Task WaitForConnectionAsync(string connectionString)
+    {
+        for (var attempt = 1; ; attempt++)
+        {
+            try
+            {
+                await using var connection = new NpgsqlConnection(connectionString);
+                await connection.OpenAsync();
+                return;
+            }
+            catch (NpgsqlException) when (attempt < 30)
+            {
+                await Task.Delay(TimeSpan.FromSeconds(1));
+            }
+        }
     }
 }

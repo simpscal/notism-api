@@ -85,15 +85,23 @@ public class AdminGetRevenueSeriesHandler
         var bn = DateTime.SpecifyKind(boundaries[^1], DateTimeKind.Utc);
         var paidStatus = PaymentStatus.Paid.GetStringValue();
 
+        // width_bucket is computed once in a derived table: the boundary array binds a
+        // single parameter, so SELECT and GROUP BY reference the same bucket column rather
+        // than two separately-parameterised width_bucket expressions (which Postgres would
+        // reject as ungrouped).
         FormattableString sql = $"""
-            SELECT width_bucket(extract(epoch from "PaidAt"), {epochBoundaries}) - 1 AS "BucketIndex",
+            SELECT "Bucket" - 1 AS "BucketIndex",
                    SUM("TotalAmount") AS "Revenue"
-            FROM "Orders"
-            WHERE "PaymentStatus" = {paidStatus}
-              AND "PaidAt" IS NOT NULL
-              AND "PaidAt" >= {b0}
-              AND "PaidAt" < {bn}
-            GROUP BY width_bucket(extract(epoch from "PaidAt"), {epochBoundaries})
+            FROM (
+                SELECT width_bucket(extract(epoch from "PaidAt"), {epochBoundaries}) AS "Bucket",
+                       "TotalAmount"
+                FROM "Orders"
+                WHERE "PaymentStatus" = {paidStatus}
+                  AND "PaidAt" IS NOT NULL
+                  AND "PaidAt" >= {b0}
+                  AND "PaidAt" < {bn}
+            ) AS "Buckets"
+            GROUP BY "Bucket"
             """;
 
         var rows = await _readDbContext.SqlQuery<RevenueBucketRow>(sql).ToListAsync(cancellationToken);
