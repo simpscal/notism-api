@@ -34,7 +34,6 @@ public class UpdateCartItemQuantityHandler : IRequestHandler<UpdateCartItemQuant
         UpdateCartItemQuantityRequest request,
         CancellationToken cancellationToken)
     {
-        // Loaded TRACKED so the quantity mutation persists on SaveChanges via the same context.
         var cartItem = await _readDbContext.Set<CartItem>(tracking: true)
                 .Where(c => c.Id == request.CartItemId)
                 .FirstOrDefaultAsync(cancellationToken)
@@ -46,7 +45,7 @@ public class UpdateCartItemQuantityHandler : IRequestHandler<UpdateCartItemQuant
             throw new ResultFailureException(_messages.CartItemNotBelongToUser);
         }
 
-        // Check if food is still available (read-only lookup)
+        // Check if food is still available
         var food = await _readDbContext.Set<Domain.Food.Food>()
                 .Where(f => f.Id == cartItem.FoodId)
                 .FirstOrDefaultAsync(cancellationToken)

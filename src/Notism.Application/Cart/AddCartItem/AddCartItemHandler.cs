@@ -54,8 +54,6 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
 
     private async Task<Domain.Food.Food> ValidateAndFetchFoodAsync()
     {
-        // Loaded TRACKED: the food's customisation graph is reused when building the cart
-        // item, and a tracked load keeps a single identity for the food across this scope.
         var food = await _readDbContext.Set<Domain.Food.Food>(tracking: true)
             .Where(f => f.Id == _request!.FoodId)
             .Include(f => f.Category!)
@@ -74,8 +72,6 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
 
     private async Task<CartItem?> GetExistingCartItemAsync()
     {
-        // Loaded TRACKED so the quantity/customisation mutations below persist on
-        // SaveChanges via the same context.
         return await _readDbContext.Set<CartItem>(tracking: true)
             .Where(c => c.UserId == _request!.UserId && c.FoodId == _request.FoodId)
             .Include(c => c.Food)

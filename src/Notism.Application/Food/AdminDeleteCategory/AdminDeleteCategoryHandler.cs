@@ -34,8 +34,6 @@ public class AdminDeleteCategoryHandler : IRequestHandler<AdminDeleteCategoryReq
 
     public async Task Handle(AdminDeleteCategoryRequest request, CancellationToken cancellationToken)
     {
-        // Both the category and its foods are loaded TRACKED so the soft-delete mutations
-        // persist on SaveChanges via the same context.
         var category = await _readDbContext.Set<DomainCategory>(tracking: true)
                 .Where(c => c.Id == request.CategoryId && !c.IsDeleted)
                 .FirstOrDefaultAsync(cancellationToken)

@@ -35,8 +35,6 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
         UpdateCartItemCustomisationsRequest request,
         CancellationToken cancellationToken)
     {
-        // Loaded TRACKED so the clear/re-add customisation mutations persist on
-        // SaveChanges via the same context.
         var cartItem = await _readDbContext.Set<CartItem>(tracking: true)
             .Where(c => c.Id == request.CartItemId)
             .Include(c => c.Food)

@@ -35,7 +35,6 @@ public class AdminUpdateCategoryHandler : IRequestHandler<AdminUpdateCategoryReq
         AdminUpdateCategoryRequest request,
         CancellationToken cancellationToken)
     {
-        // Loaded TRACKED so the name update persists on SaveChanges via the same context.
         var category = await _readDbContext.Set<DomainCategory>(tracking: true)
                 .Where(c => c.Id == request.CategoryId && !c.IsDeleted)
                 .FirstOrDefaultAsync(cancellationToken)
