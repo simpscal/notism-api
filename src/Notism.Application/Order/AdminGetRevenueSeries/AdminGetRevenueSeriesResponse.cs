@@ -11,7 +11,6 @@ public sealed record AdminGetRevenueSeriesResponse
     {
         return new AdminGetRevenueSeriesResponse
         {
-            // Client hint echoed back verbatim (empty string when omitted).
             Granularity = granularity ?? string.Empty,
             Points = points,
         };

@@ -6,9 +6,6 @@ public class AdminGetRevenueSeriesRequestValidator : AbstractValidator<AdminGetR
 {
     public AdminGetRevenueSeriesRequestValidator()
     {
-        // The client supplies the full UTC boundary set and a label per bucket; the
-        // server derives no period semantics. Granularity is a free-form echoed hint
-        // and is intentionally NOT validated against any enum.
         RuleFor(x => x.Boundaries)
             .NotNull()
             .Must(b => b is { Count: >= 2 })
@@ -28,7 +25,6 @@ public class AdminGetRevenueSeriesRequestValidator : AbstractValidator<AdminGetR
     {
         if (boundaries is null || boundaries.Count < 2)
         {
-            // Count is enforced by the dedicated rule; don't double-report here.
             return true;
         }
 
