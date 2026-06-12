@@ -71,11 +71,10 @@ public class CreateOrderHandler : IRequestHandler<CreateOrderRequest, CreateOrde
         // persisted by the unit-of-work SaveChanges on the same context.
         var cartItems = await _readDbContext.BuildGraphQuery<CartItem>(
                 c => c.UserId == request.UserId && request.CartItemIds.Contains(c.Id),
-                includes => includes
-                    .Include(c => c.Food)
-                    .Include(c => c.Food.Images)
-                    .Include(c => c.Customisations),
                 tracking: true)
+            .Include(c => c.Food)
+            .Include(c => c.Food.Images)
+            .Include(c => c.Customisations)
             .ToListAsync();
 
         if (cartItems.Count == 0)

@@ -48,26 +48,20 @@ public class GetOrdersHandler : IRequestHandler<GetOrdersRequest, GetOrdersRespo
                           o.PaymentStatus == paymentStatus;
         }
 
-        var totalCount = await _readDbContext.BuildGraphQuery<DomainOrder>(
-                filter,
-                includes => includes
-                    .Include("Items.Food.Images")
-                    .Include(o => o.StatusHistory),
-                query => query
-                    .OrderByDescending(o => o.CreatedAt)
-                    .ThenByDescending(o => o.Id))
-            .CountAsync(cancellationToken);
+        IQueryable<DomainOrder> BuildQuery() =>
+            _readDbContext.BuildGraphQuery<DomainOrder>(
+                    filter,
+                    query => query
+                        .OrderByDescending(o => o.CreatedAt)
+                        .ThenByDescending(o => o.Id))
+                .Include("Items.Food.Images")
+                .Include(o => o.StatusHistory);
 
-        var orders = await _readDbContext.BuildGraphQuery<DomainOrder>(
-                filter,
-                request.Skip,
-                request.Take,
-                includes => includes
-                    .Include("Items.Food.Images")
-                    .Include(o => o.StatusHistory),
-                query => query
-                    .OrderByDescending(o => o.CreatedAt)
-                    .ThenByDescending(o => o.Id))
+        var totalCount = await BuildQuery().CountAsync(cancellationToken);
+
+        var orders = await BuildQuery()
+            .Skip(request.Skip)
+            .Take(request.Take)
             .ToListAsync(cancellationToken);
 
         _logger.LogInformation(

@@ -39,13 +39,12 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
         // SaveChanges via the same context.
         var cartItem = await _readDbContext.BuildGraphQuery<CartItem>(
                 c => c.Id == request.CartItemId,
-                includes => includes
-                    .Include(c => c.Food)
-                    .Include("Food.Category")
-                    .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1))
-                    .Include("Food.CustomisationGroups.Options")
-                    .Include(c => c.Customisations),
                 tracking: true)
+            .Include(c => c.Food)
+            .Include("Food.Category")
+            .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1))
+            .Include("Food.CustomisationGroups.Options")
+            .Include(c => c.Customisations)
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException(_messages.CartItemNotFound);
 
@@ -58,8 +57,8 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
         var requestedOptionIds = request.Customisations.Select(c => c.OptionId).ToList();
         var fetchedOptions = (await _readDbContext.BuildGraphQuery<FoodCustomisationOption>(
                 o => requestedOptionIds.Contains(o.Id) && o.Group.FoodId == cartItem.FoodId,
-                includes => includes.Include(o => o.Group),
                 tracking: true)
+            .Include(o => o.Group)
             .ToListAsync(cancellationToken))
             .ToDictionary(o => o.Id);
 

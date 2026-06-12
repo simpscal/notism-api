@@ -71,10 +71,9 @@ public class AddBulkCartItemsHandler : IRequestHandler<AddBulkCartItemsRequest, 
         var foodIds = _request!.Items.Select(i => i.FoodId).Distinct().ToList();
         var foods = await _readDbContext.BuildGraphQuery<Domain.Food.Food>(
                 f => foodIds.Contains(f.Id),
-                includes => includes
-                    .Include(f => f.Category!)
-                    .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1)),
                 tracking: true)
+            .Include(f => f.Category!)
+            .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1))
             .ToListAsync();
 
         return foods.ToDictionary(f => f.Id);

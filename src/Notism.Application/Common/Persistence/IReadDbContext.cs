@@ -1,7 +1,5 @@
 using System.Linq.Expressions;
 
-using Notism.Domain.Common.Repositories;
-
 namespace Notism.Application.Common.Persistence;
 
 /// <summary>
@@ -9,12 +7,13 @@ namespace Notism.Application.Common.Persistence;
 /// tracked read-modify-write loads — composes over this port and executes with Entity
 /// Framework Core async/LINQ operators directly in the per-handler query logic.
 /// <para><see cref="Set{T}"/> returns a composable queryable that is no-tracking by
-/// default (tracking on request); <see cref="BuildGraphQuery{T}(Expression{Func{T, bool}}, Action{IncludeBuilder{T}}, Func{IQueryable{T}, IQueryable{T}}?, bool)"/>
-/// applies the declared navigation graph (the <c>Include</c> calls live in the
-/// Infrastructure implementation). A handler that mutates an aggregate loads it in tracking
-/// mode and persists it through the repository's <c>SaveChangesAsync</c> — the read port and
-/// the repository share the same context instance, so the tracked entity is saved. Reporting
-/// reads whose aggregation is expressed in database-native SQL use <see cref="SqlQuery{T}"/>.</para>
+/// default (tracking on request); <see cref="BuildGraphQuery{T}"/> is a thin composition
+/// root that filters by a predicate and optionally orders, leaving the caller to chain the
+/// <c>Include</c> calls, paging and materialisation it needs in the Application layer. A
+/// handler that mutates an aggregate loads it in tracking mode and persists it through the
+/// repository's <c>SaveChangesAsync</c> — the read port and the repository share the same
+/// context instance, so the tracked entity is saved. Reporting reads whose aggregation is
+/// expressed in database-native SQL use <see cref="SqlQuery{T}"/>.</para>
 /// </summary>
 public interface IReadDbContext
 {
@@ -27,28 +26,14 @@ public interface IReadDbContext
         where T : class;
 
     /// <summary>
-    /// Builds a composable queryable with the declared navigation graph applied (typed
-    /// lambdas and/or string paths; the <c>Include</c> calls are applied in Infrastructure),
-    /// the predicate filtered and optional ordering applied. No-tracking by default; pass
-    /// <paramref name="tracking"/> <c>true</c> for a read-modify-write load.
+    /// Builds a composable queryable filtered by <paramref name="predicate"/> with optional
+    /// ordering applied. The caller chains the navigation <c>Include</c> calls its projection
+    /// or graph needs (and any paging) onto the returned queryable in the Application layer.
+    /// No-tracking by default; pass <paramref name="tracking"/> <c>true</c> for a
+    /// read-modify-write load.
     /// </summary>
     IQueryable<T> BuildGraphQuery<T>(
         Expression<Func<T, bool>> predicate,
-        Action<IncludeBuilder<T>> includes,
-        Func<IQueryable<T>, IQueryable<T>>? orderBy = null,
-        bool tracking = false)
-        where T : class;
-
-    /// <summary>
-    /// Builds a paged composable queryable: the declared navigation graph, predicate and
-    /// ordering as in the non-paged overload, plus the <paramref name="skip"/>/<paramref name="take"/>
-    /// page window. No-tracking by default.
-    /// </summary>
-    IQueryable<T> BuildGraphQuery<T>(
-        Expression<Func<T, bool>> predicate,
-        int skip,
-        int take,
-        Action<IncludeBuilder<T>> includes,
         Func<IQueryable<T>, IQueryable<T>>? orderBy = null,
         bool tracking = false)
         where T : class;

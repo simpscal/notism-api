@@ -35,8 +35,8 @@ public class AdminAddCustomisationOptionHandler : IRequestHandler<AdminAddCustom
     {
         var food = await _readDbContext.BuildGraphQuery<Domain.Food.Food>(
                 f => f.Id == request.FoodId && !f.IsDeleted,
-                includes => includes.Include("CustomisationGroups.Options"),
                 tracking: true)
+            .Include("CustomisationGroups.Options")
             .FirstOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException(_messages.FoodNotFound);
 

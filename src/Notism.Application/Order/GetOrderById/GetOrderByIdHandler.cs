@@ -44,10 +44,9 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
         var isAdmin = userRole == UserRole.Admin;
 
         var order = await _readDbContext.BuildGraphQuery<DomainOrder>(
-                o => o.SlugId == request.SlugId && (o.UserId == request.UserId || isAdmin),
-                includes => includes
-                    .Include("Items.Food.Images")
-                    .Include(o => o.StatusHistory))
+                o => o.SlugId == request.SlugId && (o.UserId == request.UserId || isAdmin))
+                .Include("Items.Food.Images")
+                .Include(o => o.StatusHistory)
                 .FirstOrDefaultAsync(cancellationToken)
             ?? throw new ResultFailureException(_messages.OrderNotFound);
 

@@ -58,11 +58,10 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         // item, and a tracked load keeps a single identity for the food across this scope.
         var food = await _readDbContext.BuildGraphQuery<Domain.Food.Food>(
                 f => f.Id == _request!.FoodId,
-                includes => includes
-                    .Include(f => f.Category!)
-                    .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1))
-                    .Include("CustomisationGroups.Options"),
                 tracking: true)
+            .Include(f => f.Category!)
+            .Include(f => f.Images.OrderBy(i => i.DisplayOrder).Take(1))
+            .Include("CustomisationGroups.Options")
             .FirstOrDefaultAsync()
             ?? throw new ResultFailureException(_messages.FoodNotFound);
 
@@ -80,11 +79,10 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         // SaveChanges via the same context.
         return await _readDbContext.BuildGraphQuery<CartItem>(
                 c => c.UserId == _request!.UserId && c.FoodId == _request.FoodId,
-                includes => includes
-                    .Include(c => c.Food)
-                    .Include("Food.Category")
-                    .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1)),
                 tracking: true)
+            .Include(c => c.Food)
+            .Include("Food.Category")
+            .Include(c => c.Food.Images.OrderBy(i => i.DisplayOrder).Take(1))
             .FirstOrDefaultAsync();
     }
 
@@ -98,8 +96,8 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
         var requestedOptionIds = _request.Customisations.Select(c => c.OptionId).ToList();
         var fetched = (await _readDbContext.BuildGraphQuery<FoodCustomisationOption>(
                 o => requestedOptionIds.Contains(o.Id) && o.Group.FoodId == foodId,
-                includes => includes.Include(o => o.Group),
                 tracking: true)
+            .Include(o => o.Group)
             .ToListAsync())
             .ToDictionary(o => o.Id);
 

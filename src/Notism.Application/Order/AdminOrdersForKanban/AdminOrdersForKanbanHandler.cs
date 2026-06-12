@@ -42,22 +42,18 @@ public class AdminOrdersForKanbanHandler : IRequestHandler<AdminOrdersForKanbanR
             order => order.DeliveryStatus == deliveryStatus
                 && (paymentStatus == null || order.PaymentStatus == paymentStatus);
 
-        var totalCount = await _readDbContext.BuildGraphQuery<DomainOrder>(
-                filter,
-                includes => includes
-                    .Include(o => o.User!)
-                    .Include(o => o.Items),
-                query => query.OrderByDescending(o => o.CreatedAt))
-            .CountAsync(cancellationToken);
+        IQueryable<DomainOrder> BuildQuery() =>
+            _readDbContext.BuildGraphQuery<DomainOrder>(
+                    filter,
+                    query => query.OrderByDescending(o => o.CreatedAt))
+                .Include(o => o.User!)
+                .Include(o => o.Items);
 
-        var orders = await _readDbContext.BuildGraphQuery<DomainOrder>(
-                filter,
-                request.Skip,
-                request.Take,
-                includes => includes
-                    .Include(o => o.User!)
-                    .Include(o => o.Items),
-                query => query.OrderByDescending(o => o.CreatedAt))
+        var totalCount = await BuildQuery().CountAsync(cancellationToken);
+
+        var orders = await BuildQuery()
+            .Skip(request.Skip)
+            .Take(request.Take)
             .ToListAsync(cancellationToken);
 
         var items = orders.Select(AdminOrdersForKanbanOrderResponse.FromDomain).ToList();

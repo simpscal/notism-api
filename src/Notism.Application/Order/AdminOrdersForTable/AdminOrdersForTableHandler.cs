@@ -41,22 +41,18 @@ public class AdminOrdersForTableHandler : IRequestHandler<AdminOrdersForTableReq
         var isDescending = (request.SortOrder?.FromCamelCase<SortOrder>() ?? SortOrder.Asc) == SortOrder.Desc;
         var filter = BuildFilter(request.Keyword, paymentStatus);
 
-        var totalCount = await _readDbContext.BuildGraphQuery<DomainOrder>(
-                filter,
-                includes => includes
-                    .Include(o => o.User!)
-                    .Include(o => o.Items),
-                query => ApplyOrdering(query, request.SortBy, isDescending))
-            .CountAsync(cancellationToken);
+        IQueryable<DomainOrder> BuildQuery() =>
+            _readDbContext.BuildGraphQuery<DomainOrder>(
+                    filter,
+                    query => ApplyOrdering(query, request.SortBy, isDescending))
+                .Include(o => o.User!)
+                .Include(o => o.Items);
 
-        var orders = await _readDbContext.BuildGraphQuery<DomainOrder>(
-                filter,
-                request.Skip,
-                request.Take,
-                includes => includes
-                    .Include(o => o.User!)
-                    .Include(o => o.Items),
-                query => ApplyOrdering(query, request.SortBy, isDescending))
+        var totalCount = await BuildQuery().CountAsync(cancellationToken);
+
+        var orders = await BuildQuery()
+            .Skip(request.Skip)
+            .Take(request.Take)
             .ToListAsync(cancellationToken);
 
         var items = orders.Select(AdminOrdersForTableOrderResponse.FromDomain).ToList();
