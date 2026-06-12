@@ -100,7 +100,7 @@ File location: `tests/Notism.Application.Tests/{Feature}/{Operation}/{Operation}
 | Architecture | `docs/rules/architecture.md` |
 | Best practices index | `docs/rules/best-practices.md` |
 | Repository Pattern (write boundary) | `docs/rules/repository-pattern.md` |
-| Read Queries (per-handler query objects) | `docs/rules/read-queries.md` |
+| Read Queries (inline reads over IReadDbContext) | `docs/rules/read-queries.md` |
 | Domain Events | `docs/rules/domain-events.md` |
 | Handler Design | `docs/rules/handler-design.md` |
 | Validation | `docs/rules/validation.md` |

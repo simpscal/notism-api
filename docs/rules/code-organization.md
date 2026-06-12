@@ -42,14 +42,14 @@ Application/
 │   │   ├── GetCartItemsHandler.cs
 │   │   ├── GetCartItemsRequest.cs
 │   │   ├── GetCartItemsResponse.cs
-│   │   └── GetCartItemsSpecification.cs
+│   │   └── GetCartItemsRequestValidator.cs
 │   └── ...
 ├── Food/
 │   ├── GetFoods/
 │   │   ├── GetFoodsHandler.cs
 │   │   ├── GetFoodsRequest.cs
 │   │   ├── GetFoodsResponse.cs
-│   │   └── GetFoodsSpecification.cs
+│   │   └── FoodListProjection.cs
 │   └── ...
 ```
 

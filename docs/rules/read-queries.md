@@ -2,72 +2,122 @@
 
 Reads and writes use two different persistence paths.
 
-## Reads — per-handler query objects over `IReadDbContext`
+## Reads — composed inline in the handler over `IReadDbContext`
 
-Every read handler owns its **own** query object, co-located with the handler
-(`{Feature}/{Operation}/{Operation}Query.cs`). The query object composes its LINQ over
-the Application read port `IReadDbContext` and materialises through that port. There is
-no shared query layer.
+A read handler injects `IReadDbContext` and chains EF Core operators directly on
+`Set<T>()`. There is **no** separate `{Operation}Query.cs` file and **no** query-object
+class — the read lives in the handler. `IReadDbContext` is a two-method port:
 
 ```csharp
-public sealed class AdminGetCategoriesQuery
+public interface IReadDbContext
 {
-    private readonly IReadDbContext _readDbContext;
+    IQueryable<T> Set<T>(bool tracking = false)
+        where T : class;
 
-    public AdminGetCategoriesQuery(IReadDbContext readDbContext) => _readDbContext = readDbContext;
+    IQueryable<T> SqlQuery<T>(FormattableString sql);
+}
+```
 
-    public Task<List<Category>> ExecuteAsync(CancellationToken cancellationToken = default)
+`Set<T>()` returns a composable `IQueryable<T>` (no-tracking by default). The handler
+chains `.Where()`, `.Include()`, `.OrderBy()/.OrderByDescending()/.ThenBy()`,
+`.Skip()/.Take()` and `.Select()`, then awaits an EF async operator
+(`.ToListAsync()`, `.FirstOrDefaultAsync()`, `.CountAsync()`, …):
+
+```csharp
+public async Task<AdminGetCategoriesResponse> Handle(
+    AdminGetCategoriesRequest request,
+    CancellationToken cancellationToken)
+{
+    var categories = await _readDbContext.Set<DomainCategory>()
+        .Where(c => !c.IsDeleted)
+        .OrderBy(c => c.Name)
+        .ToListAsync(cancellationToken);
+
+    var items = categories
+        .Select(CategoryResponse.FromDomain)
+        .ToList();
+
+    return new AdminGetCategoriesResponse
     {
-        var query = _readDbContext.Set<Category>()
-            .Where(c => !c.IsDeleted)          // predicate duplicated inline — never shared
-            .OrderBy(c => c.Name);
-
-        return _readDbContext.ToListAsync(query, cancellationToken);
-    }
+        Items = items,
+        TotalCount = items.Count,
+    };
 }
 ```
 
 ### Rules
 
-- **Query objects are never shared between handlers.** Two handlers that need the same
-  read each get their own query object. Trivial predicate duplication (`!IsDeleted`,
-  by-email, `o.UserId == id`) is duplicated inline by design — there is **no** shared
-  `Predicates` helper and **no** shared `{Feature}/Queries/` folder of reusable queries.
-- **Application never calls an EF `IQueryable` extension.** Composition uses BCL
-  `System.Linq` (`Where`/`OrderBy`/`Select`); execution (`ToListAsync`, `CountAsync`,
-  `SumAsync`, …) goes through `IReadDbContext`. EF lives only in the Infrastructure
-  implementation. An architecture test enforces that `Notism.Application` references
-  neither `Notism.Infrastructure` nor `Microsoft.EntityFrameworkCore`.
-- **Project, don't `Include`.** Pure-read/projection queries shape the result with
-  `.Select(...)` into the response/projection type. The Application layer never calls
-  `Include`.
-- **Graph reads declare their navigations.** A read whose response maps off a full entity
-  graph (e.g. an order with its items, food images and status history) uses
-  `IReadDbContext.FirstWithGraphAsync` / `ListWithGraphAsync` / `PagedWithGraphAsync`,
-  declaring the required navigations via the include builder. The includes are applied
-  **no-tracking in Infrastructure** — still no `Include` in Application.
-- **Reporting reads** whose aggregation is database-native SQL use
-  `IReadDbContext.SqlQuery<T>(FormattableString)`, with the SQL preserved verbatim in the
-  query object.
+- **EF Core is allowed in the Application layer.** Composition and execution use EF Core
+  operators directly (`Include`, `ToListAsync`, `CountAsync`, …) on `Set<T>()`. The
+  architecture test (NetArchTest) forbids only a `Notism.Infrastructure` dependency from
+  `Notism.Application`; it does **not** forbid `Microsoft.EntityFrameworkCore`.
+- **Reads are never shared between handlers.** Each handler composes its own read.
+  Recurring predicates (`!IsDeleted`, by-email, `o.UserId == id`) are duplicated inline by
+  design — there is **no** shared `Predicates` helper and **no** shared `Queries/` folder.
+- **Project or `Include`, as the response needs.** A list/grid read shapes the result with
+  `.Select(...)` into a projection type; a read whose response maps off a full entity graph
+  declares its navigations with `.Include(...)`.
+- **Long or branching reads extract into a local function** inside the same handler file —
+  never a shared type. A paged read whose composition is reused for both the count and the
+  page does this:
 
-A brand-new read needs **zero** new repository methods — add a query object and go.
+  ```csharp
+  IQueryable<DomainOrder> BuildQuery() =>
+      _readDbContext.Set<DomainOrder>()
+          .Where(filter)
+          .OrderByDescending(o => o.CreatedAt)
+          .ThenByDescending(o => o.Id)
+          .Include("Items.Food.Images")
+          .Include(o => o.StatusHistory);
+
+  var totalCount = await BuildQuery().CountAsync(cancellationToken);
+
+  var orders = await BuildQuery()
+      .Skip(request.Skip)
+      .Take(request.Take)
+      .ToListAsync(cancellationToken);
+  ```
+
+- **Reporting reads.** Database-native aggregation that LINQ expresses cleanly stays as a
+  LINQ aggregate over `Set<T>()` (e.g. a `GroupBy(...).Select(...)` status summary). Where
+  the aggregation is SQL-native, use `SqlQuery<T>(FormattableString)` with the SQL inline in
+  the handler — interpolated values bind as parameters:
+
+  ```csharp
+  FormattableString sql = $"""
+      SELECT width_bucket(extract(epoch from "PaidAt"), {epochBoundaries}) - 1 AS "BucketIndex",
+             SUM("TotalAmount") AS "Revenue"
+      FROM "Orders"
+      WHERE "PaymentStatus" = {paidStatus}
+        AND "PaidAt" >= {b0}
+        AND "PaidAt" < {bn}
+      GROUP BY width_bucket(extract(epoch from "PaidAt"), {epochBoundaries})
+      """;
+
+  var rows = await _readDbContext.SqlQuery<RevenueBucketRow>(sql).ToListAsync(cancellationToken);
+  ```
+
+A brand-new read needs **zero** new repository methods and **zero** new query types — chain
+the operators in the handler and go.
 
 ## Writes — repositories are the write boundary
 
-`IRepository<T>` is the command/write boundary. Read-modify-write handlers load a
-**tracked** aggregate by a richer-than-PK predicate, mutate it, and `SaveChanges`:
+`IRepository<T>` is the command/write boundary. A read-modify-write handler loads a
+**tracked** aggregate through the read port — `Set<T>(tracking: true)` — mutates it, then
+commits via the repository. The same scoped `AppDbContext` backs both the read port and the
+repository, so the tracked changes persist:
 
 ```csharp
-var food = await _foodRepository.GetForUpdateAsync(
-    f => f.Id == request.FoodId && !f.IsDeleted,
-    includes => includes.Include("CustomisationGroups.Options"));
+var order = await _readDbContext.Set<DomainOrder>(tracking: true)
+        .Where(o => o.Id == request.OrderId && o.UserId == request.UserId)
+        .FirstOrDefaultAsync(cancellationToken)
+    ?? throw new ResultFailureException(_messages.OrderNotFound);
 
-food.AddCustomisationGroup(group);
-await _foodRepository.SaveChangesAsync();
+order.Cancel();
+await _orderRepository.SaveChangesAsync();
 ```
 
-- `GetForUpdateAsync` / `ListForUpdateAsync` return tracked, optionally graph-included
-  aggregates for mutation. There is no specification layer and no
-  `FindByExpression` / `FilterByExpression` / `FilterPaged` on the repository.
-- Read-only projection queries do **not** live on the repository — they are Application
-  query objects over `IReadDbContext`.
+- Tracked write-path loads come from `IReadDbContext.Set<T>(tracking: true)`, not from the
+  repository. There is no `GetForUpdateAsync` / `ListForUpdateAsync`, no specification layer,
+  and no `FindByExpression` / `FilterByExpression` / `FilterPaged`.
+- The repository surface is write-only — see [Repository Pattern](repository-pattern.md).

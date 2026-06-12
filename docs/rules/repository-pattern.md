@@ -1,41 +1,47 @@
 # Repository Pattern
 
-`IRepository<T>` is the **command/write boundary** for an aggregate. It loads tracked
-aggregates for mutation, adds/removes entities, and commits. Read-only and projection
-queries do **not** live here — see [Read Queries](read-queries.md).
-
-## Write-path loads
-
-Read-modify-write handlers load a **tracked** aggregate by a richer-than-PK predicate
-(optionally with a navigation graph to mutate), change it, then `SaveChanges`:
+`IRepository<T>` is the **write-only boundary** for an aggregate. It adds and removes
+entities and commits. It does **not** retrieve — reads and tracked write-path loads come
+from `IReadDbContext`, see [Read Queries](read-queries.md).
 
 ```csharp
-// Load tracked, mutate, save
-var order = await _orderRepository.GetForUpdateAsync(
-    o => o.Id == request.OrderId && o.UserId == request.UserId);
+public interface IRepository<T>
+    where T : class
+{
+    Task<T> AddAsync(T entity);
+    T Add(T entity);
+    void Remove(T entity);
+    Task<int> SaveChangesAsync();
+}
+```
+
+## Write-path loads come from the read port
+
+A read-modify-write handler loads its **tracked** aggregate via
+`IReadDbContext.Set<T>(tracking: true)` — composing `.Where(...)` and any `.Include(...)`
+for the navigation graph to mutate — then commits through the repository:
+
+```csharp
+var order = await _readDbContext.Set<DomainOrder>(tracking: true)
+        .Where(o => o.Id == request.OrderId && o.UserId == request.UserId)
+        .FirstOrDefaultAsync(cancellationToken)
+    ?? throw new ResultFailureException(_messages.OrderNotFound);
 
 order.Cancel();
 await _orderRepository.SaveChangesAsync();
 ```
 
-`IRepository<T>` exposes:
+The same scoped `AppDbContext` backs both the read port and the repository, so the tracked
+mutation persists on `SaveChangesAsync`.
 
-- `GetForUpdateAsync(predicate, includes?)` — a single tracked aggregate.
-- `ListForUpdateAsync(predicate, includes?)` — every matching tracked aggregate (bulk
-  read-modify-write).
-- `AddAsync` / `Add` / `Remove` / `SaveChangesAsync`.
+**❌ No retrieval on repositories.** Do not add `GetForUpdateAsync`, `ListForUpdateAsync`,
+or any read/projection method. Tracked write loads come from `Set<T>(tracking: true)`.
 
-The optional `includes` declares the navigation graph to load for mutation via the
-`IncludeBuilder<T>` (typed lambdas and/or string paths).
-
-**❌ There is no specification layer.** Do not add `FindByExpression`,
-`FilterByExpression`, `FilterPaged` or specification classes — they have been removed.
-
-**❌ Don't add read/projection methods to repository interfaces.** A read is an
-Application query object over `IReadDbContext`, not a repository method.
+**❌ No specification layer.** There is no `FindByExpression`, `FilterByExpression`,
+`FilterPaged`, or specification class.
 
 ```csharp
-// Avoid — reads are query objects, not repo methods
+// Avoid — reads are not repo methods
 public interface ICartItemRepository : IRepository<CartItem>
 {
     Task<IEnumerable<CartItem>> GetCartItemsByUserIdAsync(Guid userId);

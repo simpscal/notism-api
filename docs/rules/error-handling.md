@@ -7,8 +7,9 @@
 **✅ DO: Throw ResultFailureException for Business Violations**
 
 ```csharp
-var food = await _foodRepository.FindByExpressionAsync(
-    new FoodByIdSpecification(request.FoodId))
+var food = await _readDbContext.Set<Domain.Food.Food>()
+    .Where(f => f.Id == request.FoodId)
+    .FirstOrDefaultAsync(cancellationToken)
 ?? throw new ResultFailureException("Food not found");
 
 if (!food.IsAvailable)
@@ -31,7 +32,8 @@ throw new ResultFailureException("Error");
 
 ```csharp
 // Avoid this pattern
-var food = await _foodRepository.FindByExpressionAsync(...);
+var food = await _readDbContext.Set<Domain.Food.Food>()
+    .Where(f => f.Id == request.FoodId).FirstOrDefaultAsync(cancellationToken);
 if (food == null)
 {
     return new AddCartItemResponse { Success = false, ErrorCode = 404 };

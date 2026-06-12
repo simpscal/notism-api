@@ -63,18 +63,17 @@ public class CartItem : AggregateRoot
 
 ### Include Related Entities
 
-**✅ DO: Always Include Required Navigation Properties**
+**✅ DO: Include Required Navigation Properties Inline in the Read**
+
+A read whose response maps off a navigation graph declares those navigations with
+`.Include(...)` directly on the `IReadDbContext.Set<T>()` chain in the handler:
 
 ```csharp
-public class CartItemByUserIdSpecification : Specification<CartItem>
-{
-    public CartItemByUserIdSpecification(Guid userId)
-    {
-        _userId = userId;
-        Include(c => c.Food);           // Required for accessing Food properties
-        Include(c => c.Food.Images);    // Required for accessing Images
-    }
-}
+var cartItems = await _readDbContext.Set<CartItem>()
+    .Where(c => c.UserId == userId)
+    .Include(c => c.Food)
+    .Include(c => c.Food.Images)
+    .ToListAsync(cancellationToken);
 ```
 
 ---

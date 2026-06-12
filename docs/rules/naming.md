@@ -12,15 +12,15 @@ public class Food : AggregateRoot { }
 public class User : AggregateRoot { }
 ```
 
-### Specifications
+### Read Projections
 
-**✅ DO: Use Descriptive Names Ending with "Specification"**
+**✅ DO: Name a Read Projection Type After Its Read + "Projection"**
+
+A read that shapes its result with `.Select(...)` into a dedicated type names that type
+after the read it serves:
 
 ```csharp
-CartItemByUserIdSpecification
-FoodByIdSpecification
-UserByEmailSpecification
-CartItemByUserAndFoodSpecification
+FoodListProjection
 ```
 
 ### Handlers

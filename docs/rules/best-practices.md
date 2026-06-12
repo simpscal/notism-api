@@ -3,7 +3,7 @@
 Rule files by category:
 
 - [Repository Pattern (write boundary)](./repository-pattern.md)
-- [Read Queries (per-handler query objects)](./read-queries.md)
+- [Read Queries (inline reads over IReadDbContext)](./read-queries.md)
 - [Domain Events](./domain-events.md)
 - [Handler Design](./handler-design.md)
 - [Validation](./validation.md)
