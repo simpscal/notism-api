@@ -12,4 +12,7 @@ public enum PaymentStatus
 
     [StringValue("failed")]
     Failed = 2,
+
+    [StringValue("refunded")]
+    Refunded = 3,
 }
