@@ -24,6 +24,7 @@ using Notism.Application.Order.AdminGetTodaySales;
 using Notism.Application.Order.AdminOrdersForKanban;
 using Notism.Application.Order.AdminOrdersForTable;
 using Notism.Application.Order.AdminUpdateOrderDeliveryStatus;
+using Notism.Application.Order.AdminUpdateOrderPaymentStatus;
 using Notism.Application.Order.GetOrderById;
 using Notism.Application.User.AdminDeleteUser;
 using Notism.Application.User.AdminGetUserDetail;
@@ -137,6 +138,17 @@ public static class AdminEndpoints
             .WithDescription("Updates the delivery status of an order.")
             .RequireAdmin()
             .Produces<AdminUpdateOrderDeliveryStatusResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+
+        group.MapPatch("/{id:guid}/payment-status", AdminUpdateOrderPaymentStatusAsync)
+            .WithName("AdminUpdateOrderPaymentStatus")
+            .WithSummary("Update payment status")
+            .WithDescription("Updates the payment status of an order.")
+            .RequireAdmin()
+            .Produces<AdminUpdateOrderPaymentStatusResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
@@ -676,6 +688,21 @@ public static class AdminEndpoints
         {
             OrderId = id,
             DeliveryStatus = payload.DeliveryStatus,
+        };
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AdminUpdateOrderPaymentStatusAsync(
+        IMediator mediator,
+        Guid id,
+        AdminUpdateOrderPaymentStatusPayload payload,
+        CancellationToken cancellationToken)
+    {
+        var request = new AdminUpdateOrderPaymentStatusRequest
+        {
+            OrderId = id,
+            PaymentStatus = payload.PaymentStatus,
         };
         var result = await mediator.Send(request, cancellationToken);
         return Results.Ok(result);
