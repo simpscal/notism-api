@@ -59,6 +59,34 @@ public class UpdatePaymentStatusTests
     }
 
     [Fact]
+    public void UpdatePaymentStatus_WhenTargetIsRefundedAfterPaid_MarksRefundedAndKeepsPaidAt()
+    {
+        var order = DomainOrder.Create(Guid.NewGuid(), PaymentMethodEnum.Banking, new List<Guid>());
+        order.UpdatePaymentStatus(PaymentStatus.Paid);
+        var paidAt = order.PaidAt;
+
+        order.UpdatePaymentStatus(PaymentStatus.Refunded);
+
+        order.PaymentStatus.Should().Be(PaymentStatus.Refunded);
+        order.PaidAt.Should().Be(paidAt);
+    }
+
+    [Fact]
+    public void MarkAsRefunded_WhenCalled_SetsStatusRefundedAndKeepsPaidAt()
+    {
+        var order = DomainOrder.Create(Guid.NewGuid(), PaymentMethodEnum.Banking, new List<Guid>());
+        order.MarkAsPaid(DateTime.UtcNow);
+        var paidAt = order.PaidAt;
+        order.ClearDomainEvents();
+
+        order.MarkAsRefunded();
+
+        order.PaymentStatus.Should().Be(PaymentStatus.Refunded);
+        order.PaidAt.Should().Be(paidAt);
+        order.DomainEvents.Should().BeEmpty();
+    }
+
+    [Fact]
     public void UpdatePaymentStatus_WhenChangedRegardlessOfPaymentMethod_AllowsTransitionForCashOnDelivery()
     {
         var order = DomainOrder.Create(Guid.NewGuid(), PaymentMethodEnum.CashOnDelivery, new List<Guid>());

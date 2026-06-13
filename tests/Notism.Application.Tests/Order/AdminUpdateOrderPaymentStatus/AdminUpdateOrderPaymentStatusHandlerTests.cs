@@ -89,6 +89,25 @@ public class AdminUpdateOrderPaymentStatusHandlerTests : IDisposable
     }
 
     [Fact]
+    public async Task Handle_WhenTargetIsRefundedAfterPaid_PersistsRefundedStatusAndKeepsPaidAt()
+    {
+        var order = DomainOrder.Create(_userId == Guid.Empty ? await NewUserAsync() : _userId, PaymentMethodEnum.Banking, new List<Guid>());
+        order.MarkAsPaid(DateTime.UtcNow);
+        await PersistSeedAsync(order);
+
+        var result = await _handler.Handle(
+            new AdminUpdateOrderPaymentStatusRequest { OrderId = order.Id, PaymentStatus = "refunded" },
+            CancellationToken.None);
+
+        result.PaymentStatus.Should().Be("refunded");
+        result.PaidAt.Should().NotBeNull();
+
+        var persisted = await GetPersistedAsync(order.Id);
+        persisted.PaymentStatus.Should().Be(PaymentStatus.Refunded);
+        persisted.PaidAt.Should().NotBeNull();
+    }
+
+    [Fact]
     public async Task Handle_WhenPaymentMethodIsCashOnDelivery_AllowsTransitionRegardlessOfMethod()
     {
         var order = await SeedOrderAsync(PaymentMethodEnum.CashOnDelivery);
