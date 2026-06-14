@@ -119,6 +119,12 @@ public class Order : AggregateRoot
         UpdatedAt = DateTime.UtcNow;
     }
 
+    public void MarkAsRefunded()
+    {
+        PaymentStatus = PaymentStatus.Refunded;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
     public void UpdatePaymentStatus(PaymentStatus status)
     {
         if (PaymentStatus == status)
@@ -136,6 +142,9 @@ public class Order : AggregateRoot
                 break;
             case PaymentStatus.Unpaid:
                 RevertToUnpaid();
+                break;
+            case PaymentStatus.Refunded:
+                MarkAsRefunded();
                 break;
             default:
                 throw new InvalidOperationException($"Unsupported payment status transition: {status}");
