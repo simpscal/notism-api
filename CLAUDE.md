@@ -17,113 +17,52 @@
 ```bash
 dotnet build Notism.sln
 dotnet test Notism.sln
-./format-code.sh --verify  # check only
-./format-code.sh           # fix issues
+./format-code.sh --verify  # check only; omit --verify to fix
 ```
 
 ## EF Core Migrations
 
-Run from `src/Notism.Infrastructure/`:
+Run from `src/Notism.Infrastructure/` (`-p Notism.Infrastructure.csproj -s ../Notism.Api/Notism.Api.csproj`):
 
 ```bash
-dotnet ef migrations add <Name> \
-  --project Notism.Infrastructure.csproj \
-  --startup-project ../Notism.Api/Notism.Api.csproj
-
-dotnet ef database update \
-  --project Notism.Infrastructure.csproj \
-  --startup-project ../Notism.Api/Notism.Api.csproj
+dotnet ef migrations add <Name> -p Notism.Infrastructure.csproj -s ../Notism.Api/Notism.Api.csproj
+dotnet ef database update    -p Notism.Infrastructure.csproj -s ../Notism.Api/Notism.Api.csproj
 ```
 
 ## Folder Structure
 
 ```
-src/
-  Notism.Api/              # Minimal APIs, middleware, JWT auth
-  Notism.Application/       # MediatR handlers (CQRS), FluentValidation
-  Notism.Domain/           # Aggregates, entities, domain events
-  Notism.Infrastructure/    # EF Core, repositories, external services
-  Notism.Shared/            # Result pattern, constants, extensions
-tests/
-  Notism.Api.Tests/         # API integration tests
-  Notism.Application.Tests/  # Application unit tests
-terraform/                   # AWS infrastructure (EC2, RDS, S3, CloudFront)
+src/Notism.Api/             # Minimal APIs, middleware, JWT auth
+src/Notism.Application/      # MediatR handlers (CQRS), FluentValidation
+src/Notism.Domain/          # Aggregates, entities, domain events
+src/Notism.Infrastructure/  # EF Core, repositories, external services
+src/Notism.Shared/          # Result pattern, constants, extensions
+tests/Notism.Api.Tests/         # API integration tests
+tests/Notism.Application.Tests/ # Application unit tests
+terraform/                  # AWS infrastructure (EC2, RDS, S3, CloudFront)
 docs/                       # Architecture and feature documentation
 ```
 
-## Architecture
+## Conventions — load before editing
 
-Clean Architecture (Onion) + CQRS via MediatR
-
-| Layer | Responsibility |
-|-------|----------------|
-| Domain | Entities, aggregates, domain events |
-| Application | MediatR handlers, FluentValidation, AutoMapper |
-| Infrastructure | EF Core persistence, repository implementations |
-| Api | Minimal APIs, middleware, JWT authentication |
-
-## CQRS Naming
-
-Feature folder: `src/Notism.Application/{Feature}/{Operation}/`
-
-| File | Pattern |
-|------|---------|
-| Request | `{Operation}Request.cs` |
-| Response | `{Operation}Response.cs` |
-| Handler | `{Operation}Handler.cs` |
-| Validator | `{Operation}RequestValidator.cs` |
-
-Validators and AutoMapper profiles auto-register — no manual DI registration needed.
-
-## Error Handling
-
-| Exception | HTTP |
+| When you… | Read |
 |-----------|------|
-| `ResultFailureException` | 400 |
-| `NotFoundException` | 404 |
-| `UnauthorizedException` | 401 |
-| `ForbiddenException` | 403 |
-| `InvalidRefreshTokenException` | 401 |
-
-Never return null/bool for failures — throw. `ValidationBehavior` throws `ResultFailureException` automatically.
-
-## Test Naming
-
-Method pattern: `Handle_When{Condition}_{ExpectedOutcome}`
-File location: `tests/Notism.Application.Tests/{Feature}/{Operation}/{Operation}HandlerTests.cs`
-
-## Document Navigation
-
-| Topic | Location |
-|-------|----------|
-| Architecture | `docs/rules/architecture.md` |
-| Repository Pattern (write boundary) | `docs/rules/repository-pattern.md` |
-| Read Queries (inline reads over IReadDbContext) | `docs/rules/read-queries.md` |
-| Domain Events | `docs/rules/domain-events.md` |
-| Handler Design | `docs/rules/handler-design.md` |
-| Validation | `docs/rules/validation.md` |
-| Error Handling | `docs/rules/error-handling.md` |
-| Naming Conventions | `docs/rules/naming.md` |
-| Code Organization | `docs/rules/code-organization.md` |
-| Additional Practices | `docs/rules/additional-practices.md` |
-| Image resizing flow | `docs/flows/image-resizing.md` |
-| Auth cookie flow | `docs/flows/secure-authentication-cookies.md` |
+| Add/edit a MediatR handler, request, response, or validator under `src/Notism.Application/**` | `docs/rules/naming.md` |
+| Define cross-layer dependencies or a new aggregate/service; review `src/` project structure | `docs/rules/architecture.md` |
+| Add endpoints in `src/Notism.Api/Endpoints/**`, new Application feature folders, or new interfaces | `docs/rules/code-organization.md` |
+| Throw/catch exceptions in handlers or middleware | `docs/rules/error-handling.md` |
+| Add/edit any `*RequestValidator.cs` | `docs/rules/validation.md` |
+| Create/edit any `*Handler.cs` | `docs/rules/handler-design.md` |
+| Write a read handler or any query over `IReadDbContext` | `docs/rules/read-queries.md` |
+| Add methods to any `I*Repository` interface/impl under `src/Notism.Infrastructure/Repositories/**` | `docs/rules/repository-pattern.md` |
+| Raise domain events / create event classes under `src/Notism.Domain/**/Events/**` | `docs/rules/domain-events.md` |
+| Create aggregates/entities/value objects in `src/Notism.Domain/**` | `docs/rules/additional-practices.md` |
 
 ## Infrastructure (Terraform)
 
-```
-terraform/
-  main.tf, variables.tf, outputs.tf
-```
-
-Deploy: `terraform apply -var="key_name=notism-api"`
-
-Resources: VPC, EC2 (t4g.micro), RDS PostgreSQL (optional), ECR, S3, CloudFront
+`terraform/` (`main.tf`, `variables.tf`, `outputs.tf`). Deploy: `terraform apply -var="key_name=notism-api"`.
+Resources: VPC, EC2 (t4g.micro), RDS PostgreSQL (optional), ECR, S3, CloudFront.
 
 ## CI/CD
 
-| Workflow | Target | Trigger |
-|----------|---------|---------|
-| `deploy.yml` | AWS EC2 (Docker Compose) | Push to main/dev |
-
-Branch → environment: `main` = prod, `dev` = dev
+`deploy.yml` → AWS EC2 (Docker Compose) on push to `main`/`dev`. Branch → env: `main` = prod, `dev` = dev.

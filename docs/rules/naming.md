@@ -55,5 +55,24 @@ FoodCreatedEvent
 UserProfileUpdatedEvent
 ```
 
+### CQRS Feature Folder
+
+**✅ DO: Place Each Operation in `src/Notism.Application/{Feature}/{Operation}/`**
+
+| File | Pattern |
+|------|---------|
+| Request | `{Operation}Request.cs` |
+| Response | `{Operation}Response.cs` |
+| Handler | `{Operation}Handler.cs` |
+| Validator | `{Operation}RequestValidator.cs` |
+
+Validators and AutoMapper profiles auto-register — no manual DI registration needed.
+
+### Test Naming
+
+**✅ DO: Use `Handle_When{Condition}_{ExpectedOutcome}` for Handler Test Methods**
+
+File location: `tests/Notism.Application.Tests/{Feature}/{Operation}/{Operation}HandlerTests.cs`
+
 ---
 
