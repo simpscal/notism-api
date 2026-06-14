@@ -112,6 +112,45 @@ public class Order : AggregateRoot
         AddDomainEvent(new OrderPaymentFailedEvent(Id, UserId));
     }
 
+    public void RevertToUnpaid()
+    {
+        PaymentStatus = PaymentStatus.Unpaid;
+        PaidAt = null;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void MarkAsRefunded()
+    {
+        PaymentStatus = PaymentStatus.Refunded;
+        UpdatedAt = DateTime.UtcNow;
+    }
+
+    public void UpdatePaymentStatus(PaymentStatus status)
+    {
+        if (PaymentStatus == status)
+        {
+            return;
+        }
+
+        switch (status)
+        {
+            case PaymentStatus.Paid:
+                MarkAsPaid(DateTime.UtcNow);
+                break;
+            case PaymentStatus.Failed:
+                MarkAsFailed();
+                break;
+            case PaymentStatus.Unpaid:
+                RevertToUnpaid();
+                break;
+            case PaymentStatus.Refunded:
+                MarkAsRefunded();
+                break;
+            default:
+                throw new InvalidOperationException($"Unsupported payment status transition: {status}");
+        }
+    }
+
     public DeliveryStatusTiming GetDeliveryStatusTiming()
     {
         var history = _statusHistory
