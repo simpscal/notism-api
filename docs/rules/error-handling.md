@@ -40,5 +40,17 @@ if (food == null)
 }
 ```
 
+### Exception → HTTP
+
+| Exception | HTTP |
+|-----------|------|
+| `ResultFailureException` | 400 |
+| `NotFoundException` | 404 |
+| `UnauthorizedException` | 401 |
+| `ForbiddenException` | 403 |
+| `InvalidRefreshTokenException` | 401 |
+
+Never return null/bool for failures — throw.
+
 ---
 
