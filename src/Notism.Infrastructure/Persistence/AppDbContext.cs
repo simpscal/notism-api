@@ -37,6 +37,7 @@ public partial class AppDbContext(DbContextOptions<AppDbContext> options, IMedia
     public DbSet<Order> Orders { get; set; }
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<DeliveryStatusHistory> DeliveryStatusHistories { get; set; }
+    public DbSet<Refund> Refunds { get; set; }
     public DbSet<Payment> Payments { get; set; }
     public DbSet<BankingCheckout> BankingCheckouts { get; set; }
 
@@ -72,6 +73,7 @@ public partial class AppDbContext(DbContextOptions<AppDbContext> options, IMedia
         ConfigureOrder(modelBuilder);
         ConfigureOrderItem(modelBuilder);
         ConfigureDeliveryStatusHistory(modelBuilder);
+        ConfigureRefund(modelBuilder);
         ConfigurePayment(modelBuilder);
         ConfigureBankingCheckout(modelBuilder);
 
@@ -452,6 +454,11 @@ public partial class AppDbContext(DbContextOptions<AppDbContext> options, IMedia
                 .HasForeignKey(h => h.OrderId)
                 .OnDelete(DeleteBehavior.Cascade);
 
+            entity.HasOne(o => o.Refund)
+                .WithOne(r => r.Order)
+                .HasForeignKey<Refund>(r => r.OrderId)
+                .OnDelete(DeleteBehavior.Cascade);
+
             entity.HasOne(o => o.User)
                 .WithMany()
                 .HasForeignKey(o => o.UserId)
@@ -538,6 +545,49 @@ public partial class AppDbContext(DbContextOptions<AppDbContext> options, IMedia
 
             entity.HasIndex(dsh => dsh.OrderId);
             entity.HasIndex(dsh => new { dsh.OrderId, dsh.StatusChangedAt });
+        });
+    }
+
+    private static void ConfigureRefund(ModelBuilder modelBuilder)
+    {
+        modelBuilder.Entity<Refund>(entity =>
+        {
+            entity.ToTable("refunds");
+
+            entity.HasKey(r => r.Id);
+
+            entity.Property(r => r.OrderId)
+                .IsRequired();
+
+            entity.Property(r => r.Amount)
+                .HasPrecision(18, 2)
+                .IsRequired();
+
+            entity.Property(r => r.Status)
+                .HasConversion(
+                    status => status.GetStringValue(),
+                    value => value.ToEnum<RefundStatus>())
+                .HasMaxLength(50)
+                .IsRequired();
+
+            entity.Property(r => r.TransferReference)
+                .HasMaxLength(255);
+
+            entity.Property(r => r.FailureReason)
+                .HasMaxLength(500);
+
+            entity.Property(r => r.PaidAt);
+
+            entity.Property(r => r.CreatedAt)
+                .IsRequired();
+
+            entity.Property(r => r.UpdatedAt)
+                .IsRequired();
+
+            entity.HasIndex(r => r.OrderId)
+                .IsUnique();
+            entity.HasIndex(r => r.Status);
+            entity.HasIndex(r => r.TransferReference);
         });
     }
 
