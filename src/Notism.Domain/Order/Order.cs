@@ -25,6 +25,8 @@ public class Order : AggregateRoot
     private readonly List<DeliveryStatusHistory> _statusHistory = new();
     public IReadOnlyCollection<DeliveryStatusHistory> StatusHistory => _statusHistory.AsReadOnly();
 
+    public Refund? Refund { get; private set; }
+
     private Order(
         Guid userId,
         PaymentMethod paymentMethod,
@@ -95,6 +97,86 @@ public class Order : AggregateRoot
 
         ClearDomainEvents();
         AddDomainEvent(new DeliveryStatusUpdatedEvent(Id, UserId, DeliveryStatus.Cancelled));
+        AddDomainEvent(new OrderCancelledEvent(Id, UserId));
+    }
+
+    public Refund CreateRefund()
+    {
+        if (Refund != null)
+        {
+            throw new InvalidOperationException("Order already has a refund");
+        }
+
+        if (PaymentStatus != PaymentStatus.Paid)
+        {
+            throw new InvalidOperationException("Refund can only be created for a paid order");
+        }
+
+        if (PaymentMethod != PaymentMethod.Banking)
+        {
+            throw new InvalidOperationException("Refund is only supported for banking orders");
+        }
+
+        Refund = Refund.Create(Id, TotalAmount);
+        UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new RefundCreatedEvent(Id, Refund.Id, UserId, Refund.Amount));
+
+        return Refund;
+    }
+
+    public Refund RequestRefund()
+    {
+        if (Refund != null)
+        {
+            throw new InvalidOperationException("Order already has a refund");
+        }
+
+        Refund = Refund.Create(Id, TotalAmount);
+        UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new RefundCreatedEvent(Id, Refund.Id, UserId, Refund.Amount));
+
+        return Refund;
+    }
+
+    public void MarkRefundProcessing(string transferReference)
+    {
+        if (Refund == null)
+        {
+            throw new InvalidOperationException("Order has no refund to process");
+        }
+
+        Refund.MarkProcessing(transferReference);
+        UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new RefundProcessingEvent(Id, Refund.Id, transferReference));
+    }
+
+    public void MarkRefundPaid()
+    {
+        if (Refund == null)
+        {
+            throw new InvalidOperationException("Order has no refund to mark as paid");
+        }
+
+        Refund.MarkPaid();
+        UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new RefundPaidEvent(Id, Refund.Id, UserId, Refund.PaidAt!.Value));
+    }
+
+    public void MarkRefundFailed(string reason)
+    {
+        if (Refund == null)
+        {
+            throw new InvalidOperationException("Order has no refund to fail");
+        }
+
+        Refund.MarkFailed(reason);
+        UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new RefundFailedEvent(Id, Refund.Id, UserId, reason));
     }
 
     public void MarkAsPaid(DateTime paidAt)
