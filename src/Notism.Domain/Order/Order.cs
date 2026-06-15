@@ -140,30 +140,30 @@ public class Order : AggregateRoot
         return Refund;
     }
 
-    public void MarkRefundProcessing(string transferReference)
+    public void MarkRefundProcessing()
     {
         if (Refund == null)
         {
             throw new InvalidOperationException("Order has no refund to process");
         }
 
-        Refund.MarkProcessing(transferReference);
+        Refund.MarkProcessing();
         UpdatedAt = DateTime.UtcNow;
 
-        AddDomainEvent(new RefundProcessingEvent(Id, Refund.Id, transferReference));
+        AddDomainEvent(new RefundProcessingEvent(Id, Refund.Id));
     }
 
-    public void MarkRefundPaid()
+    public void MarkRefundPaid(string transferReference)
     {
         if (Refund == null)
         {
             throw new InvalidOperationException("Order has no refund to mark as paid");
         }
 
-        Refund.MarkPaid();
+        Refund.MarkPaid(transferReference);
         UpdatedAt = DateTime.UtcNow;
 
-        AddDomainEvent(new RefundPaidEvent(Id, Refund.Id, UserId, Refund.PaidAt!.Value));
+        AddDomainEvent(new RefundPaidEvent(Id, Refund.Id, UserId, Refund.PaidAt!.Value, transferReference));
     }
 
     public void MarkRefundFailed(string reason)

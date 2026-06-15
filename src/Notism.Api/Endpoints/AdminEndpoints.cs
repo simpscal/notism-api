@@ -25,7 +25,11 @@ using Notism.Application.Order.AdminOrdersForKanban;
 using Notism.Application.Order.AdminOrdersForTable;
 using Notism.Application.Order.AdminUpdateOrderDeliveryStatus;
 using Notism.Application.Order.AdminUpdateOrderPaymentStatus;
+using Notism.Application.Order.ApproveRefund;
+using Notism.Application.Order.Common;
 using Notism.Application.Order.GetOrderById;
+using Notism.Application.Order.MarkRefundFailed;
+using Notism.Application.Order.RetryRefund;
 using Notism.Application.User.AdminDeleteUser;
 using Notism.Application.User.AdminGetUserDetail;
 using Notism.Application.User.AdminGetUsers;
@@ -39,6 +43,7 @@ public static class AdminEndpoints
     {
         MapAdminUserEndpoints(app);
         MapAdminOrderEndpoints(app);
+        MapAdminRefundEndpoints(app);
         MapAdminDashboardEndpoints(app);
         MapAdminCategoryEndpoints(app);
         MapAdminFoodEndpoints(app);
@@ -153,6 +158,48 @@ public static class AdminEndpoints
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
             .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+    }
+
+    private static void MapAdminRefundEndpoints(IEndpointRouteBuilder app)
+    {
+        var group = app.MapGroup("/api/admin/refunds")
+            .WithTags("Admin Refund Management")
+            .WithOpenApi()
+            .RequireAuthorization();
+
+        group.MapPost("/{id:guid}/approve", AdminApproveRefundAsync)
+            .WithName("AdminApproveRefund")
+            .WithSummary("Approve refund")
+            .WithDescription("Transitions a pending refund to processing. Staff transfer funds manually; no provider call is made.")
+            .RequireAdmin()
+            .Produces<RefundResponse>(StatusCodes.Status202Accepted)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound)
+            .Produces<ErrorResponse>(StatusCodes.Status409Conflict);
+
+        group.MapPost("/{id:guid}/retry", AdminRetryRefundAsync)
+            .WithName("AdminRetryRefund")
+            .WithSummary("Retry refund")
+            .WithDescription("Transitions a failed refund back to processing. Staff transfer funds manually; no provider call is made.")
+            .RequireAdmin()
+            .Produces<RefundResponse>(StatusCodes.Status202Accepted)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound)
+            .Produces<ErrorResponse>(StatusCodes.Status409Conflict);
+
+        group.MapPost("/{id:guid}/mark-failed", AdminMarkRefundFailedAsync)
+            .WithName("AdminMarkRefundFailed")
+            .WithSummary("Mark refund failed")
+            .WithDescription("Marks a processing refund as failed with a reason.")
+            .RequireAdmin()
+            .Produces<RefundResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound)
+            .Produces<ErrorResponse>(StatusCodes.Status409Conflict);
     }
 
     private static void MapAdminDashboardEndpoints(IEndpointRouteBuilder app)
@@ -703,6 +750,41 @@ public static class AdminEndpoints
         {
             OrderId = id,
             PaymentStatus = payload.PaymentStatus,
+        };
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AdminApproveRefundAsync(
+        IMediator mediator,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var request = new ApproveRefundRequest { RefundId = id };
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Accepted(value: result);
+    }
+
+    private static async Task<IResult> AdminRetryRefundAsync(
+        IMediator mediator,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var request = new RetryRefundRequest { RefundId = id };
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Accepted(value: result);
+    }
+
+    private static async Task<IResult> AdminMarkRefundFailedAsync(
+        IMediator mediator,
+        Guid id,
+        MarkRefundFailedPayload payload,
+        CancellationToken cancellationToken)
+    {
+        var request = new MarkRefundFailedRequest
+        {
+            RefundId = id,
+            Reason = payload.Reason,
         };
         var result = await mediator.Send(request, cancellationToken);
         return Results.Ok(result);

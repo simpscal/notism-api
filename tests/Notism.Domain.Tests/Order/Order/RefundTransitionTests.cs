@@ -80,14 +80,13 @@ public class RefundTransitionTests
     }
 
     [Fact]
-    public void MarkRefundProcessing_FromPending_TransitionsAndSetsReferenceAndRaisesEvent()
+    public void MarkRefundProcessing_FromPending_TransitionsAndRaisesEvent()
     {
         var order = CreateOrderWithPendingRefund();
 
-        order.MarkRefundProcessing("REF-123");
+        order.MarkRefundProcessing();
 
         order.Refund!.Status.Should().Be(RefundStatus.Processing);
-        order.Refund.TransferReference.Should().Be("REF-123");
         order.DomainEvents.Should().ContainSingle(e => e is RefundProcessingEvent);
     }
 
@@ -98,24 +97,24 @@ public class RefundTransitionTests
         order.MarkRefundFailed("provider declined");
         order.ClearDomainEvents();
 
-        order.MarkRefundProcessing("REF-RETRY");
+        order.MarkRefundProcessing();
 
         order.Refund!.Status.Should().Be(RefundStatus.Processing);
-        order.Refund.TransferReference.Should().Be("REF-RETRY");
         order.Refund.FailureReason.Should().BeNull();
         order.DomainEvents.Should().ContainSingle(e => e is RefundProcessingEvent);
     }
 
     [Fact]
-    public void MarkRefundPaid_FromProcessing_TransitionsToPaidAndSetsPaidAtAndRaisesEvent()
+    public void MarkRefundPaid_FromProcessing_TransitionsToPaidAndCapturesReferenceAndRaisesEvent()
     {
         var order = CreateOrderWithPendingRefund();
-        order.MarkRefundProcessing("REF-123");
+        order.MarkRefundProcessing();
         order.ClearDomainEvents();
 
-        order.MarkRefundPaid();
+        order.MarkRefundPaid("SEPAY-REF-123");
 
         order.Refund!.Status.Should().Be(RefundStatus.Paid);
+        order.Refund.TransferReference.Should().Be("SEPAY-REF-123");
         order.Refund.PaidAt.Should().NotBeNull();
         order.DomainEvents.Should().ContainSingle(e => e is RefundPaidEvent);
     }
@@ -136,7 +135,7 @@ public class RefundTransitionTests
     public void MarkRefundFailed_FromProcessing_TransitionsToFailed()
     {
         var order = CreateOrderWithPendingRefund();
-        order.MarkRefundProcessing("REF-123");
+        order.MarkRefundProcessing();
         order.ClearDomainEvents();
 
         order.MarkRefundFailed("provider timeout");
@@ -151,7 +150,7 @@ public class RefundTransitionTests
     {
         var order = CreateOrderWithPendingRefund();
 
-        var act = () => order.MarkRefundPaid();
+        var act = () => order.MarkRefundPaid("SEPAY-REF-123");
 
         act.Should().Throw<InvalidOperationException>();
     }
@@ -160,10 +159,10 @@ public class RefundTransitionTests
     public void MarkRefundProcessing_FromPaid_Throws()
     {
         var order = CreateOrderWithPendingRefund();
-        order.MarkRefundProcessing("REF-123");
-        order.MarkRefundPaid();
+        order.MarkRefundProcessing();
+        order.MarkRefundPaid("SEPAY-REF-123");
 
-        var act = () => order.MarkRefundProcessing("REF-456");
+        var act = () => order.MarkRefundProcessing();
 
         act.Should().Throw<InvalidOperationException>();
     }
@@ -172,8 +171,8 @@ public class RefundTransitionTests
     public void MarkRefundFailed_FromPaid_Throws()
     {
         var order = CreateOrderWithPendingRefund();
-        order.MarkRefundProcessing("REF-123");
-        order.MarkRefundPaid();
+        order.MarkRefundProcessing();
+        order.MarkRefundPaid("SEPAY-REF-123");
 
         var act = () => order.MarkRefundFailed("late failure");
 
@@ -186,7 +185,7 @@ public class RefundTransitionTests
         var order = CreateOrderWithPendingRefund();
         order.MarkRefundFailed("provider declined");
 
-        var act = () => order.MarkRefundPaid();
+        var act = () => order.MarkRefundPaid("SEPAY-REF-123");
 
         act.Should().Throw<InvalidOperationException>();
     }

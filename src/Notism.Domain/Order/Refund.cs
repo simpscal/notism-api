@@ -30,7 +30,7 @@ public class Refund : Entity
         return new Refund(orderId, amount);
     }
 
-    internal void MarkProcessing(string transferReference)
+    internal void MarkProcessing()
     {
         if (Status != RefundStatus.Pending && Status != RefundStatus.Failed)
         {
@@ -38,12 +38,11 @@ public class Refund : Entity
         }
 
         Status = RefundStatus.Processing;
-        TransferReference = transferReference;
         FailureReason = null;
         UpdatedAt = DateTime.UtcNow;
     }
 
-    internal void MarkPaid()
+    internal void MarkPaid(string transferReference)
     {
         if (Status != RefundStatus.Processing)
         {
@@ -51,6 +50,7 @@ public class Refund : Entity
         }
 
         Status = RefundStatus.Paid;
+        TransferReference = transferReference;
         PaidAt = DateTime.UtcNow;
         UpdatedAt = DateTime.UtcNow;
     }

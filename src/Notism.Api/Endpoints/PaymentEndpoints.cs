@@ -3,12 +3,10 @@ using System.Text.Json;
 
 using MediatR;
 
-using Notism.Api.Constants;
 using Notism.Api.Extensions;
 using Notism.Api.Models;
 using Notism.Application.Payment.CreateBankingCheckout;
 using Notism.Application.Payment.GetBankAccount;
-using Notism.Application.Payment.HandleRefundWebhook;
 using Notism.Application.Payment.HandleSepayWebhook;
 using Notism.Application.Payment.SaveBankAccount;
 
@@ -61,14 +59,6 @@ public static class PaymentEndpoints
             .WithSummary("SePay webhook")
             .WithDescription("Receives SePay bank transfer notifications and auto-confirms matching orders.")
             .Produces(StatusCodes.Status200OK);
-
-        webhookGroup.MapPost("/webhook/refund", HandleRefundWebhookAsync)
-            .WithName("HandleRefundWebhook")
-            .WithSummary("Refund webhook")
-            .WithDescription("Receives bank transfer refund outcomes, secret-verified, and drives the matching refund to Paid or Failed.")
-            .Produces(StatusCodes.Status200OK)
-            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
-            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
     }
 
     private static async Task<IResult> CreateBankingCheckoutAsync(
@@ -128,31 +118,11 @@ public static class PaymentEndpoints
             TransactionId = payload.TransactionId.ToString(CultureInfo.InvariantCulture),
             Amount = payload.Amount,
             Content = payload.Content,
+            TransferType = payload.TransferType,
             TransferredAt = transferredAt,
         };
 
         await mediator.Send(request, CancellationToken.None);
-
-        return Results.Ok();
-    }
-
-    private static async Task<IResult> HandleRefundWebhookAsync(
-        HttpContext httpContext,
-        IMediator mediator,
-        RefundWebhookPayload payload,
-        CancellationToken cancellationToken)
-    {
-        var secret = httpContext.Request.Headers[HeaderNames.WebhookSecret].ToString();
-
-        var request = new HandleRefundWebhookRequest
-        {
-            Secret = secret,
-            TransferReference = payload.TransferReference,
-            Status = payload.Status,
-            FailureReason = payload.FailureReason,
-        };
-
-        await mediator.Send(request, cancellationToken);
 
         return Results.Ok();
     }

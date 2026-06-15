@@ -124,6 +124,18 @@
   <data name="CartItemsNotFound" xml:space="preserve">
     <value>Cart items not found: {0}</value>
   </data>
+  <data name="RefundNotFound" xml:space="preserve">
+    <value>Refund not found</value>
+  </data>
+  <data name="RefundNotPending" xml:space="preserve">
+    <value>Refund can only be approved when it is pending</value>
+  </data>
+  <data name="RefundNotFailed" xml:space="preserve">
+    <value>Refund can only be retried when it has failed</value>
+  </data>
+  <data name="RefundNotProcessing" xml:space="preserve">
+    <value>Refund can only be marked failed when it is processing</value>
+  </data>
   <data name="CannotDeleteOwnAccount" xml:space="preserve">
     <value>You cannot delete your own account.</value>
   </data>

@@ -32,6 +32,12 @@ public interface IMessages
     string NoCartItemsFound { get; }
     string CartItemsNotFound { get; }
 
+    // Refund Messages
+    string RefundNotFound { get; }
+    string RefundNotPending { get; }
+    string RefundNotFailed { get; }
+    string RefundNotProcessing { get; }
+
     // User/Admin Messages
     string CannotDeleteOwnAccount { get; }
     string CannotDeleteAdmin { get; }

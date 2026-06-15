@@ -124,6 +124,18 @@
   <data name="CartItemsNotFound" xml:space="preserve">
     <value>Không tìm thấy mục giỏ hàng: {0}</value>
   </data>
+  <data name="RefundNotFound" xml:space="preserve">
+    <value>Không tìm thấy yêu cầu hoàn tiền</value>
+  </data>
+  <data name="RefundNotPending" xml:space="preserve">
+    <value>Chỉ có thể duyệt hoàn tiền khi đang ở trạng thái chờ</value>
+  </data>
+  <data name="RefundNotFailed" xml:space="preserve">
+    <value>Chỉ có thể thử lại hoàn tiền khi đã thất bại</value>
+  </data>
+  <data name="RefundNotProcessing" xml:space="preserve">
+    <value>Chỉ có thể đánh dấu hoàn tiền thất bại khi đang xử lý</value>
+  </data>
   <data name="CannotDeleteOwnAccount" xml:space="preserve">
     <value>Bạn không thể xóa tài khoản của riêng mình.</value>
   </data>

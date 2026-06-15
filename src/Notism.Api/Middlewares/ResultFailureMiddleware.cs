@@ -37,6 +37,7 @@ public class ResultFailureMiddleware
             ResultFailureException resultEx => (HttpStatusCode.BadRequest, resultEx.ErrorMessage, null),
             ValidationException validationEx => (HttpStatusCode.BadRequest, validationEx.Message, validationEx.Errors),
             NotFoundException notFoundEx => (HttpStatusCode.NotFound, notFoundEx.Message, null),
+            ConflictException conflictEx => (HttpStatusCode.Conflict, conflictEx.Message, null),
             UnauthorizedException unauthorizedEx => (HttpStatusCode.Unauthorized, unauthorizedEx.Message, null),
             ForbiddenException forbiddenEx => (HttpStatusCode.Forbidden, forbiddenEx.Message, null),
             InvalidRefreshTokenException refreshEx => (HttpStatusCode.Unauthorized, refreshEx.Message, null),

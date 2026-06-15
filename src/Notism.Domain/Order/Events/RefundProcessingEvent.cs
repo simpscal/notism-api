@@ -8,12 +8,10 @@ public class RefundProcessingEvent : DomainEvent, INotification
 {
     public Guid OrderId { get; }
     public Guid RefundId { get; }
-    public string TransferReference { get; }
 
-    public RefundProcessingEvent(Guid orderId, Guid refundId, string transferReference)
+    public RefundProcessingEvent(Guid orderId, Guid refundId)
     {
         OrderId = orderId;
         RefundId = refundId;
-        TransferReference = transferReference;
     }
 }

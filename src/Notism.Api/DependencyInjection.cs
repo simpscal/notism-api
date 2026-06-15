@@ -43,7 +43,6 @@ public static class DependencyInjection
         services.Configure<ClientAppSettings>(configuration.GetSection(ClientAppSettings.SectionName));
         services.Configure<GoogleOAuthSettings>(configuration.GetSection(GoogleOAuthSettings.SectionName));
         services.Configure<SepaySettings>(configuration.GetSection(SepaySettings.SectionName));
-        services.Configure<BankingRefundSettings>(configuration.GetSection(BankingRefundSettings.SectionName));
 
         return services;
     }
