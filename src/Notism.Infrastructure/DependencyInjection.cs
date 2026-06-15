@@ -61,6 +61,7 @@ public static class DependencyInjection
 
         services.AddHttpClient<IHttpService, HttpService>();
         services.AddScoped<IGoogleOAuthService, GoogleOAuthService>();
+        services.AddScoped<IBankTransferService, StubBankTransferService>();
 
         services.AddAWSS3(configuration);
         services.AddMailerSend(configuration);
