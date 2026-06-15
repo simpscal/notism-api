@@ -118,6 +118,7 @@ public static class PaymentEndpoints
             TransactionId = payload.TransactionId.ToString(CultureInfo.InvariantCulture),
             Amount = payload.Amount,
             Content = payload.Content,
+            TransferType = payload.TransferType,
             TransferredAt = transferredAt,
         };
 
