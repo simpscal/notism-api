@@ -37,6 +37,8 @@ public interface IMessages
     string RefundNotPending { get; }
     string RefundNotFailed { get; }
     string RefundNotProcessing { get; }
+    string RefundNotEligible { get; }
+    string RefundAlreadyRequested { get; }
 
     // User/Admin Messages
     string CannotDeleteOwnAccount { get; }

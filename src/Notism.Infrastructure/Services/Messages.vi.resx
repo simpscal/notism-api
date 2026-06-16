@@ -136,6 +136,12 @@
   <data name="RefundNotProcessing" xml:space="preserve">
     <value>Chỉ có thể đánh dấu hoàn tiền thất bại khi đang xử lý</value>
   </data>
+  <data name="RefundNotEligible" xml:space="preserve">
+    <value>Đơn hàng này không đủ điều kiện để yêu cầu hoàn tiền</value>
+  </data>
+  <data name="RefundAlreadyRequested" xml:space="preserve">
+    <value>Đơn hàng này đã có yêu cầu hoàn tiền</value>
+  </data>
   <data name="CannotDeleteOwnAccount" xml:space="preserve">
     <value>Bạn không thể xóa tài khoản của riêng mình.</value>
   </data>

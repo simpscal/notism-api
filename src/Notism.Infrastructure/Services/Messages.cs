@@ -48,6 +48,8 @@ public class Messages : IMessages
     public string RefundNotPending => _localizer["RefundNotPending"];
     public string RefundNotFailed => _localizer["RefundNotFailed"];
     public string RefundNotProcessing => _localizer["RefundNotProcessing"];
+    public string RefundNotEligible => _localizer["RefundNotEligible"];
+    public string RefundAlreadyRequested => _localizer["RefundAlreadyRequested"];
 
     // User/Admin Messages
     public string CannotDeleteOwnAccount => _localizer["CannotDeleteOwnAccount"];

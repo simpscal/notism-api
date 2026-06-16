@@ -136,6 +136,12 @@
   <data name="RefundNotProcessing" xml:space="preserve">
     <value>Refund can only be marked failed when it is processing</value>
   </data>
+  <data name="RefundNotEligible" xml:space="preserve">
+    <value>This order is not eligible for a refund request</value>
+  </data>
+  <data name="RefundAlreadyRequested" xml:space="preserve">
+    <value>A refund has already been requested for this order</value>
+  </data>
   <data name="CannotDeleteOwnAccount" xml:space="preserve">
     <value>You cannot delete your own account.</value>
   </data>

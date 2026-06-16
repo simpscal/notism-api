@@ -80,6 +80,54 @@ public class RefundTransitionTests
     }
 
     [Fact]
+    public void IsRefundRequestEligible_WhenDeliveredBankingWithin24h_ReturnsTrue()
+    {
+        var asOf = DateTime.UtcNow;
+        var order = CreateDeliveredBankingOrder(deliveredAt: asOf.AddHours(-2));
+
+        order.IsRefundRequestEligible(asOf).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsRefundRequestEligible_WhenDeliveredMoreThan24hAgo_ReturnsFalse()
+    {
+        var asOf = DateTime.UtcNow;
+        var order = CreateDeliveredBankingOrder(deliveredAt: asOf.AddHours(-25));
+
+        order.IsRefundRequestEligible(asOf).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsRefundRequestEligible_WhenNotDelivered_ReturnsFalse()
+    {
+        var order = CreatePaidBankingOrder();
+
+        order.IsRefundRequestEligible(DateTime.UtcNow).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsRefundRequestEligible_WhenNotBanking_ReturnsFalse()
+    {
+        var asOf = DateTime.UtcNow;
+        var order = DomainOrder.Create(Guid.NewGuid(), PaymentMethodEnum.CashOnDelivery, new List<Guid>());
+        order.AddItem(DomainOrderItem.Create(order.Id, Guid.NewGuid(), "Burger", unitPrice: 50m, discountPrice: null, quantity: 2));
+        order.RecordDeliveredAt(asOf.AddHours(-2));
+        order.ClearDomainEvents();
+
+        order.IsRefundRequestEligible(asOf).Should().BeFalse();
+    }
+
+    [Fact]
+    public void IsRefundRequestEligible_WhenRefundAlreadyExists_ReturnsFalse()
+    {
+        var asOf = DateTime.UtcNow;
+        var order = CreateDeliveredBankingOrder(deliveredAt: asOf.AddHours(-2));
+        order.RequestRefund();
+
+        order.IsRefundRequestEligible(asOf).Should().BeFalse();
+    }
+
+    [Fact]
     public void MarkRefundProcessing_FromPending_TransitionsAndRaisesEvent()
     {
         var order = CreateOrderWithPendingRefund();
@@ -214,6 +262,14 @@ public class RefundTransitionTests
     {
         var order = CreatePaidBankingOrder();
         order.RequestRefund();
+        order.ClearDomainEvents();
+        return order;
+    }
+
+    private static DomainOrder CreateDeliveredBankingOrder(DateTime deliveredAt)
+    {
+        var order = CreatePaidBankingOrder();
+        order.RecordDeliveredAt(deliveredAt);
         order.ClearDomainEvents();
         return order;
     }

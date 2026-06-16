@@ -9,6 +9,8 @@ namespace Notism.Domain.Order;
 
 public class Order : AggregateRoot
 {
+    public static readonly TimeSpan RefundRequestWindow = TimeSpan.FromHours(24);
+
     public Guid UserId { get; private set; }
     public User.User? User { get; private set; }
     public string SlugId { get; private set; } = string.Empty;
@@ -123,6 +125,27 @@ public class Order : AggregateRoot
         AddDomainEvent(new RefundCreatedEvent(Id, Refund.Id, UserId, Refund.Amount));
 
         return Refund;
+    }
+
+    public bool IsRefundRequestEligible(DateTime asOf)
+    {
+        if (Refund != null)
+        {
+            return false;
+        }
+
+        if (PaymentMethod != PaymentMethod.Banking)
+        {
+            return false;
+        }
+
+        var deliveredAt = DeliveredAt();
+        if (deliveredAt == null)
+        {
+            return false;
+        }
+
+        return asOf - deliveredAt.Value <= RefundRequestWindow;
     }
 
     public Refund RequestRefund()
@@ -273,6 +296,20 @@ public class Order : AggregateRoot
 
         return timing;
     }
+
+    internal void RecordDeliveredAt(DateTime deliveredAt)
+    {
+        DeliveryStatus = DeliveryStatus.Delivered;
+        UpdatedAt = DateTime.UtcNow;
+        _statusHistory.Add(DeliveryStatusHistory.Create(Id, DeliveryStatus.Delivered, deliveredAt));
+    }
+
+    private DateTime? DeliveredAt()
+        => _statusHistory
+            .Where(h => h.Status == DeliveryStatus.Delivered)
+            .OrderByDescending(h => h.StatusChangedAt)
+            .Select(h => (DateTime?)h.StatusChangedAt)
+            .FirstOrDefault();
 
     private void RecalculateTotal()
     {
