@@ -156,6 +156,25 @@ public class GetOrderByIdHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WhenRefundFailed_CollapsesStatusToPendingAndHidesReason()
+    {
+        await SeedUserAsync();
+        var order = DomainOrder.Create(_userId, PaymentMethod.Banking, new List<Guid>());
+        order.AddItem(Domain.Order.OrderItem.Create(order.Id, Guid.NewGuid(), "Burger", unitPrice: 150_000m, discountPrice: null, quantity: 1));
+        order.MarkAsPaid(DateTime.UtcNow);
+        order.CreateRefund();
+        order.MarkRefundFailed("provider declined");
+        await SeedOrderAsync(order);
+
+        var result = await _handler.Handle(
+            new GetOrderByIdRequest { SlugId = order.SlugId, UserId = _userId, Role = "user" },
+            CancellationToken.None);
+
+        result.Refund.Should().NotBeNull();
+        result.Refund!.Status.Should().Be("pending");
+    }
+
+    [Fact]
     public async Task Handle_WhenOrderHasNoRefund_ReturnsNullRefund()
     {
         await SeedUserAsync();

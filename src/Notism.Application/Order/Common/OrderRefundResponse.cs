@@ -25,5 +25,5 @@ public sealed record OrderRefundResponse
     }
 
     private static RefundStatus CustomerVisibleStatus(RefundStatus status)
-        => status == RefundStatus.Processing ? RefundStatus.Pending : status;
+        => status is RefundStatus.Processing or RefundStatus.Failed ? RefundStatus.Pending : status;
 }
