@@ -140,6 +140,20 @@ public class AdminRefundsForTableHandlerTests
         item.CreatedAt.Should().Be(order.Refund.CreatedAt);
     }
 
+    [Fact]
+    public async Task Handle_WhenFilteredByFailed_ExposesFailureReason()
+    {
+        await SeedOrderWithRefundAsync(RefundStatus.Failed);
+
+        var result = await _handler.Handle(
+            new AdminRefundsForTableRequest { Status = "failed" },
+            CancellationToken.None);
+
+        var item = result.Items.Single();
+        item.Status.Should().Be("failed");
+        item.FailureReason.Should().Be("Bank rejected the transfer");
+    }
+
     private async Task<DomainOrder> SeedOrderWithRefundAsync(RefundStatus status)
     {
         var order = DomainOrder.Create(Guid.NewGuid(), PaymentMethodEnum.Banking, new List<Guid>());
