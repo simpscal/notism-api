@@ -47,6 +47,7 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
                 .Where(o => o.SlugId == request.SlugId && (o.UserId == request.UserId || isAdmin))
                 .Include("Items.Food.Images")
                 .Include(o => o.StatusHistory)
+                .Include(o => o.Refund)
                 .FirstOrDefaultAsync(cancellationToken)
             ?? throw new ResultFailureException(_messages.OrderNotFound);
 
