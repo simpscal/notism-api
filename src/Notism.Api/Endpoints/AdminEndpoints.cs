@@ -29,6 +29,7 @@ using Notism.Application.Order.AdminUpdateOrderPaymentStatus;
 using Notism.Application.Order.ApproveRefund;
 using Notism.Application.Order.Common;
 using Notism.Application.Order.GetOrderById;
+using Notism.Application.Order.GetRefundById;
 using Notism.Application.Order.MarkRefundFailed;
 using Notism.Application.Order.RetryRefund;
 using Notism.Application.User.AdminDeleteUser;
@@ -177,6 +178,16 @@ public static class AdminEndpoints
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
+
+        group.MapGet("/{id:guid}", AdminGetRefundByIdAsync)
+            .WithName("AdminGetRefundById")
+            .WithSummary("Get refund detail")
+            .WithDescription("Returns the admin refund detail, including the refund id and amount to transfer.")
+            .RequireAdmin()
+            .Produces<GetRefundByIdResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden)
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
 
         group.MapPost("/{id:guid}/approve", AdminApproveRefundAsync)
             .WithName("AdminApproveRefund")
@@ -771,6 +782,16 @@ public static class AdminEndpoints
         [AsParameters] AdminRefundsForTableRequest request,
         CancellationToken cancellationToken)
     {
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AdminGetRefundByIdAsync(
+        IMediator mediator,
+        Guid id,
+        CancellationToken cancellationToken)
+    {
+        var request = new GetRefundByIdRequest { RefundId = id };
         var result = await mediator.Send(request, cancellationToken);
         return Results.Ok(result);
     }
