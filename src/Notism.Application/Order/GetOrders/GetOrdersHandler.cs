@@ -54,7 +54,8 @@ public class GetOrdersHandler : IRequestHandler<GetOrdersRequest, GetOrdersRespo
                 .OrderByDescending(o => o.CreatedAt)
                 .ThenByDescending(o => o.Id)
                 .Include("Items.Food.Images")
-                .Include(o => o.StatusHistory);
+                .Include(o => o.StatusHistory)
+                .Include(o => o.Refund);
 
         var totalCount = await BuildQuery().CountAsync(cancellationToken);
 
