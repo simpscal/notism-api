@@ -36,6 +36,7 @@ public sealed record GetOrdersOrderResponse
     public DateTime? PaidAt { get; set; }
     public PaymentQrResponse? PaymentQr { get; set; }
     public string? DeliveryNotes { get; set; }
+    public OrderRefundResponse? Refund { get; set; }
 
     public static GetOrdersOrderResponse FromDomain(
         Domain.Order.Order order,
@@ -55,6 +56,7 @@ public sealed record GetOrdersOrderResponse
             PaymentStatus = order.PaymentStatus.GetStringValue(),
             PaidAt = order.PaidAt,
             DeliveryNotes = order.DeliveryNotes,
+            Refund = order.Refund == null ? null : OrderRefundResponse.FromDomain(order.Refund),
         };
     }
 }
