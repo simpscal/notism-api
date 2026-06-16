@@ -23,4 +23,10 @@ public class PaymentSignalRNotifier : IPaymentNotifier
             "ReceivePaymentNotification",
             new { type = "payment-failure", orderId, message = "Payment failed. Please try again or contact support.", timestamp = DateTime.UtcNow },
             cancellationToken);
+
+    public Task NotifyRefundPaidAsync(Guid refundId, string orderId, string orderRef, decimal amount, DateTime sentDate, Guid userId, CancellationToken cancellationToken)
+        => _hubContext.Clients.Group(userId.ToString()).SendAsync(
+            "ReceivePaymentNotification",
+            new { type = "refund-paid", refundId, orderId, orderRef, amount, message = $"Your refund for order {orderRef} has been sent.", timestamp = sentDate },
+            cancellationToken);
 }

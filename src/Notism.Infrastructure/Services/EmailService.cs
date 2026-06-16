@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Net.Http.Json;
 using System.Reflection;
 using System.Text.Json.Serialization;
@@ -57,6 +58,39 @@ public class EmailService : IEmailService
 
         _logger.LogInformation("Welcome email sent successfully to {Email} for user {Username}", email.Value, username);
     }
+
+    public async Task SendRefundPaidEmailAsync(
+        Email email,
+        string? customerFirstName,
+        string orderRef,
+        decimal amount,
+        string transferReference,
+        DateTime sentDate,
+        string orderSlugId)
+    {
+        var subject = $"Your refund for order {orderRef} has been sent";
+        var orderUrl = $"{_clientAppSettings.Url}/orders/{orderSlugId}";
+        var greetingName = string.IsNullOrWhiteSpace(customerFirstName) ? "there" : customerFirstName;
+
+        var htmlContent = LoadEmailTemplate("RefundPaid.html")
+            .Replace("{{CUSTOMER_NAME}}", greetingName)
+            .Replace("{{ORDER_REF}}", orderRef)
+            .Replace("{{AMOUNT}}", FormatVnd(amount))
+            .Replace("{{SENT_DATE}}", FormatDate(sentDate))
+            .Replace("{{TRANSFER_REFERENCE}}", transferReference)
+            .Replace("{{ORDER_URL}}", orderUrl)
+            .Replace("{{YEAR}}", DateTime.UtcNow.Year.ToString());
+
+        await SendEmailAsync(email.Value, subject, htmlContent);
+
+        _logger.LogInformation("Refund-paid email sent successfully to {Email} for order {OrderRef}", email.Value, orderRef);
+    }
+
+    private static string FormatVnd(decimal amount)
+        => $"{amount.ToString("#,##0", CultureInfo.InvariantCulture)} ₫";
+
+    private static string FormatDate(DateTime date)
+        => date.ToString("dd MMM yyyy", CultureInfo.InvariantCulture);
 
     private async Task SendEmailAsync(string toEmail, string subject, string htmlContent)
     {
