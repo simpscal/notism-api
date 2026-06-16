@@ -10,7 +10,7 @@ public sealed record AdminRefundsForTableRefundResponse
 {
     public Guid Id { get; set; }
     public Guid OrderId { get; set; }
-    public string OrderReference { get; set; } = string.Empty;
+    public string OrderSlugId { get; set; } = string.Empty;
     public decimal Amount { get; set; }
     public string Status { get; set; } = string.Empty;
     public string? TransferReference { get; set; }
@@ -25,7 +25,7 @@ public sealed record AdminRefundsForTableRefundResponse
         {
             Id = refund.Id,
             OrderId = refund.OrderId,
-            OrderReference = refund.Order?.SlugId ?? string.Empty,
+            OrderSlugId = refund.Order?.SlugId ?? string.Empty,
             Amount = refund.Amount,
             Status = refund.Status.GetStringValue(),
             TransferReference = refund.TransferReference,

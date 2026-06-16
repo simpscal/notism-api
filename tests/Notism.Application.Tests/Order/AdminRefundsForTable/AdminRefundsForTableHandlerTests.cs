@@ -123,7 +123,7 @@ public class AdminRefundsForTableHandlerTests
     }
 
     [Fact]
-    public async Task Handle_MapsRefundFieldsAndOrderReference()
+    public async Task Handle_MapsRefundFieldsAndOrderSlugId()
     {
         var order = await SeedOrderWithRefundAsync(RefundStatus.Paid);
 
@@ -132,7 +132,7 @@ public class AdminRefundsForTableHandlerTests
         var item = result.Items.Single();
         item.Id.Should().Be(order.Refund!.Id);
         item.OrderId.Should().Be(order.Id);
-        item.OrderReference.Should().Be(order.SlugId);
+        item.OrderSlugId.Should().Be(order.SlugId);
         item.Amount.Should().Be(order.Refund.Amount);
         item.Status.Should().Be("paid");
         item.TransferReference.Should().Be(order.Refund.TransferReference);
