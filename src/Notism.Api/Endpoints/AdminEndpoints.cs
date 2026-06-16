@@ -23,6 +23,7 @@ using Notism.Application.Order.AdminGetRevenueSeries;
 using Notism.Application.Order.AdminGetTodaySales;
 using Notism.Application.Order.AdminOrdersForKanban;
 using Notism.Application.Order.AdminOrdersForTable;
+using Notism.Application.Order.AdminRefundsForTable;
 using Notism.Application.Order.AdminUpdateOrderDeliveryStatus;
 using Notism.Application.Order.AdminUpdateOrderPaymentStatus;
 using Notism.Application.Order.ApproveRefund;
@@ -166,6 +167,16 @@ public static class AdminEndpoints
             .WithTags("Admin Refund Management")
             .WithOpenApi()
             .RequireAuthorization();
+
+        group.MapGet("/", AdminRefundsForTableAsync)
+            .WithName("AdminRefundsForTable")
+            .WithSummary("Get refunds ledger")
+            .WithDescription("Retrieves a paginated list of refunds with optional status filtering for the reconcile ledger. The unfiltered list exposes every admin status, including processing and failed.")
+            .RequireAdmin()
+            .Produces<AdminRefundsForTableResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
+            .Produces<ErrorResponse>(StatusCodes.Status403Forbidden);
 
         group.MapPost("/{id:guid}/approve", AdminApproveRefundAsync)
             .WithName("AdminApproveRefund")
@@ -751,6 +762,15 @@ public static class AdminEndpoints
             OrderId = id,
             PaymentStatus = payload.PaymentStatus,
         };
+        var result = await mediator.Send(request, cancellationToken);
+        return Results.Ok(result);
+    }
+
+    private static async Task<IResult> AdminRefundsForTableAsync(
+        IMediator mediator,
+        [AsParameters] AdminRefundsForTableRequest request,
+        CancellationToken cancellationToken)
+    {
         var result = await mediator.Send(request, cancellationToken);
         return Results.Ok(result);
     }
