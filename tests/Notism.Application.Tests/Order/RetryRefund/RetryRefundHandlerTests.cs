@@ -65,6 +65,21 @@ public class RetryRefundHandlerTests : IDisposable
     }
 
     [Fact]
+    public async Task Handle_WhenRefundPaid_ThrowsConflict()
+    {
+        var order = await SeedPaidRefundAsync();
+
+        var act = async () => await _handler.Handle(
+            new RetryRefundRequest { RefundId = order.Refund!.Id },
+            CancellationToken.None);
+
+        await act.Should().ThrowAsync<ConflictException>();
+
+        var refund = await GetPersistedRefundAsync(order.Id);
+        refund.Status.Should().Be(RefundStatus.Paid);
+    }
+
+    [Fact]
     public async Task Handle_WhenRefundNotFound_ThrowsNotFound()
     {
         var act = async () => await _handler.Handle(
@@ -90,6 +105,16 @@ public class RetryRefundHandlerTests : IDisposable
     private async Task<DomainOrder> SeedPendingRefundAsync()
     {
         var order = NewPaidOrderWithRefund();
+        order.ClearDomainEvents();
+        await _context.SeedAsync(order);
+        return order;
+    }
+
+    private async Task<DomainOrder> SeedPaidRefundAsync()
+    {
+        var order = NewPaidOrderWithRefund();
+        order.MarkRefundProcessing();
+        order.MarkRefundPaid("TXN-RETRY");
         order.ClearDomainEvents();
         await _context.SeedAsync(order);
         return order;
