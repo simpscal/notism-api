@@ -11,10 +11,11 @@ public sealed record OrderRefundResponse
     public string Status { get; set; } = string.Empty;
     public string? TransferReference { get; set; }
     public DateTime? SentDate { get; set; }
+    public bool HasBankDetails { get; set; }
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
-    public static OrderRefundResponse FromDomain(Refund refund)
+    public static OrderRefundResponse FromDomain(Refund refund, bool hasBankDetails = false)
     {
         var isPaid = refund.Status == RefundStatus.Paid;
 
@@ -25,6 +26,7 @@ public sealed record OrderRefundResponse
             Status = CustomerVisibleStatus(refund.Status).GetStringValue(),
             TransferReference = isPaid ? refund.TransferReference : null,
             SentDate = isPaid ? refund.PaidAt : null,
+            HasBankDetails = hasBankDetails,
             CreatedAt = refund.CreatedAt,
             UpdatedAt = refund.UpdatedAt,
         };

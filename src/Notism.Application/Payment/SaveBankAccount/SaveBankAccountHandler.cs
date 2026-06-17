@@ -29,13 +29,14 @@ public class SaveBankAccountHandler : IRequestHandler<SaveBankAccountRequest>
     public async Task Handle(SaveBankAccountRequest request, CancellationToken cancellationToken)
     {
         var existing = await _readDbContext.Set<DomainPayment>(tracking: true)
-            .Where(p => p.StorerId == request.StorerId)
+            .Where(p => p.OwnerType == request.OwnerType && p.StorerId == request.OwnerId)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (existing is null)
         {
             var payment = Domain.Payment.Payment.Create(
-                request.StorerId,
+                request.OwnerType,
+                request.OwnerId,
                 request.BankCode,
                 request.AccountNumber,
                 request.AccountHolderName);
@@ -49,6 +50,6 @@ public class SaveBankAccountHandler : IRequestHandler<SaveBankAccountRequest>
 
         await _paymentRepository.SaveChangesAsync();
 
-        _logger.LogInformation("Saved bank account for storer {StorerId}", request.StorerId);
+        _logger.LogInformation("Saved {OwnerType} bank account for owner {OwnerId}", request.OwnerType, request.OwnerId);
     }
 }

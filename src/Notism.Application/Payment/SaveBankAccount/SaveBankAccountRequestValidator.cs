@@ -6,9 +6,9 @@ public class SaveBankAccountRequestValidator : AbstractValidator<SaveBankAccount
 {
     public SaveBankAccountRequestValidator()
     {
-        RuleFor(x => x.StorerId)
+        RuleFor(x => x.OwnerId)
             .NotEmpty()
-            .WithMessage("Storer ID is required");
+            .WithMessage("Owner ID is required");
 
         RuleFor(x => x.BankCode)
             .NotEmpty()

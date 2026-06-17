@@ -597,6 +597,13 @@ public partial class AppDbContext(DbContextOptions<AppDbContext> options, IMedia
         {
             entity.HasKey(p => p.Id);
 
+            entity.Property(p => p.OwnerType)
+                .HasConversion(
+                    ownerType => ownerType.GetStringValue(),
+                    value => value.ToEnum<PaymentOwnerType>())
+                .HasMaxLength(50)
+                .IsRequired();
+
             entity.Property(p => p.StorerId)
                 .IsRequired();
 

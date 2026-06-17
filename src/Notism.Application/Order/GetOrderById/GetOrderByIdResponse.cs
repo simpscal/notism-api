@@ -24,7 +24,8 @@ public sealed record GetOrderByIdResponse
     public static GetOrderByIdResponse FromDomain(
         Domain.Order.Order order,
         IStorageService storageService,
-        PaymentQrResponse? paymentQr)
+        PaymentQrResponse? paymentQr,
+        bool hasBankDetails)
     {
         return new GetOrderByIdResponse
         {
@@ -41,7 +42,7 @@ public sealed record GetOrderByIdResponse
             PaidAt = order.PaidAt,
             PaymentQr = paymentQr,
             DeliveryNotes = order.DeliveryNotes,
-            Refund = order.Refund == null ? null : OrderRefundResponse.FromDomain(order.Refund),
+            Refund = order.Refund == null ? null : OrderRefundResponse.FromDomain(order.Refund, hasBankDetails),
         };
     }
 }
