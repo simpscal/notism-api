@@ -11,8 +11,10 @@ using Notism.Shared.Exceptions;
 using NSubstitute;
 
 using DomainOrder = Notism.Domain.Order.Order;
+using DomainPayment = Notism.Domain.Payment.Payment;
 using DomainUser = Notism.Domain.User.User;
 using PaymentMethodEnum = Notism.Domain.Order.Enums.PaymentMethod;
+using PaymentOwnerType = Notism.Domain.Payment.Enums.PaymentOwnerType;
 using UserRoleEnum = Notism.Domain.User.Enums.UserRole;
 
 namespace Notism.Application.Tests.Order.GetRefundById;
@@ -69,6 +71,38 @@ public class GetRefundByIdHandlerTests : IDisposable
     }
 
     [Fact]
+    public async Task Handle_WhenCustomerHasPayoutRow_ReturnsPayoutFields()
+    {
+        var (order, userId) = await SeedOrderWithRefundAsync(processToPaid: false);
+        await SeedCustomerPayoutAsync(userId, "Techcombank", "987654321", "Jane Doe");
+
+        var result = await _handler.Handle(
+            new GetRefundByIdRequest { RefundId = order.Refund!.Id },
+            CancellationToken.None);
+
+        result.BankCode.Should().Be("Techcombank");
+        result.AccountNumber.Should().Be("987654321");
+        result.AccountHolderName.Should().Be("Jane Doe");
+    }
+
+    [Fact]
+    public async Task Handle_WhenNoCustomerPayoutRow_ReturnsNullPayoutFields()
+    {
+        var (order, _) = await SeedOrderWithRefundAsync(processToPaid: false);
+
+        // A Store row exists but must not be resolved as the customer's payout.
+        await SeedPaymentAsync(DomainPayment.Create(PaymentOwnerType.Store, Guid.NewGuid(), "Vietcombank", "111", "Store"));
+
+        var result = await _handler.Handle(
+            new GetRefundByIdRequest { RefundId = order.Refund!.Id },
+            CancellationToken.None);
+
+        result.BankCode.Should().BeNull();
+        result.AccountNumber.Should().BeNull();
+        result.AccountHolderName.Should().BeNull();
+    }
+
+    [Fact]
     public async Task Handle_WhenRefundNotFound_ThrowsNotFound()
     {
         var act = async () => await _handler.Handle(
@@ -105,5 +139,16 @@ public class GetRefundByIdHandlerTests : IDisposable
         _dbContext.ChangeTracker.Clear();
 
         return (order, user.Id);
+    }
+
+    private async Task SeedCustomerPayoutAsync(Guid ownerId, string bankCode, string accountNumber, string accountHolderName)
+        => await SeedPaymentAsync(DomainPayment.Create(PaymentOwnerType.Customer, ownerId, bankCode, accountNumber, accountHolderName));
+
+    private async Task SeedPaymentAsync(DomainPayment payment)
+    {
+        payment.ClearDomainEvents();
+        _dbContext.Payments.Add(payment);
+        await _dbContext.SaveChangesAsync();
+        _dbContext.ChangeTracker.Clear();
     }
 }

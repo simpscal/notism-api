@@ -5,9 +5,11 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
+using Notism.Domain.Payment.Enums;
 using Notism.Shared.Exceptions;
 
 using DomainOrder = Notism.Domain.Order.Order;
+using DomainPayment = Notism.Domain.Payment.Payment;
 
 namespace Notism.Application.Order.GetRefundById;
 
@@ -38,8 +40,12 @@ public class GetRefundByIdHandler : IRequestHandler<GetRefundByIdRequest, GetRef
                 .FirstOrDefaultAsync(cancellationToken)
             ?? throw new NotFoundException(_messages.RefundNotFound);
 
+        var payout = await _readDbContext.Set<DomainPayment>()
+            .Where(p => p.OwnerType == PaymentOwnerType.Customer && p.StorerId == order.UserId)
+            .FirstOrDefaultAsync(cancellationToken);
+
         _logger.LogInformation("Retrieved refund {RefundId} for admin detail", request.RefundId);
 
-        return GetRefundByIdResponse.FromDomain(order);
+        return GetRefundByIdResponse.FromDomain(order, payout);
     }
 }

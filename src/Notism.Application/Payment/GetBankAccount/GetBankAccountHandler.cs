@@ -19,7 +19,9 @@ public class GetBankAccountHandler : IRequestHandler<GetBankAccountRequest, GetB
 
     public async Task<GetBankAccountResponse?> Handle(GetBankAccountRequest request, CancellationToken cancellationToken)
     {
-        var payment = await _readDbContext.Set<DomainPayment>().FirstOrDefaultAsync(cancellationToken);
+        var payment = await _readDbContext.Set<DomainPayment>()
+            .Where(p => p.OwnerType == request.OwnerType && p.StorerId == request.OwnerId)
+            .FirstOrDefaultAsync(cancellationToken);
 
         if (payment is null)
         {
