@@ -30,9 +30,13 @@ public class RefundFailedHandlerTests
 
         await _handler.Handle(notification, CancellationToken.None);
 
-        await _paymentNotifier.Received(1).NotifyAdminRefundStatusChangedAsync(
+        await _paymentNotifier.Received(1).NotifyRefundStatusChangedAsync(
             notification.RefundId,
             "failed",
+            notification.UserId,
+            Arg.Any<string>(),
+            Arg.Any<decimal>(),
+            Arg.Any<DateTime?>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -41,7 +45,14 @@ public class RefundFailedHandlerTests
     {
         var notification = new RefundFailedEvent(Guid.NewGuid(), Guid.NewGuid(), Guid.NewGuid(), "bank rejected");
         _paymentNotifier
-            .NotifyAdminRefundStatusChangedAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .NotifyRefundStatusChangedAsync(
+                Arg.Any<Guid>(),
+                Arg.Any<string>(),
+                Arg.Any<Guid>(),
+                Arg.Any<string>(),
+                Arg.Any<decimal>(),
+                Arg.Any<DateTime?>(),
+                Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new InvalidOperationException("hub down")));
 
         var act = async () => await _handler.Handle(notification, CancellationToken.None);

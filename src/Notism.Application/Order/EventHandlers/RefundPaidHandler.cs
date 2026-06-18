@@ -46,33 +46,20 @@ public class RefundPaidHandler : INotificationHandler<RefundPaidEvent>
 
         await Task.WhenAll(
             PushNotificationAsync(order, notification, cancellationToken),
-            NotifyAdminAsync(notification, cancellationToken),
             SendEmailAsync(order, notification));
-    }
-
-    private async Task NotifyAdminAsync(RefundPaidEvent notification, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await _paymentNotifier.NotifyAdminRefundStatusChangedAsync(notification.RefundId, "paid", cancellationToken);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Failed to push admin refund-status-changed notification for refund {RefundId}", notification.RefundId);
-        }
     }
 
     private async Task PushNotificationAsync(DomainOrder order, RefundPaidEvent notification, CancellationToken cancellationToken)
     {
         try
         {
-            await _paymentNotifier.NotifyRefundPaidAsync(
+            await _paymentNotifier.NotifyRefundStatusChangedAsync(
                 notification.RefundId,
-                order.SlugId,
+                "paid",
+                notification.UserId,
                 order.SlugId,
                 order.Refund!.Amount,
                 notification.PaidAt,
-                notification.UserId,
                 cancellationToken);
         }
         catch (Exception ex)

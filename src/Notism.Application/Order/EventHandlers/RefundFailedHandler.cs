@@ -24,7 +24,14 @@ public class RefundFailedHandler : INotificationHandler<RefundFailedEvent>
     {
         try
         {
-            await _paymentNotifier.NotifyAdminRefundStatusChangedAsync(notification.RefundId, "failed", cancellationToken);
+            await _paymentNotifier.NotifyRefundStatusChangedAsync(
+                notification.RefundId,
+                "failed",
+                notification.UserId,
+                string.Empty,
+                0m,
+                null,
+                cancellationToken);
         }
         catch (Exception ex)
         {
