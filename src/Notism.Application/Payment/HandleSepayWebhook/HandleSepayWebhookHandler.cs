@@ -53,9 +53,7 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
 
     private async Task HandleInboundCheckoutAsync(HandleSepayWebhookRequest request, CancellationToken cancellationToken)
     {
-        var token = request.Content.Trim().Split('-')[0];
-
-        if (!Guid.TryParseExact(token, "N", out var checkoutId))
+        if (!TryExtractNFormatGuid(request.Content, out var checkoutId))
         {
             _logger.LogWarning("No valid checkoutId found in webhook content: {Content}", request.Content);
             return;
@@ -126,9 +124,7 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
 
     private async Task HandleOutboundRefundAsync(HandleSepayWebhookRequest request, CancellationToken cancellationToken)
     {
-        var token = request.Content.Trim().Split('-')[0];
-
-        if (!Guid.TryParseExact(token, "N", out var refundId))
+        if (!TryExtractNFormatGuid(request.Content, out var refundId))
         {
             _logger.LogWarning("No valid refundId found in outbound webhook content: {Content}", request.Content);
             return;
@@ -173,5 +169,23 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
             "Refund {RefundId} marked as paid via SePay transaction {TransactionId}",
             refundId,
             request.TransactionId);
+    }
+
+    private static bool TryExtractNFormatGuid(string content, out Guid id)
+    {
+        var tokens = content.Split(
+            new[] { ' ', '\t', '\n', '\r', '-' },
+            StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var token in tokens)
+        {
+            if (Guid.TryParseExact(token, "N", out id))
+            {
+                return true;
+            }
+        }
+
+        id = Guid.Empty;
+        return false;
     }
 }
