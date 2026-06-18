@@ -9,6 +9,8 @@ namespace Notism.Domain.Order;
 
 public class Order : AggregateRoot
 {
+    public static readonly TimeSpan RefundRequestWindow = TimeSpan.FromHours(24);
+
     public Guid UserId { get; private set; }
     public User.User? User { get; private set; }
     public string SlugId { get; private set; } = string.Empty;
@@ -24,6 +26,8 @@ public class Order : AggregateRoot
 
     private readonly List<DeliveryStatusHistory> _statusHistory = new();
     public IReadOnlyCollection<DeliveryStatusHistory> StatusHistory => _statusHistory.AsReadOnly();
+
+    public Refund? Refund { get; private set; }
 
     private Order(
         Guid userId,
@@ -95,6 +99,107 @@ public class Order : AggregateRoot
 
         ClearDomainEvents();
         AddDomainEvent(new DeliveryStatusUpdatedEvent(Id, UserId, DeliveryStatus.Cancelled));
+        AddDomainEvent(new OrderCancelledEvent(Id, UserId));
+    }
+
+    public Refund CreateRefund()
+    {
+        if (Refund != null)
+        {
+            throw new InvalidOperationException("Order already has a refund");
+        }
+
+        if (PaymentStatus != PaymentStatus.Paid)
+        {
+            throw new InvalidOperationException("Refund can only be created for a paid order");
+        }
+
+        if (PaymentMethod != PaymentMethod.Banking)
+        {
+            throw new InvalidOperationException("Refund is only supported for banking orders");
+        }
+
+        Refund = Refund.Create(Id, TotalAmount);
+        UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new RefundCreatedEvent(Id, Refund.Id, UserId, Refund.Amount));
+
+        return Refund;
+    }
+
+    public bool IsRefundRequestEligible(DateTime asOf)
+    {
+        if (Refund != null)
+        {
+            return false;
+        }
+
+        if (PaymentMethod is not (PaymentMethod.Banking or PaymentMethod.CashOnDelivery))
+        {
+            return false;
+        }
+
+        var deliveredAt = DeliveredAt();
+        if (deliveredAt == null)
+        {
+            return false;
+        }
+
+        return asOf - deliveredAt.Value <= RefundRequestWindow;
+    }
+
+    public Refund RequestRefund()
+    {
+        if (Refund != null)
+        {
+            throw new InvalidOperationException("Order already has a refund");
+        }
+
+        Refund = Refund.Create(Id, TotalAmount);
+        UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new RefundCreatedEvent(Id, Refund.Id, UserId, Refund.Amount));
+
+        return Refund;
+    }
+
+    public void MarkRefundProcessing()
+    {
+        if (Refund == null)
+        {
+            throw new InvalidOperationException("Order has no refund to process");
+        }
+
+        Refund.MarkProcessing();
+        UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new RefundProcessingEvent(Id, Refund.Id));
+    }
+
+    public void MarkRefundPaid(string transferReference)
+    {
+        if (Refund == null)
+        {
+            throw new InvalidOperationException("Order has no refund to mark as paid");
+        }
+
+        Refund.MarkPaid(transferReference);
+        UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new RefundPaidEvent(Id, Refund.Id, UserId, Refund.PaidAt!.Value, transferReference));
+    }
+
+    public void MarkRefundFailed(string reason)
+    {
+        if (Refund == null)
+        {
+            throw new InvalidOperationException("Order has no refund to fail");
+        }
+
+        Refund.MarkFailed(reason);
+        UpdatedAt = DateTime.UtcNow;
+
+        AddDomainEvent(new RefundFailedEvent(Id, Refund.Id, UserId, reason));
     }
 
     public void MarkAsPaid(DateTime paidAt)
@@ -191,6 +296,20 @@ public class Order : AggregateRoot
 
         return timing;
     }
+
+    internal void RecordDeliveredAt(DateTime deliveredAt)
+    {
+        DeliveryStatus = DeliveryStatus.Delivered;
+        UpdatedAt = DateTime.UtcNow;
+        _statusHistory.Add(DeliveryStatusHistory.Create(Id, DeliveryStatus.Delivered, deliveredAt));
+    }
+
+    private DateTime? DeliveredAt()
+        => _statusHistory
+            .Where(h => h.Status == DeliveryStatus.Delivered)
+            .OrderByDescending(h => h.StatusChangedAt)
+            .Select(h => (DateTime?)h.StatusChangedAt)
+            .FirstOrDefault();
 
     private void RecalculateTotal()
     {

@@ -13,7 +13,7 @@ public class SaveBankAccountValidatorTests
     {
         var request = new SaveBankAccountRequest
         {
-            StorerId = Guid.NewGuid(),
+            OwnerId = Guid.NewGuid(),
             BankCode = "Vietcombank",
             AccountNumber = "123456789",
             AccountHolderName = "Nguyen Van A",
@@ -29,7 +29,7 @@ public class SaveBankAccountValidatorTests
     {
         var request = new SaveBankAccountRequest
         {
-            StorerId = Guid.NewGuid(),
+            OwnerId = Guid.NewGuid(),
             BankCode = string.Empty,
             AccountNumber = "123456789",
             AccountHolderName = "Nguyen Van A",
@@ -46,7 +46,7 @@ public class SaveBankAccountValidatorTests
     {
         var request = new SaveBankAccountRequest
         {
-            StorerId = Guid.NewGuid(),
+            OwnerId = Guid.NewGuid(),
             BankCode = "Vietcombank",
             AccountNumber = string.Empty,
             AccountHolderName = "Nguyen Van A",
@@ -63,7 +63,7 @@ public class SaveBankAccountValidatorTests
     {
         var request = new SaveBankAccountRequest
         {
-            StorerId = Guid.NewGuid(),
+            OwnerId = Guid.NewGuid(),
             BankCode = "Vietcombank",
             AccountNumber = "123456789",
             AccountHolderName = string.Empty,

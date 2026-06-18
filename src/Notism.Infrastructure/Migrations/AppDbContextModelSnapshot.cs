@@ -557,6 +557,65 @@ namespace Notism.Infrastructure.Migrations
                     b.ToTable("OrderItems");
                 });
 
+            modelBuilder.Entity("Notism.Domain.Order.Refund", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("CreatedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("FailureReason")
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("OrderId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("PaidAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("TransferReference")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("UpdatedBy")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OrderId")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TransferReference");
+
+                    b.ToTable("refunds", (string)null);
+                });
+
             modelBuilder.Entity("Notism.Domain.Payment.BankingCheckout", b =>
                 {
                     b.Property<Guid>("Id")
@@ -636,6 +695,11 @@ namespace Notism.Infrastructure.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("OwnerType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<Guid>("StorerId")
                         .HasColumnType("uuid");
@@ -934,6 +998,17 @@ namespace Notism.Infrastructure.Migrations
                     b.Navigation("Order");
                 });
 
+            modelBuilder.Entity("Notism.Domain.Order.Refund", b =>
+                {
+                    b.HasOne("Notism.Domain.Order.Order", "Order")
+                        .WithOne("Refund")
+                        .HasForeignKey("Notism.Domain.Order.Refund", "OrderId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Order");
+                });
+
             modelBuilder.Entity("Notism.Domain.Cart.CartItem", b =>
                 {
                     b.Navigation("Customisations");
@@ -954,6 +1029,8 @@ namespace Notism.Infrastructure.Migrations
             modelBuilder.Entity("Notism.Domain.Order.Order", b =>
                 {
                     b.Navigation("Items");
+
+                    b.Navigation("Refund");
 
                     b.Navigation("StatusHistory");
                 });

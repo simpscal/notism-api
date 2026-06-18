@@ -159,8 +159,107 @@ public class GetOrdersHandlerTests
         orderResponse.PaidAt.Should().BeNull();
     }
 
+    [Fact]
+    public async Task Handle_WhenOrderHasPendingRefund_ListItemCarriesPendingRefund()
+    {
+        await SeedUserAsync();
+        var order = RefundableOrder();
+        order.CreateRefund();
+        await SeedOrdersAsync(order);
+
+        var result = await _handler.Handle(
+            new GetOrdersRequest { UserId = _userId },
+            CancellationToken.None);
+
+        var orderResponse = result.Items.Single();
+        orderResponse.Refund.Should().NotBeNull();
+        orderResponse.Refund!.Status.Should().Be("pending");
+        orderResponse.Refund.Amount.Should().Be(order.TotalAmount);
+    }
+
+    [Fact]
+    public async Task Handle_WhenRefundPaid_ListItemCarriesPaidRefundWithTransferReferenceAndSentDate()
+    {
+        await SeedUserAsync();
+        var order = RefundableOrder();
+        order.CreateRefund();
+        order.MarkRefundProcessing();
+        order.MarkRefundPaid("SEPAY-TX-PAID");
+        await SeedOrdersAsync(order);
+
+        var result = await _handler.Handle(
+            new GetOrdersRequest { UserId = _userId },
+            CancellationToken.None);
+
+        var orderResponse = result.Items.Single();
+        orderResponse.Refund.Should().NotBeNull();
+        orderResponse.Refund!.Status.Should().Be("paid");
+        orderResponse.Refund.TransferReference.Should().Be("SEPAY-TX-PAID");
+        orderResponse.Refund.SentDate.Should().NotBeNull();
+    }
+
+    [Fact]
+    public async Task Handle_WhenRefundProcessing_ListItemCollapsesStatusToPending()
+    {
+        await SeedUserAsync();
+        var order = RefundableOrder();
+        order.CreateRefund();
+        order.MarkRefundProcessing();
+        await SeedOrdersAsync(order);
+
+        var result = await _handler.Handle(
+            new GetOrdersRequest { UserId = _userId },
+            CancellationToken.None);
+
+        var orderResponse = result.Items.Single();
+        orderResponse.Refund.Should().NotBeNull();
+        orderResponse.Refund!.Status.Should().Be("pending");
+    }
+
+    [Fact]
+    public async Task Handle_WhenRefundFailed_ListItemCollapsesStatusToPending()
+    {
+        await SeedUserAsync();
+        var order = RefundableOrder();
+        order.CreateRefund();
+        order.MarkRefundProcessing();
+        order.MarkRefundFailed("provider declined");
+        await SeedOrdersAsync(order);
+
+        var result = await _handler.Handle(
+            new GetOrdersRequest { UserId = _userId },
+            CancellationToken.None);
+
+        var orderResponse = result.Items.Single();
+        orderResponse.Refund.Should().NotBeNull();
+        orderResponse.Refund!.Status.Should().Be("pending");
+        orderResponse.Refund.TransferReference.Should().BeNull();
+        orderResponse.Refund.SentDate.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task Handle_WhenOrderHasNoRefund_ListItemCarriesNullRefund()
+    {
+        await SeedUserAsync();
+        await SeedOrdersAsync(NewOrder());
+
+        var result = await _handler.Handle(
+            new GetOrdersRequest { UserId = _userId },
+            CancellationToken.None);
+
+        result.Items.Single().Refund.Should().BeNull();
+    }
+
     private DomainOrder NewOrder()
         => DomainOrder.Create(_userId, PaymentMethod.Banking, new List<Guid>());
+
+    private DomainOrder RefundableOrder()
+    {
+        var order = NewOrder();
+        order.AddItem(Domain.Order.OrderItem.Create(order.Id, Guid.NewGuid(), "Burger", unitPrice: 150_000m, discountPrice: null, quantity: 1));
+        order.MarkAsPaid(DateTime.UtcNow);
+        return order;
+    }
 
     private DomainOrder NewOrderWith(DateTime createdAt, Guid id)
     {

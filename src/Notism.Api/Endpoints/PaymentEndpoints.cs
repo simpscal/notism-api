@@ -9,6 +9,9 @@ using Notism.Application.Payment.CreateBankingCheckout;
 using Notism.Application.Payment.GetBankAccount;
 using Notism.Application.Payment.HandleSepayWebhook;
 using Notism.Application.Payment.SaveBankAccount;
+using Notism.Domain.Payment.Enums;
+using Notism.Domain.User.Enums;
+using Notism.Shared.Extensions;
 
 namespace Notism.Api.Endpoints;
 
@@ -33,8 +36,7 @@ public static class PaymentEndpoints
         group.MapPut("/bank-account", SaveBankAccountAsync)
             .WithName("SaveBankAccount")
             .WithSummary("Save bank account")
-            .WithDescription("Creates or updates the storer's bank account details.")
-            .RequireAdmin()
+            .WithDescription("Creates or updates the caller's bank account. Admins upsert the store's inbound row; customers upsert their own refund-payout row. Owner type is derived from the role claim.")
             .Produces(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
@@ -82,10 +84,17 @@ public static class PaymentEndpoints
     }
 
     private static async Task<IResult> GetBankAccountAsync(
+        HttpContext httpContext,
         IMediator mediator,
         CancellationToken cancellationToken)
     {
-        var result = await mediator.Send(new GetBankAccountRequest(), cancellationToken);
+        var request = new GetBankAccountRequest
+        {
+            OwnerId = httpContext.User.GetUserId(),
+            OwnerType = ResolveOwnerType(httpContext),
+        };
+
+        var result = await mediator.Send(request, cancellationToken);
 
         return Results.Ok(result);
     }
@@ -118,6 +127,7 @@ public static class PaymentEndpoints
             TransactionId = payload.TransactionId.ToString(CultureInfo.InvariantCulture),
             Amount = payload.Amount,
             Content = payload.Content,
+            TransferType = payload.TransferType,
             TransferredAt = transferredAt,
         };
 
@@ -132,11 +142,10 @@ public static class PaymentEndpoints
         SaveBankAccountPayload payload,
         CancellationToken cancellationToken)
     {
-        var userId = httpContext.User.GetUserId();
-
         var request = new SaveBankAccountRequest
         {
-            StorerId = userId,
+            OwnerId = httpContext.User.GetUserId(),
+            OwnerType = ResolveOwnerType(httpContext),
             BankCode = payload.BankCode,
             AccountNumber = payload.AccountNumber,
             AccountHolderName = payload.AccountHolderName,
@@ -145,5 +154,12 @@ public static class PaymentEndpoints
         await mediator.Send(request, cancellationToken);
 
         return Results.Ok();
+    }
+
+    private static PaymentOwnerType ResolveOwnerType(HttpContext httpContext)
+    {
+        var role = httpContext.User.GetRole().FromCamelCase<UserRole>() ?? UserRole.User;
+
+        return role == UserRole.Admin ? PaymentOwnerType.Store : PaymentOwnerType.Customer;
     }
 }

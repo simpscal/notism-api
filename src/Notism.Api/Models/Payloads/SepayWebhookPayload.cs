@@ -15,4 +15,7 @@ public record SepayWebhookPayload
 
     [JsonPropertyName("content")]
     public string Content { get; init; } = string.Empty;
+
+    [JsonPropertyName("transferType")]
+    public string TransferType { get; init; } = string.Empty;
 }

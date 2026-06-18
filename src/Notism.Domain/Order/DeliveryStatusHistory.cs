@@ -25,6 +25,11 @@ public class DeliveryStatusHistory : Entity
         return new DeliveryStatusHistory(orderId, status, DateTime.UtcNow);
     }
 
+    internal static DeliveryStatusHistory Create(Guid orderId, DeliveryStatus status, DateTime statusChangedAt)
+    {
+        return new DeliveryStatusHistory(orderId, status, statusChangedAt);
+    }
+
     private DeliveryStatusHistory()
     {
     }

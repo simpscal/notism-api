@@ -43,6 +43,14 @@ public class Messages : IMessages
     public string NoCartItemsFound => _localizer["NoCartItemsFound"];
     public string CartItemsNotFound => _localizer["CartItemsNotFound"];
 
+    // Refund Messages
+    public string RefundNotFound => _localizer["RefundNotFound"];
+    public string RefundNotPending => _localizer["RefundNotPending"];
+    public string RefundNotFailed => _localizer["RefundNotFailed"];
+    public string RefundNotProcessing => _localizer["RefundNotProcessing"];
+    public string RefundNotEligible => _localizer["RefundNotEligible"];
+    public string RefundAlreadyRequested => _localizer["RefundAlreadyRequested"];
+
     // User/Admin Messages
     public string CannotDeleteOwnAccount => _localizer["CannotDeleteOwnAccount"];
     public string CannotDeleteAdmin => _localizer["CannotDeleteAdmin"];

@@ -47,12 +47,15 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
                 .Where(o => o.SlugId == request.SlugId && (o.UserId == request.UserId || isAdmin))
                 .Include("Items.Food.Images")
                 .Include(o => o.StatusHistory)
+                .Include(o => o.Refund)
                 .FirstOrDefaultAsync(cancellationToken)
             ?? throw new ResultFailureException(_messages.OrderNotFound);
 
         _logger.LogInformation("Retrieved order {SlugId} for user {UserId} (Admin: {IsAdmin})", request.SlugId, request.UserId, isAdmin);
 
-        var payment = await _readDbContext.Set<DomainPayment>().FirstOrDefaultAsync(cancellationToken);
+        var payment = await _readDbContext.Set<DomainPayment>()
+            .Where(p => p.OwnerType == PaymentOwnerType.Store)
+            .FirstOrDefaultAsync(cancellationToken);
         var bankAccountConfigured = payment != null;
 
         PaymentQrResponse? paymentQr = null;
@@ -61,6 +64,11 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
             paymentQr = PaymentQrResponse.FromDomain(payment!, order.TotalAmount, order.SlugId);
         }
 
-        return GetOrderByIdResponse.FromDomain(order, _storageService, paymentQr);
+        var hasBankDetails = order.Refund != null
+            && await _readDbContext.Set<DomainPayment>()
+                .Where(p => p.OwnerType == PaymentOwnerType.Customer && p.StorerId == order.UserId)
+                .AnyAsync(cancellationToken);
+
+        return GetOrderByIdResponse.FromDomain(order, _storageService, paymentQr, hasBankDetails);
     }
 }
