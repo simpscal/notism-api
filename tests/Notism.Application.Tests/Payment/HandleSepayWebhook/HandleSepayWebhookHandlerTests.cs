@@ -75,6 +75,42 @@ public class HandleSepayWebhookHandlerTests : IDisposable
     }
 
     [Fact]
+    public async Task Handle_WhenCheckoutIdAtEndPrecededByBankTokens_MarksOrderAsPaidAndMarksCheckoutAsUsed()
+    {
+        var userId = Guid.NewGuid();
+        var checkoutId = Guid.NewGuid();
+        var cartItemIds = new List<Guid> { Guid.NewGuid() };
+        var totalAmount = 150_000m;
+        var transferredAt = new DateTime(2026, 4, 5, 10, 0, 0, DateTimeKind.Utc);
+
+        var checkout = BankingCheckout.Create(userId, cartItemIds, totalAmount);
+        checkout.Id = checkoutId;
+
+        var order = Domain.Order.Order.Create(userId, PaymentMethod.Banking, cartItemIds);
+        await _context.SeedAsync(checkout, order);
+
+        _sender
+            .Send(Arg.Any<CreateOrderRequest>(), Arg.Any<CancellationToken>())
+            .Returns(new CreateOrderResponse { OrderId = order.Id });
+
+        var request = new HandleSepayWebhookRequest
+        {
+            TransactionId = "99010",
+            Amount = totalAmount,
+            Content = "EWX445876928 H21WVC4Q IBFT  " + checkoutId.ToString("N"),
+            TransferredAt = transferredAt,
+        };
+
+        await _handler.Handle(request, CancellationToken.None);
+
+        _context.DbContext.ChangeTracker.Clear();
+        var persistedOrder = _context.DbContext.Orders.Single(o => o.Id == order.Id);
+        persistedOrder.PaymentStatus.Should().Be(Domain.Payment.Enums.PaymentStatus.Paid);
+        persistedOrder.PaidAt.Should().Be(transferredAt);
+        _context.DbContext.BankingCheckouts.Single(c => c.Id == checkoutId).IsUsed.Should().BeTrue();
+    }
+
+    [Fact]
     public async Task Handle_WhenContentDoesNotContainValidGuid_ReturnsWithoutLookingUpCheckout()
     {
         var request = new HandleSepayWebhookRequest

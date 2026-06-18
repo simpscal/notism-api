@@ -59,6 +59,50 @@ public class HandleSepayWebhookRefundTests : IDisposable
     }
 
     [Fact]
+    public async Task Handle_WhenOutboundRefundIdAtEndPrecededByBankTokens_MarksRefundPaid()
+    {
+        var order = await SeedOrderWithProcessingRefundAsync(150_000m);
+        var refundId = order.Refund!.Id;
+
+        var request = new HandleSepayWebhookRequest
+        {
+            TransactionId = "SEPAY-TX-END",
+            Amount = 150_000m,
+            Content = "EWX445876928 H21WVC4Q IBFT  " + refundId.ToString("N"),
+            TransferType = "out",
+            TransferredAt = DateTime.UtcNow,
+        };
+
+        await _handler.Handle(request, CancellationToken.None);
+
+        var refund = await GetPersistedRefundAsync(order.Id);
+        refund.Status.Should().Be(RefundStatus.Paid);
+        refund.TransferReference.Should().Be("SEPAY-TX-END");
+    }
+
+    [Fact]
+    public async Task Handle_WhenOutboundRefundIdInMiddleOfContent_MarksRefundPaid()
+    {
+        var order = await SeedOrderWithProcessingRefundAsync(150_000m);
+        var refundId = order.Refund!.Id;
+
+        var request = new HandleSepayWebhookRequest
+        {
+            TransactionId = "SEPAY-TX-MID",
+            Amount = 150_000m,
+            Content = "EWX445876928 " + refundId.ToString("N") + " IBFT",
+            TransferType = "out",
+            TransferredAt = DateTime.UtcNow,
+        };
+
+        await _handler.Handle(request, CancellationToken.None);
+
+        var refund = await GetPersistedRefundAsync(order.Id);
+        refund.Status.Should().Be(RefundStatus.Paid);
+        refund.TransferReference.Should().Be("SEPAY-TX-MID");
+    }
+
+    [Fact]
     public async Task Handle_WhenOutboundContentHasNoValidGuid_NoOps()
     {
         var order = await SeedOrderWithProcessingRefundAsync(150_000m);
