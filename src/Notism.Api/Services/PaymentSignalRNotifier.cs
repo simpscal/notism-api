@@ -12,6 +12,12 @@ public class PaymentSignalRNotifier : IPaymentNotifier
     public PaymentSignalRNotifier(IHubContext<PaymentHub> hubContext)
         => _hubContext = hubContext;
 
+    public Task NotifyAdminRefundStatusChangedAsync(Guid refundId, string status, CancellationToken cancellationToken)
+        => _hubContext.Clients.Group(PaymentHub.AdminsGroup).SendAsync(
+            "ReceivePaymentNotification",
+            new { type = "refund-status-changed", refundId, status, timestamp = DateTime.UtcNow },
+            cancellationToken);
+
     public Task NotifyPaymentSuccessAsync(Guid orderId, Guid userId, DateTime paidAt, string slugId, CancellationToken cancellationToken)
         => _hubContext.Clients.Group(userId.ToString()).SendAsync(
             "ReceivePaymentNotification",

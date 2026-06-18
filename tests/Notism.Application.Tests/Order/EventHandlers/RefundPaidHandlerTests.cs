@@ -54,6 +54,42 @@ public class RefundPaidHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WhenRefundPaid_NotifiesAdminsRefundStatusPaid()
+    {
+        var (order, userId) = await SeedPaidRefundOrderAsync();
+        var notification = BuildEvent(order, userId);
+
+        await _handler.Handle(notification, CancellationToken.None);
+
+        await _paymentNotifier.Received(1).NotifyAdminRefundStatusChangedAsync(
+            order.Refund!.Id,
+            "paid",
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
+    public async Task Handle_WhenAdminNotifyThrows_StillNotifiesCustomerAndDoesNotRethrow()
+    {
+        var (order, userId) = await SeedPaidRefundOrderAsync();
+        var notification = BuildEvent(order, userId);
+        _paymentNotifier
+            .NotifyAdminRefundStatusChangedAsync(Arg.Any<Guid>(), Arg.Any<string>(), Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new InvalidOperationException("hub down")));
+
+        var act = async () => await _handler.Handle(notification, CancellationToken.None);
+
+        await act.Should().NotThrowAsync();
+        await _paymentNotifier.Received(1).NotifyRefundPaidAsync(
+            Arg.Any<Guid>(),
+            Arg.Any<string>(),
+            Arg.Any<string>(),
+            Arg.Any<decimal>(),
+            Arg.Any<DateTime>(),
+            userId,
+            Arg.Any<CancellationToken>());
+    }
+
+    [Fact]
     public async Task Handle_WhenRefundPaid_SendsConfirmationEmail()
     {
         var (order, userId) = await SeedPaidRefundOrderAsync();
