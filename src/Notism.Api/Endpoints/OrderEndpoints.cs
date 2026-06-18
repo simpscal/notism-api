@@ -5,6 +5,7 @@ using Notism.Api.Models;
 using Notism.Application.Order.CancelOrder;
 using Notism.Application.Order.Common;
 using Notism.Application.Order.CreateOrder;
+using Notism.Application.Order.GetHeldRefunds;
 using Notism.Application.Order.GetOrderById;
 using Notism.Application.Order.GetOrders;
 using Notism.Application.Order.RequestRefund;
@@ -34,6 +35,13 @@ public static class OrderEndpoints
             .WithDescription("Retrieves a page of orders for the authenticated user, most recent first.")
             .Produces<GetOrdersResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized);
+
+        group.MapGet("/held-refunds", GetHeldRefundsAsync)
+            .WithName("GetHeldRefunds")
+            .WithSummary("Get held refunds awaiting bank details")
+            .WithDescription("Retrieves the authenticated customer's refunds held awaiting bank details. Returns an empty array once bank details are on file.")
+            .Produces<HeldRefundResponse[]>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized);
 
         group.MapGet("/{slugId}", GetOrderByIdAsync)
@@ -106,6 +114,23 @@ public static class OrderEndpoints
         var result = await mediator.Send(request, cancellationToken);
 
         return Results.Ok(result);
+    }
+
+    private static async Task<IResult> GetHeldRefundsAsync(
+        HttpContext httpContext,
+        IMediator mediator,
+        CancellationToken cancellationToken)
+    {
+        var userId = httpContext.User.GetUserId();
+
+        var request = new GetHeldRefundsRequest
+        {
+            UserId = userId,
+        };
+
+        var result = await mediator.Send(request, cancellationToken);
+
+        return Results.Ok(result.Items);
     }
 
     private static async Task<IResult> GetOrderByIdAsync(
