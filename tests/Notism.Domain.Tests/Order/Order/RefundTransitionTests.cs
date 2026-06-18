@@ -106,12 +106,24 @@ public class RefundTransitionTests
     }
 
     [Fact]
-    public void IsRefundRequestEligible_WhenNotBanking_ReturnsFalse()
+    public void IsRefundRequestEligible_WhenDeliveredCashOnDeliveryWithin24h_ReturnsTrue()
     {
         var asOf = DateTime.UtcNow;
         var order = DomainOrder.Create(Guid.NewGuid(), PaymentMethodEnum.CashOnDelivery, new List<Guid>());
         order.AddItem(DomainOrderItem.Create(order.Id, Guid.NewGuid(), "Burger", unitPrice: 50m, discountPrice: null, quantity: 2));
         order.RecordDeliveredAt(asOf.AddHours(-2));
+        order.ClearDomainEvents();
+
+        order.IsRefundRequestEligible(asOf).Should().BeTrue();
+    }
+
+    [Fact]
+    public void IsRefundRequestEligible_WhenDeliveredCashOnDeliveryMoreThan24hAgo_ReturnsFalse()
+    {
+        var asOf = DateTime.UtcNow;
+        var order = DomainOrder.Create(Guid.NewGuid(), PaymentMethodEnum.CashOnDelivery, new List<Guid>());
+        order.AddItem(DomainOrderItem.Create(order.Id, Guid.NewGuid(), "Burger", unitPrice: 50m, discountPrice: null, quantity: 2));
+        order.RecordDeliveredAt(asOf.AddHours(-25));
         order.ClearDomainEvents();
 
         order.IsRefundRequestEligible(asOf).Should().BeFalse();

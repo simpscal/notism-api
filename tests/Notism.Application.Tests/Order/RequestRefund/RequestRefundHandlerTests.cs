@@ -72,18 +72,22 @@ public class RequestRefundHandlerTests : IDisposable
     }
 
     [Fact]
-    public async Task Handle_WhenNotBankingOrder_ThrowsBadRequest()
+    public async Task Handle_WhenDeliveredCashOnDeliveryOrderWithin24h_CreatesPendingFullTotalRefund()
     {
         var order = await SeedOrderAsync(
             PaymentMethodEnum.CashOnDelivery,
             paid: true,
             deliveredAt: DateTime.UtcNow.AddHours(-2));
 
-        var act = () => _handler.Handle(Request(order), CancellationToken.None);
+        var result = await _handler.Handle(Request(order), CancellationToken.None);
 
-        await act.Should().ThrowAsync<ResultFailureException>();
+        result.Status.Should().Be("pending");
+        result.Amount.Should().Be(order.TotalAmount);
+
         var persisted = await ReloadAsync(order.Id);
-        persisted.Refund.Should().BeNull();
+        persisted.Refund.Should().NotBeNull();
+        persisted.Refund!.Status.Should().Be(RefundStatus.Pending);
+        persisted.Refund.Amount.Should().Be(order.TotalAmount);
     }
 
     [Fact]

@@ -134,7 +134,7 @@ public class Order : AggregateRoot
             return false;
         }
 
-        if (PaymentMethod != PaymentMethod.Banking)
+        if (PaymentMethod is not (PaymentMethod.Banking or PaymentMethod.CashOnDelivery))
         {
             return false;
         }
