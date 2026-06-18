@@ -53,13 +53,13 @@ public class RefundPaidHandler : INotificationHandler<RefundPaidEvent>
     {
         try
         {
-            await _paymentNotifier.NotifyRefundPaidAsync(
+            await _paymentNotifier.NotifyRefundStatusChangedAsync(
                 notification.RefundId,
-                order.SlugId,
+                "paid",
+                notification.UserId,
                 order.SlugId,
                 order.Refund!.Amount,
                 notification.PaidAt,
-                notification.UserId,
                 cancellationToken);
         }
         catch (Exception ex)

@@ -43,13 +43,13 @@ public class RefundPaidHandlerTests
 
         await _handler.Handle(notification, CancellationToken.None);
 
-        await _paymentNotifier.Received(1).NotifyRefundPaidAsync(
+        await _paymentNotifier.Received(1).NotifyRefundStatusChangedAsync(
             order.Refund!.Id,
-            order.SlugId,
+            "paid",
+            userId,
             order.SlugId,
             order.Refund.Amount,
             order.Refund.PaidAt!.Value,
-            userId,
             Arg.Any<CancellationToken>());
     }
 
@@ -90,13 +90,13 @@ public class RefundPaidHandlerTests
         var act = async () => await _handler.Handle(notification, CancellationToken.None);
 
         await act.Should().NotThrowAsync();
-        await _paymentNotifier.Received(1).NotifyRefundPaidAsync(
+        await _paymentNotifier.Received(1).NotifyRefundStatusChangedAsync(
             Arg.Any<Guid>(),
-            Arg.Any<string>(),
+            "paid",
+            userId,
             Arg.Any<string>(),
             Arg.Any<decimal>(),
-            Arg.Any<DateTime>(),
-            userId,
+            Arg.Any<DateTime?>(),
             Arg.Any<CancellationToken>());
     }
 
@@ -106,13 +106,13 @@ public class RefundPaidHandlerTests
         var (order, userId) = await SeedPaidRefundOrderAsync();
         var notification = BuildEvent(order, userId);
         _paymentNotifier
-            .NotifyRefundPaidAsync(
+            .NotifyRefundStatusChangedAsync(
                 Arg.Any<Guid>(),
                 Arg.Any<string>(),
+                Arg.Any<Guid>(),
                 Arg.Any<string>(),
                 Arg.Any<decimal>(),
-                Arg.Any<DateTime>(),
-                Arg.Any<Guid>(),
+                Arg.Any<DateTime?>(),
                 Arg.Any<CancellationToken>())
             .Returns(Task.FromException(new InvalidOperationException("hub down")));
 
@@ -138,13 +138,13 @@ public class RefundPaidHandlerTests
         var act = async () => await _handler.Handle(notification, CancellationToken.None);
 
         await act.Should().NotThrowAsync();
-        await _paymentNotifier.DidNotReceive().NotifyRefundPaidAsync(
+        await _paymentNotifier.DidNotReceive().NotifyRefundStatusChangedAsync(
             Arg.Any<Guid>(),
             Arg.Any<string>(),
+            Arg.Any<Guid>(),
             Arg.Any<string>(),
             Arg.Any<decimal>(),
-            Arg.Any<DateTime>(),
-            Arg.Any<Guid>(),
+            Arg.Any<DateTime?>(),
             Arg.Any<CancellationToken>());
         await _emailService.DidNotReceive().SendRefundPaidEmailAsync(
             Arg.Any<Domain.User.ValueObjects.Email>(),
