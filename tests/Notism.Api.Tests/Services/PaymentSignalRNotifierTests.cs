@@ -46,7 +46,7 @@ public class PaymentSignalRNotifierTests
             Arg.Any<CancellationToken>());
         await _customerGroup.Received(1).SendCoreAsync(
             "ReceivePaymentNotification",
-            Arg.Is<object?[]>(args => MatchesRefundPaid(args, refundId, "ORD-123", 485_000m)),
+            Arg.Is<object?[]>(args => MatchesCustomerPaid(args, refundId, "ORD-123", 485_000m)),
             Arg.Any<CancellationToken>());
     }
 
@@ -83,7 +83,7 @@ public class PaymentSignalRNotifierTests
             && (string?)type.GetProperty("status")?.GetValue(payload) == status;
     }
 
-    private static bool MatchesRefundPaid(object?[] args, Guid refundId, string orderRef, decimal amount)
+    private static bool MatchesCustomerPaid(object?[] args, Guid refundId, string orderRef, decimal amount)
     {
         if (args.Length != 1 || args[0] is null)
         {
@@ -93,7 +93,8 @@ public class PaymentSignalRNotifierTests
         var payload = args[0]!;
         var type = payload.GetType();
 
-        return (string?)type.GetProperty("type")?.GetValue(payload) == "refund-paid"
+        return (string?)type.GetProperty("type")?.GetValue(payload) == "refund-status-changed"
+            && (string?)type.GetProperty("status")?.GetValue(payload) == "paid"
             && (Guid?)type.GetProperty("refundId")?.GetValue(payload) == refundId
             && (string?)type.GetProperty("orderRef")?.GetValue(payload) == orderRef
             && (decimal?)type.GetProperty("amount")?.GetValue(payload) == amount;

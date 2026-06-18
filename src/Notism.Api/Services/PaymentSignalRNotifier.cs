@@ -23,7 +23,7 @@ public class PaymentSignalRNotifier : IPaymentNotifier
         {
             await _hubContext.Clients.Group(customerUserId.ToString()).SendAsync(
                 "ReceivePaymentNotification",
-                new { type = "refund-paid", refundId, orderId = orderRef, orderRef, amount, message = $"Your refund for order {orderRef} has been sent.", timestamp = sentDate ?? DateTime.UtcNow },
+                new { type = "refund-status-changed", status, refundId, orderId = orderRef, orderRef, amount, message = $"Your refund for order {orderRef} has been sent.", timestamp = sentDate ?? DateTime.UtcNow },
                 cancellationToken);
         }
     }
