@@ -8,13 +8,13 @@ public sealed record PaymentQrResponse
     public decimal Amount { get; set; }
     public string OrderReference { get; set; } = string.Empty;
 
-    public static PaymentQrResponse FromDomain(Domain.Payment.Payment payment, decimal amount, string orderReference)
+    public static PaymentQrResponse FromDomain(Domain.User.BankAccount bankAccount, decimal amount, string orderReference)
     {
         return new PaymentQrResponse
         {
-            BankCode = payment.BankCode,
-            AccountNumber = payment.AccountNumber,
-            AccountHolderName = payment.AccountHolderName,
+            BankCode = bankAccount.BankCode,
+            AccountNumber = bankAccount.AccountNumber,
+            AccountHolderName = bankAccount.AccountHolderName,
             Amount = amount,
             OrderReference = orderReference,
         };

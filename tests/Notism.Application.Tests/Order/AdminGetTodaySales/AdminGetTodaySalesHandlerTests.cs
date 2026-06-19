@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 using Notism.Application.Order.AdminGetTodaySales;
 using Notism.Application.Tests.Common;
 using Notism.Domain.Order.Enums;
-using Notism.Domain.Payment.Enums;
 using Notism.Domain.User.Enums;
 using Notism.Infrastructure.Persistence;
 

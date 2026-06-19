@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Persistence;
-using Notism.Domain.Payment.Enums;
+using Notism.Domain.Order.Enums;
 using Notism.Shared.Enums;
 using Notism.Shared.Extensions;
 

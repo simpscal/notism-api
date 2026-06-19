@@ -7,13 +7,12 @@ using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Application.Order.Common;
 using Notism.Domain.Order.Enums;
-using Notism.Domain.Payment.Enums;
 using Notism.Domain.User.Enums;
 using Notism.Shared.Exceptions;
 using Notism.Shared.Extensions;
 
+using DomainBankAccount = Notism.Domain.User.BankAccount;
 using DomainOrder = Notism.Domain.Order.Order;
-using DomainPayment = Notism.Domain.Payment.Payment;
 
 namespace Notism.Application.Order.GetOrderById;
 
@@ -53,20 +52,20 @@ public class GetOrderByIdHandler : IRequestHandler<GetOrderByIdRequest, GetOrder
 
         _logger.LogInformation("Retrieved order {SlugId} for user {UserId} (Admin: {IsAdmin})", request.SlugId, request.UserId, isAdmin);
 
-        var payment = await _readDbContext.Set<DomainPayment>()
-            .Where(p => p.OwnerType == PaymentOwnerType.Store)
+        var bankAccount = await _readDbContext.Set<DomainBankAccount>()
+            .Where(p => p.OwnerType == BankAccountOwnerType.Store)
             .FirstOrDefaultAsync(cancellationToken);
-        var bankAccountConfigured = payment != null;
+        var bankAccountConfigured = bankAccount != null;
 
         PaymentQrResponse? paymentQr = null;
         if (bankAccountConfigured && order.PaymentMethod == PaymentMethod.Banking && order.PaymentStatus == PaymentStatus.Unpaid)
         {
-            paymentQr = PaymentQrResponse.FromDomain(payment!, order.TotalAmount, order.SlugId);
+            paymentQr = PaymentQrResponse.FromDomain(bankAccount!, order.TotalAmount, order.SlugId);
         }
 
         var hasBankDetails = order.Refund != null
-            && await _readDbContext.Set<DomainPayment>()
-                .Where(p => p.OwnerType == PaymentOwnerType.Customer && p.StorerId == order.UserId)
+            && await _readDbContext.Set<DomainBankAccount>()
+                .Where(p => p.OwnerType == BankAccountOwnerType.Customer && p.OwnerId == order.UserId)
                 .AnyAsync(cancellationToken);
 
         return GetOrderByIdResponse.FromDomain(order, _storageService, paymentQr, hasBankDetails);

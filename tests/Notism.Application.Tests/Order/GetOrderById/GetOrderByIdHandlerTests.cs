@@ -6,15 +6,14 @@ using Notism.Application.Common.Services;
 using Notism.Application.Order.GetOrderById;
 using Notism.Application.Tests.Common;
 using Notism.Domain.Order.Enums;
-using Notism.Domain.Payment.Enums;
 using Notism.Domain.User.Enums;
 using Notism.Infrastructure.Persistence;
 using Notism.Shared.Exceptions;
 
 using NSubstitute;
 
+using DomainBankAccount = Notism.Domain.User.BankAccount;
 using DomainOrder = Notism.Domain.Order.Order;
-using DomainPayment = Notism.Domain.Payment.Payment;
 
 namespace Notism.Application.Tests.Order.GetOrderById;
 
@@ -44,7 +43,7 @@ public class GetOrderByIdHandlerTests
         await SeedUserAsync();
         var order = DomainOrder.Create(_userId, PaymentMethod.Banking, new List<Guid>());
         await SeedOrderAsync(order);
-        await SeedPaymentAsync(DomainPayment.Create(PaymentOwnerType.Store, Guid.NewGuid(), "Vietcombank", "123456789", "Nguyen Van A"));
+        await SeedPaymentAsync(DomainBankAccount.Create(BankAccountOwnerType.Store, Guid.NewGuid(), "Vietcombank", "123456789", "Nguyen Van A"));
 
         var result = await _handler.Handle(
             new GetOrderByIdRequest { SlugId = order.SlugId, UserId = _userId, Role = "user" },
@@ -270,7 +269,7 @@ public class GetOrderByIdHandlerTests
         await SeedUserAsync();
         var order = DomainOrder.Create(_userId, PaymentMethod.Banking, new List<Guid>());
         await SeedOrderAsync(order);
-        await SeedPaymentAsync(DomainPayment.Create(PaymentOwnerType.Store, Guid.NewGuid(), "MB", "9999", "Le Van C"));
+        await SeedPaymentAsync(DomainBankAccount.Create(BankAccountOwnerType.Store, Guid.NewGuid(), "MB", "9999", "Le Van C"));
 
         var result = await _handler.Handle(
             new GetOrderByIdRequest { SlugId = order.SlugId, UserId = _userId, Role = "user" },
@@ -288,8 +287,8 @@ public class GetOrderByIdHandlerTests
         await SeedOrderAsync(order);
 
         // Customer payout row for the order owner must never satisfy the checkout QR.
-        await SeedPaymentAsync(DomainPayment.Create(PaymentOwnerType.Customer, _userId, "CustomerBank", "000", "Customer"));
-        await SeedPaymentAsync(DomainPayment.Create(PaymentOwnerType.Store, Guid.NewGuid(), "Vietcombank", "123456789", "Store Account"));
+        await SeedPaymentAsync(DomainBankAccount.Create(BankAccountOwnerType.Customer, _userId, "CustomerBank", "000", "Customer"));
+        await SeedPaymentAsync(DomainBankAccount.Create(BankAccountOwnerType.Store, Guid.NewGuid(), "Vietcombank", "123456789", "Store Account"));
 
         var result = await _handler.Handle(
             new GetOrderByIdRequest { SlugId = order.SlugId, UserId = _userId, Role = "user" },
@@ -307,7 +306,7 @@ public class GetOrderByIdHandlerTests
         await SeedUserAsync();
         var order = DomainOrder.Create(_userId, PaymentMethod.Banking, new List<Guid>());
         await SeedOrderAsync(order);
-        await SeedPaymentAsync(DomainPayment.Create(PaymentOwnerType.Customer, _userId, "CustomerBank", "000", "Customer"));
+        await SeedPaymentAsync(DomainBankAccount.Create(BankAccountOwnerType.Customer, _userId, "CustomerBank", "000", "Customer"));
 
         var result = await _handler.Handle(
             new GetOrderByIdRequest { SlugId = order.SlugId, UserId = _userId, Role = "user" },
@@ -325,7 +324,7 @@ public class GetOrderByIdHandlerTests
         order.MarkAsPaid(DateTime.UtcNow);
         order.CreateRefund();
         await SeedOrderAsync(order);
-        await SeedPaymentAsync(DomainPayment.Create(PaymentOwnerType.Customer, _userId, "Techcombank", "987", "Buyer"));
+        await SeedPaymentAsync(DomainBankAccount.Create(BankAccountOwnerType.Customer, _userId, "Techcombank", "987", "Buyer"));
 
         var result = await _handler.Handle(
             new GetOrderByIdRequest { SlugId = order.SlugId, UserId = _userId, Role = "user" },
@@ -346,7 +345,7 @@ public class GetOrderByIdHandlerTests
         await SeedOrderAsync(order);
 
         // Only a Store row exists — it must not count as the caller's payout details.
-        await SeedPaymentAsync(DomainPayment.Create(PaymentOwnerType.Store, Guid.NewGuid(), "Vietcombank", "111", "Store"));
+        await SeedPaymentAsync(DomainBankAccount.Create(BankAccountOwnerType.Store, Guid.NewGuid(), "Vietcombank", "111", "Store"));
 
         var result = await _handler.Handle(
             new GetOrderByIdRequest { SlugId = order.SlugId, UserId = _userId, Role = "user" },
@@ -374,10 +373,10 @@ public class GetOrderByIdHandlerTests
         _dbContext.ChangeTracker.Clear();
     }
 
-    private async Task SeedPaymentAsync(DomainPayment payment)
+    private async Task SeedPaymentAsync(DomainBankAccount payment)
     {
         payment.ClearDomainEvents();
-        _dbContext.Payments.Add(payment);
+        _dbContext.BankAccounts.Add(payment);
         await _dbContext.SaveChangesAsync();
         _dbContext.ChangeTracker.Clear();
     }

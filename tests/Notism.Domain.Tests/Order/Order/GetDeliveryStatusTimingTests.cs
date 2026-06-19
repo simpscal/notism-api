@@ -1,7 +1,6 @@
 using FluentAssertions;
 
 using Notism.Domain.Order.Enums;
-using Notism.Domain.Payment.Enums;
 
 namespace Notism.Domain.Tests.Order.Order;
 

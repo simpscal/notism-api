@@ -5,7 +5,7 @@ using Microsoft.Extensions.Logging;
 using Notism.Application.Common.Services;
 using Notism.Application.Order.AdminUpdateOrderPaymentStatus;
 using Notism.Application.Tests.Common;
-using Notism.Domain.Payment.Enums;
+using Notism.Domain.Order.Enums;
 using Notism.Domain.User.Enums;
 using Notism.Infrastructure.Repositories;
 using Notism.Shared.Exceptions;

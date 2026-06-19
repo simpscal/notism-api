@@ -2,7 +2,6 @@ using FluentAssertions;
 
 using Notism.Domain.Order.Enums;
 using Notism.Domain.Order.Events;
-using Notism.Domain.Payment.Enums;
 
 using DomainOrder = Notism.Domain.Order.Order;
 using DomainOrderItem = Notism.Domain.Order.OrderItem;

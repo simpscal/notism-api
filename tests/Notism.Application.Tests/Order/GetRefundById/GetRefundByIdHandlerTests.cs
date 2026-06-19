@@ -10,11 +10,11 @@ using Notism.Shared.Exceptions;
 
 using NSubstitute;
 
+using BankAccountOwnerType = Notism.Domain.User.Enums.BankAccountOwnerType;
+using DomainBankAccount = Notism.Domain.User.BankAccount;
 using DomainOrder = Notism.Domain.Order.Order;
-using DomainPayment = Notism.Domain.Payment.Payment;
 using DomainUser = Notism.Domain.User.User;
 using PaymentMethodEnum = Notism.Domain.Order.Enums.PaymentMethod;
-using PaymentOwnerType = Notism.Domain.Payment.Enums.PaymentOwnerType;
 using UserRoleEnum = Notism.Domain.User.Enums.UserRole;
 
 namespace Notism.Application.Tests.Order.GetRefundById;
@@ -91,7 +91,7 @@ public class GetRefundByIdHandlerTests : IDisposable
         var (order, _) = await SeedOrderWithRefundAsync(processToPaid: false);
 
         // A Store row exists but must not be resolved as the customer's payout.
-        await SeedPaymentAsync(DomainPayment.Create(PaymentOwnerType.Store, Guid.NewGuid(), "Vietcombank", "111", "Store"));
+        await SeedPaymentAsync(DomainBankAccount.Create(BankAccountOwnerType.Store, Guid.NewGuid(), "Vietcombank", "111", "Store"));
 
         var result = await _handler.Handle(
             new GetRefundByIdRequest { RefundId = order.Refund!.Id },
@@ -142,12 +142,12 @@ public class GetRefundByIdHandlerTests : IDisposable
     }
 
     private async Task SeedCustomerPayoutAsync(Guid ownerId, string bankCode, string accountNumber, string accountHolderName)
-        => await SeedPaymentAsync(DomainPayment.Create(PaymentOwnerType.Customer, ownerId, bankCode, accountNumber, accountHolderName));
+        => await SeedPaymentAsync(DomainBankAccount.Create(BankAccountOwnerType.Customer, ownerId, bankCode, accountNumber, accountHolderName));
 
-    private async Task SeedPaymentAsync(DomainPayment payment)
+    private async Task SeedPaymentAsync(DomainBankAccount payment)
     {
         payment.ClearDomainEvents();
-        _dbContext.Payments.Add(payment);
+        _dbContext.BankAccounts.Add(payment);
         await _dbContext.SaveChangesAsync();
         _dbContext.ChangeTracker.Clear();
     }

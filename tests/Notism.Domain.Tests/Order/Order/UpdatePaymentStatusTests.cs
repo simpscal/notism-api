@@ -1,6 +1,6 @@
 using FluentAssertions;
 
-using Notism.Domain.Payment.Enums;
+using Notism.Domain.Order.Enums;
 
 using DomainOrder = Notism.Domain.Order.Order;
 using PaymentMethodEnum = Notism.Domain.Order.Enums.PaymentMethod;
