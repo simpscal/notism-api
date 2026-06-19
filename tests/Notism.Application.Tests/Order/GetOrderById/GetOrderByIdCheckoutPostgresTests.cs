@@ -7,14 +7,13 @@ using Notism.Application.Common.Services;
 using Notism.Application.Order.GetOrderById;
 using Notism.Application.Tests.Common;
 using Notism.Domain.Order.Enums;
-using Notism.Domain.Payment.Enums;
 using Notism.Domain.User.Enums;
 using Notism.Infrastructure.Persistence;
 
 using NSubstitute;
 
+using DomainBankAccount = Notism.Domain.User.BankAccount;
 using DomainOrder = Notism.Domain.Order.Order;
-using DomainPayment = Notism.Domain.Payment.Payment;
 using DomainUser = Notism.Domain.User.User;
 
 namespace Notism.Application.Tests.Order.GetOrderById;
@@ -43,7 +42,7 @@ public sealed class GetOrderByIdCheckoutPostgresTests : IClassFixture<PostgresRe
     public async Task InitializeAsync()
     {
         await _dbContext.Orders.ExecuteDeleteAsync();
-        await _dbContext.Payments.ExecuteDeleteAsync();
+        await _dbContext.BankAccounts.ExecuteDeleteAsync();
         _dbContext.ChangeTracker.Clear();
     }
 
@@ -57,8 +56,8 @@ public sealed class GetOrderByIdCheckoutPostgresTests : IClassFixture<PostgresRe
         order.ClearDomainEvents();
         _dbContext.Orders.Add(order);
 
-        _dbContext.Payments.Add(SeedReady(DomainPayment.Create(PaymentOwnerType.Customer, userId, "CustomerBank", "000", "Customer")));
-        _dbContext.Payments.Add(SeedReady(DomainPayment.Create(PaymentOwnerType.Store, Guid.NewGuid(), "Vietcombank", "123456789", "Store Account")));
+        _dbContext.BankAccounts.Add(SeedReady(DomainBankAccount.Create(BankAccountOwnerType.Customer, userId, "CustomerBank", "000", "Customer")));
+        _dbContext.BankAccounts.Add(SeedReady(DomainBankAccount.Create(BankAccountOwnerType.Store, Guid.NewGuid(), "Vietcombank", "123456789", "Store Account")));
         await _dbContext.SaveChangesAsync();
         _dbContext.ChangeTracker.Clear();
 
@@ -82,7 +81,7 @@ public sealed class GetOrderByIdCheckoutPostgresTests : IClassFixture<PostgresRe
         return user.Id;
     }
 
-    private static DomainPayment SeedReady(DomainPayment payment)
+    private static DomainBankAccount SeedReady(DomainBankAccount payment)
     {
         payment.ClearDomainEvents();
         return payment;

@@ -16,8 +16,6 @@ using Notism.Domain.Food;
 using Notism.Domain.Food.Repositories;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Repositories;
-using Notism.Domain.Payment;
-using Notism.Domain.Payment.Repositories;
 using Notism.Domain.RefreshToken;
 using Notism.Domain.RefreshToken.Repositories;
 using Notism.Domain.User;
@@ -51,7 +49,7 @@ public static class DependencyInjection
         services.AddScoped<IFoodRepository, FoodRepository>();
         services.AddScoped<ICartItemRepository, CartItemRepository>();
         services.AddScoped<IOrderRepository, OrderRepository>();
-        services.AddScoped<IPaymentRepository, PaymentRepository>();
+        services.AddScoped<IBankAccountRepository, BankAccountRepository>();
         services.AddScoped<IBankingCheckoutRepository, BankingCheckoutRepository>();
 
         services.AddScoped<IMessages, Messages>();

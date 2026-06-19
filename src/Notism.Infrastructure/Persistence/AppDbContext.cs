@@ -12,8 +12,6 @@ using Notism.Domain.Food;
 using Notism.Domain.Food.Enums;
 using Notism.Domain.Order;
 using Notism.Domain.Order.Enums;
-using Notism.Domain.Payment;
-using Notism.Domain.Payment.Enums;
 using Notism.Domain.RefreshToken;
 using Notism.Domain.User;
 using Notism.Domain.User.Enums;
@@ -38,7 +36,7 @@ public partial class AppDbContext(DbContextOptions<AppDbContext> options, IMedia
     public DbSet<OrderItem> OrderItems { get; set; }
     public DbSet<DeliveryStatusHistory> DeliveryStatusHistories { get; set; }
     public DbSet<Refund> Refunds { get; set; }
-    public DbSet<Payment> Payments { get; set; }
+    public DbSet<BankAccount> BankAccounts { get; set; }
     public DbSet<BankingCheckout> BankingCheckouts { get; set; }
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -74,7 +72,7 @@ public partial class AppDbContext(DbContextOptions<AppDbContext> options, IMedia
         ConfigureOrderItem(modelBuilder);
         ConfigureDeliveryStatusHistory(modelBuilder);
         ConfigureRefund(modelBuilder);
-        ConfigurePayment(modelBuilder);
+        ConfigureBankAccount(modelBuilder);
         ConfigureBankingCheckout(modelBuilder);
 
         base.OnModelCreating(modelBuilder);
@@ -591,20 +589,22 @@ public partial class AppDbContext(DbContextOptions<AppDbContext> options, IMedia
         });
     }
 
-    private static void ConfigurePayment(ModelBuilder modelBuilder)
+    private static void ConfigureBankAccount(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<Payment>(entity =>
+        modelBuilder.Entity<BankAccount>(entity =>
         {
+            entity.ToTable("BankAccounts");
+
             entity.HasKey(p => p.Id);
 
             entity.Property(p => p.OwnerType)
                 .HasConversion(
                     ownerType => ownerType.GetStringValue(),
-                    value => value.ToEnum<PaymentOwnerType>())
+                    value => value.ToEnum<BankAccountOwnerType>())
                 .HasMaxLength(50)
                 .IsRequired();
 
-            entity.Property(p => p.StorerId)
+            entity.Property(p => p.OwnerId)
                 .IsRequired();
 
             entity.Property(p => p.BankCode)
@@ -625,7 +625,7 @@ public partial class AppDbContext(DbContextOptions<AppDbContext> options, IMedia
             entity.Property(p => p.UpdatedAt)
                 .IsRequired();
 
-            entity.HasIndex(p => p.StorerId)
+            entity.HasIndex(p => p.OwnerId)
                 .IsUnique();
         });
     }

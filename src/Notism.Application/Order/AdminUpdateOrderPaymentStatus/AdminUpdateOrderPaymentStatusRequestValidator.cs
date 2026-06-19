@@ -1,6 +1,6 @@
 using FluentValidation;
 
-using Notism.Domain.Payment.Enums;
+using Notism.Domain.Order.Enums;
 using Notism.Shared.Extensions;
 
 namespace Notism.Application.Order.AdminUpdateOrderPaymentStatus;

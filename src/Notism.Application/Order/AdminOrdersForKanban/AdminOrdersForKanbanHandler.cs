@@ -5,7 +5,6 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Persistence;
 using Notism.Domain.Order.Enums;
-using Notism.Domain.Payment.Enums;
 using Notism.Shared.Extensions;
 
 using DomainOrder = Notism.Domain.Order.Order;

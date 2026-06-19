@@ -1,7 +1,7 @@
 using Notism.Shared.Extensions;
 
+using DomainBankAccount = Notism.Domain.User.BankAccount;
 using DomainOrder = Notism.Domain.Order.Order;
-using DomainPayment = Notism.Domain.Payment.Payment;
 
 namespace Notism.Application.Order.GetRefundById;
 
@@ -24,7 +24,7 @@ public sealed record GetRefundByIdResponse
     public DateTime CreatedAt { get; set; }
     public DateTime UpdatedAt { get; set; }
 
-    public static GetRefundByIdResponse FromDomain(DomainOrder order, DomainPayment? payout)
+    public static GetRefundByIdResponse FromDomain(DomainOrder order, DomainBankAccount? payout)
     {
         var refund = order.Refund!;
 

@@ -5,10 +5,10 @@ using Microsoft.Extensions.Logging;
 
 using Notism.Application.Common.Persistence;
 using Notism.Domain.Order.Enums;
-using Notism.Domain.Payment.Enums;
+using Notism.Domain.User.Enums;
 
+using DomainBankAccount = Notism.Domain.User.BankAccount;
 using DomainOrder = Notism.Domain.Order.Order;
-using DomainPayment = Notism.Domain.Payment.Payment;
 
 namespace Notism.Application.Order.GetHeldRefunds;
 
@@ -29,9 +29,9 @@ public class GetHeldRefundsHandler : IRequestHandler<GetHeldRefundsRequest, GetH
         GetHeldRefundsRequest request,
         CancellationToken cancellationToken)
     {
-        var hasBankDetails = await _readDbContext.Set<DomainPayment>()
+        var hasBankDetails = await _readDbContext.Set<DomainBankAccount>()
             .AnyAsync(
-                p => p.OwnerType == PaymentOwnerType.Customer && p.StorerId == request.UserId,
+                p => p.OwnerType == BankAccountOwnerType.Customer && p.OwnerId == request.UserId,
                 cancellationToken);
 
         if (hasBankDetails)

@@ -8,11 +8,11 @@ using Notism.Infrastructure.Persistence;
 
 using NSubstitute;
 
+using BankAccountOwnerType = Notism.Domain.User.Enums.BankAccountOwnerType;
+using DomainBankAccount = Notism.Domain.User.BankAccount;
 using DomainOrder = Notism.Domain.Order.Order;
-using DomainPayment = Notism.Domain.Payment.Payment;
 using DomainUser = Notism.Domain.User.User;
 using PaymentMethodEnum = Notism.Domain.Order.Enums.PaymentMethod;
-using PaymentOwnerType = Notism.Domain.Payment.Enums.PaymentOwnerType;
 using RefundState = Notism.Domain.Order.Enums.RefundStatus;
 using UserRoleEnum = Notism.Domain.User.Enums.UserRole;
 
@@ -165,9 +165,9 @@ public class GetHeldRefundsHandlerTests : IDisposable
 
     private async Task SeedCustomerPayoutAsync(Guid userId)
     {
-        var payment = DomainPayment.Create(PaymentOwnerType.Customer, userId, "Techcombank", "987654321", "Jane Doe");
+        var payment = DomainBankAccount.Create(BankAccountOwnerType.Customer, userId, "Techcombank", "987654321", "Jane Doe");
         payment.ClearDomainEvents();
-        _dbContext.Payments.Add(payment);
+        _dbContext.BankAccounts.Add(payment);
         await _dbContext.SaveChangesAsync();
         _dbContext.ChangeTracker.Clear();
     }

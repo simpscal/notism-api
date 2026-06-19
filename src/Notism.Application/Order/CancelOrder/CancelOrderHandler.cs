@@ -7,7 +7,6 @@ using Notism.Application.Common.Persistence;
 using Notism.Application.Common.Services;
 using Notism.Domain.Order.Enums;
 using Notism.Domain.Order.Repositories;
-using Notism.Domain.Payment.Enums;
 using Notism.Shared.Exceptions;
 
 using DomainOrder = Notism.Domain.Order.Order;

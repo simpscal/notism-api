@@ -4,6 +4,7 @@ using Notism.Api.Extensions;
 using Notism.Api.Models;
 using Notism.Application.Order.CancelOrder;
 using Notism.Application.Order.Common;
+using Notism.Application.Order.CreateBankingCheckout;
 using Notism.Application.Order.CreateOrder;
 using Notism.Application.Order.GetHeldRefunds;
 using Notism.Application.Order.GetOrderById;
@@ -71,6 +72,34 @@ public static class OrderEndpoints
             .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized)
             .Produces<ErrorResponse>(StatusCodes.Status404NotFound)
             .Produces<ErrorResponse>(StatusCodes.Status409Conflict);
+
+        group.MapPost("/banking/checkout", CreateBankingCheckoutAsync)
+            .WithName("CreateBankingCheckout")
+            .WithSummary("Create banking checkout session")
+            .WithDescription("Creates a BankingCheckout session for bank transfer payment. Returns a checkoutId used as the transfer reference.")
+            .Produces<CreateBankingCheckoutResponse>(StatusCodes.Status200OK)
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .Produces<ErrorResponse>(StatusCodes.Status401Unauthorized);
+    }
+
+    private static async Task<IResult> CreateBankingCheckoutAsync(
+        HttpContext httpContext,
+        IMediator mediator,
+        CreateBankingCheckoutPayload payload,
+        CancellationToken cancellationToken)
+    {
+        var userId = httpContext.User.GetUserId();
+
+        var request = new CreateBankingCheckoutRequest
+        {
+            UserId = userId,
+            CartItemIds = payload.CartItemIds,
+            TotalAmount = payload.TotalAmount,
+        };
+
+        var result = await mediator.Send(request, cancellationToken);
+
+        return Results.Ok(result);
     }
 
     private static async Task<IResult> CreateOrderAsync(
