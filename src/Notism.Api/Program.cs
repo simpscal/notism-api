@@ -8,6 +8,7 @@ using Notism.Api.Hubs;
 using Notism.Api.Middlewares;
 using Notism.Application;
 using Notism.Infrastructure;
+using Notism.Shared.Configuration;
 
 var envFile = ".env";
 if (File.Exists(envFile))
@@ -55,6 +56,14 @@ var app = builder.Build();
     app.UseAuthorization();
 
     app.UseAntiforgery();
+
+    var outputCacheSettings = app.Configuration
+        .GetSection(OutputCacheSettings.SectionName)
+        .Get<OutputCacheSettings>() ?? new OutputCacheSettings();
+    if (outputCacheSettings.Enabled)
+    {
+        app.UseOutputCache();
+    }
 
     app.UseMiddleware<ResultFailureMiddleware>();
 

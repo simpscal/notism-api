@@ -1,9 +1,13 @@
 using MediatR;
 
+using Microsoft.Extensions.Options;
+
 using Notism.Api.Models;
+using Notism.Application.Common.Constants;
 using Notism.Application.Food.GetCategories;
 using Notism.Application.Food.GetFoodById;
 using Notism.Application.Food.GetFoods;
+using Notism.Shared.Configuration;
 
 namespace Notism.Api.Endpoints;
 
@@ -11,6 +15,9 @@ public static class FoodEndpoints
 {
     public static void MapFoodEndpoints(this IEndpointRouteBuilder app)
     {
+        var cacheSettings = app.ServiceProvider
+            .GetRequiredService<IOptions<OutputCacheSettings>>().Value;
+
         var group = app.MapGroup("/api/foods")
             .WithTags("Food Management")
             .WithOpenApi();
@@ -20,13 +27,19 @@ public static class FoodEndpoints
             .WithSummary("Get list of foods")
             .WithDescription("Retrieves a paginated list of foods with optional filtering by category, keyword, and sorting.")
             .Produces<GetFoodsResponse>(StatusCodes.Status200OK)
-            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest);
+            .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
+            .CacheOutput(policy => policy
+                .Tag(CacheTagConstants.Foods)
+                .Expire(TimeSpan.FromSeconds(cacheSettings.FoodsTtlSeconds)));
 
         group.MapGet("/categories", GetCategoriesAsync)
             .WithName("GetCategories")
             .WithSummary("Get categories")
             .WithDescription("Retrieves all categories for the client, excluding deleted ones.")
-            .Produces<GetCategoriesResponse>(StatusCodes.Status200OK);
+            .Produces<GetCategoriesResponse>(StatusCodes.Status200OK)
+            .CacheOutput(policy => policy
+                .Tag(CacheTagConstants.Categories)
+                .Expire(TimeSpan.FromSeconds(cacheSettings.CategoriesTtlSeconds)));
 
         group.MapGet("/{id:guid}", GetFoodByIdAsync)
             .WithName("GetFoodById")
@@ -34,7 +47,10 @@ public static class FoodEndpoints
             .WithDescription("Retrieves detailed information about a specific food item.")
             .Produces<GetFoodByIdResponse>(StatusCodes.Status200OK)
             .Produces<ErrorResponse>(StatusCodes.Status400BadRequest)
-            .Produces<ErrorResponse>(StatusCodes.Status404NotFound);
+            .Produces<ErrorResponse>(StatusCodes.Status404NotFound)
+            .CacheOutput(policy => policy
+                .Tag(CacheTagConstants.Foods)
+                .Expire(TimeSpan.FromSeconds(cacheSettings.FoodsTtlSeconds)));
     }
 
     private static async Task<IResult> GetFoodsAsync(

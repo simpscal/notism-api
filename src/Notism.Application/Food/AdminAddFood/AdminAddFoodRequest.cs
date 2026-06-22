@@ -1,11 +1,15 @@
 using MediatR;
 
+using Notism.Application.Common.Abstractions;
+using Notism.Application.Common.Constants;
 using Notism.Application.Food.AdminUpdateFood;
 
 namespace Notism.Application.Food.AdminAddFood;
 
-public record AdminAddFoodRequest : IRequest<AdminAddFoodResponse>
+public record AdminAddFoodRequest : IRequest<AdminAddFoodResponse>, ICacheInvalidatingRequest
 {
+    public IEnumerable<string> CacheTagsToEvict => [CacheTagConstants.Foods];
+
     public required string Name { get; set; }
     public required string Description { get; set; }
     public required decimal Price { get; set; }
