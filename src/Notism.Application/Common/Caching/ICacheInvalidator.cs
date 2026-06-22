@@ -1,4 +1,4 @@
-namespace Notism.Application.Common.Abstractions;
+namespace Notism.Application.Common.Caching;
 
 public interface ICacheInvalidator
 {

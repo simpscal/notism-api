@@ -1,8 +1,6 @@
 using MediatR;
 
-using Notism.Application.Common.Abstractions;
-using Notism.Application.Common.Constants;
-
+using Notism.Application.Common.Caching;
 namespace Notism.Application.Food.AdminDeleteFood;
 
 public record AdminDeleteFoodRequest : IRequest, ICacheInvalidatingRequest

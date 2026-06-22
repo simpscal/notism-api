@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.OutputCaching;
 
-using Notism.Application.Common.Abstractions;
+using Notism.Application.Common.Caching;
 
 namespace Notism.Api.Services;
 

@@ -1,7 +1,6 @@
 using MediatR;
 
-using Notism.Application.Common.Abstractions;
-using Notism.Application.Common.Constants;
+using Notism.Application.Common.Caching;
 using Notism.Application.Food.AdminUpdateFood;
 
 namespace Notism.Application.Food.AdminAddFood;

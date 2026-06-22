@@ -3,7 +3,7 @@ using MediatR;
 using Microsoft.Extensions.Options;
 
 using Notism.Api.Models;
-using Notism.Application.Common.Constants;
+using Notism.Application.Common.Caching;
 using Notism.Application.Food.GetCategories;
 using Notism.Application.Food.GetFoodById;
 using Notism.Application.Food.GetFoods;

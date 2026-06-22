@@ -1,6 +1,6 @@
 using MediatR;
 
-using Notism.Application.Common.Abstractions;
+using Notism.Application.Common.Caching;
 
 namespace Notism.Application.Common.Behaviors;
 

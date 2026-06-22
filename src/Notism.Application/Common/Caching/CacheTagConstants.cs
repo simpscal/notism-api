@@ -1,4 +1,4 @@
-namespace Notism.Application.Common.Constants;
+namespace Notism.Application.Common.Caching;
 
 public static class CacheTagConstants
 {
