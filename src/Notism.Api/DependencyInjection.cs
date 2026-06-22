@@ -26,11 +26,13 @@ public static class DependencyInjection
         services.AddCorsConfiguration(configuration);
         services.AddAntiforgeryConfiguration(environment);
         services.AddLocalizationConfiguration();
+        services.AddOutputCache();
 
         services.AddProblemDetails();
 
         services.AddScoped<ICookieService, CookieService>();
         services.AddScoped<IPaymentNotifier, PaymentSignalRNotifier>();
+        services.AddScoped<ICacheInvalidator, OutputCacheInvalidator>();
 
         return services;
     }
@@ -43,6 +45,7 @@ public static class DependencyInjection
         services.Configure<ClientAppSettings>(configuration.GetSection(ClientAppSettings.SectionName));
         services.Configure<GoogleOAuthSettings>(configuration.GetSection(GoogleOAuthSettings.SectionName));
         services.Configure<SepaySettings>(configuration.GetSection(SepaySettings.SectionName));
+        services.Configure<OutputCacheSettings>(configuration.GetSection(OutputCacheSettings.SectionName));
 
         return services;
     }
