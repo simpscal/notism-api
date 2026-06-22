@@ -3,7 +3,7 @@ using FluentAssertions;
 using MediatR;
 
 using Notism.Application.Common.Behaviors;
-using Notism.Application.Common.Caching;
+using Notism.Application.Common.Services;
 
 using NSubstitute;
 

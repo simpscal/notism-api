@@ -1,6 +1,6 @@
 using MediatR;
 
-using Notism.Application.Common.Caching;
+using Notism.Application.Common.Services;
 
 namespace Notism.Application.Common.Behaviors;
 

@@ -1,6 +1,7 @@
 using MediatR;
 
-using Notism.Application.Common.Caching;
+using Notism.Application.Common.Behaviors;
+using Notism.Application.Common.Constants;
 namespace Notism.Application.Food.AdminUpdateFood;
 
 public record AdminUpdateFoodRequest : IRequest<AdminUpdateFoodResponse>, ICacheInvalidatingRequest
