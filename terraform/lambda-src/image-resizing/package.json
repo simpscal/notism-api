@@ -1,0 +1,11 @@
+{
+  "name": "notism-image-resizing",
+  "version": "1.0.0",
+  "description": "S3 ObjectCreated → multi-variant image resize (RESIZE_JOBS driven)",
+  "type": "module",
+  "main": "index.mjs",
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.1075.0",
+    "sharp": "^0.33.5"
+  }
+}

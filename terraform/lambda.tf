@@ -8,9 +8,10 @@
 # The REGION environment variable tells the Node.js AWS SDK which region to use
 # when initialising S3 clients.
 #
-# Code packages are deployed by CI/CD and are excluded from Terraform management
-# via ignore_changes.  Terraform only owns configuration (env vars, IAM role,
-# memory, timeout).
+# Handler source lives in lambda-src/image-resizing/ (see its README for the
+# package build). The deployment zip is built and uploaded out of band and is
+# excluded from Terraform management via ignore_changes — Terraform owns only
+# configuration (env vars, IAM role, memory, timeout).
 #
 # runtime is set to nodejs22.x here because the current AWS provider version
 # (5.100.0) does not yet enumerate nodejs24.x in its validation schema.
@@ -24,8 +25,8 @@ locals {
   sharp_layer_arn = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:layer:sharp:1"
 }
 
-resource "aws_lambda_function" "food_resizing" {
-  function_name = "notism-food-resizing"
+resource "aws_lambda_function" "image_resizing" {
+  function_name = "notism-image-resizing"
   role          = aws_iam_role.lambda_image_resizing.arn
   handler       = "index.handler"
   runtime       = "nodejs22.x"
@@ -34,49 +35,26 @@ resource "aws_lambda_function" "food_resizing" {
   architectures = ["arm64"]
 
   # Code is deployed by CI/CD; Terraform manages configuration only.
-  filename = "./lambda-packages/notism-food-resizing.zip"
+  filename = "./lambda-packages/notism-image-resizing.zip"
 
   layers = [local.sharp_layer_arn]
 
-  environment {
-    variables = {
-      DESTINATION_BUCKET   = "public-notism-storage"
-      INVOKE_NEXT_FUNCTION = "notism-food-detail-resizing"
-      RESIZE_WIDTH         = "400"
-      RESIZE_HEIGHT        = "400"
-      REGION               = var.aws_region
-    }
-  }
-
-  lifecycle {
-    ignore_changes = [filename, source_code_hash, layers, runtime]
-  }
-
-  tags = {
-    Name = "notism-food-resizing"
-  }
-}
-
-resource "aws_lambda_function" "food_detail_resizing" {
-  function_name = "notism-food-detail-resizing"
-  role          = aws_iam_role.lambda_image_resizing.arn
-  handler       = "index.handler"
-  runtime       = "nodejs22.x"
-  timeout       = 30
-  memory_size   = 256
-  architectures = ["arm64"]
-
-  filename = "./lambda-packages/notism-food-detail-resizing.zip"
-
-  layers = [local.sharp_layer_arn]
-
+  # RESIZE_JOBS maps a source upload prefix to the resize variants written to
+  # DESTINATION_BUCKET in a single invocation. The handler replaces the source
+  # key's first path segment with outputPrefix, so output prefixes match the
+  # consuming StorageTypeConstants (avatar, food, food-detail). Keys mirror the
+  # app's real upload folders (avatar/, food/ — see GenerateUploadUrlHandler).
   environment {
     variables = {
       DESTINATION_BUCKET = "public-notism-storage"
-      DESTINATION_PREFIX = "food-detail"
-      RESIZE_WIDTH       = "800"
-      RESIZE_HEIGHT      = "800"
       REGION             = var.aws_region
+      RESIZE_JOBS = jsonencode({
+        "avatar/" = [{ outputPrefix = "avatar", width = 200, height = 200 }]
+        "food/" = [
+          { outputPrefix = "food", width = 400, height = 400 },
+          { outputPrefix = "food-detail", width = 800, height = 800 },
+        ]
+      })
     }
   }
 
@@ -85,58 +63,18 @@ resource "aws_lambda_function" "food_detail_resizing" {
   }
 
   tags = {
-    Name = "notism-food-detail-resizing"
-  }
-}
-
-resource "aws_lambda_function" "avatar_resizing" {
-  function_name = "notism-avatar-resizing"
-  role          = aws_iam_role.lambda_image_resizing.arn
-  handler       = "index.handler"
-  runtime       = "nodejs22.x"
-  timeout       = 3
-  memory_size   = 128
-  architectures = ["arm64"]
-
-  filename = "./lambda-packages/notism-avatar-resizing.zip"
-
-  layers = [local.sharp_layer_arn]
-
-  environment {
-    variables = {
-      DESTINATION_BUCKET = "public-notism-storage"
-      RESIZE_WIDTH       = "200"
-      RESIZE_HEIGHT      = "200"
-      REGION             = var.aws_region
-    }
-  }
-
-  lifecycle {
-    ignore_changes = [filename, source_code_hash, layers, runtime]
-  }
-
-  tags = {
-    Name = "notism-avatar-resizing"
+    Name = "notism-image-resizing"
   }
 }
 
 # ------------------------------------------------------------------------------
-# Lambda resource-based policies — allow S3 to invoke each function
+# Lambda resource-based policy — allow S3 to invoke the resize function
 # ------------------------------------------------------------------------------
 
-resource "aws_lambda_permission" "s3_invoke_food_resizing" {
-  statement_id   = "AllowS3InvokeFood"
+resource "aws_lambda_permission" "s3_invoke_image_resizing" {
+  statement_id   = "AllowS3InvokeImageResizing"
   action         = "lambda:InvokeFunction"
-  function_name  = aws_lambda_function.food_resizing.function_name
-  principal      = "s3.amazonaws.com"
-  source_arn     = aws_s3_bucket.private_storage.arn
-  source_account = data.aws_caller_identity.current.account_id
-}
-
-resource "aws_lambda_permission" "s3_invoke_avatar_resizing" {
-  statement_id   = "AllowS3InvokeAvatar"
-  action         = "lambda:InvokeFunction"
-  function_name  = aws_lambda_function.avatar_resizing.function_name
+  function_name  = aws_lambda_function.image_resizing.function_name
   principal      = "s3.amazonaws.com"
   source_arn     = aws_s3_bucket.private_storage.arn
   source_account = data.aws_caller_identity.current.account_id

@@ -12,3 +12,7 @@ override.tf
 override.tf.json
 *_override.tf
 *_override.tf.json
+
+lambda-packages/
+lambda-src/*/package-lock.json
+tfplan*

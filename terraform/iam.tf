@@ -4,7 +4,7 @@
 
 resource "aws_iam_role" "lambda_image_resizing" {
   name        = "notism-image-resizing-role"
-  description = "Execution role for all Notism image resizing Lambdas (avatar, food, food-detail)"
+  description = "Execution role for the Notism image-resizing Lambda"
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -42,11 +42,6 @@ resource "aws_iam_role_policy" "lambda_image_resizing_s3" {
           "${aws_s3_bucket.public_storage.arn}/*",
           "${aws_s3_bucket.private_storage.arn}/*",
         ]
-      },
-      {
-        Effect   = "Allow"
-        Action   = "lambda:InvokeFunction"
-        Resource = aws_lambda_function.food_detail_resizing.arn
       }
     ]
   })
