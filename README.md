@@ -31,7 +31,6 @@ Detailed documentation is available in the `docs/` directory:
 |------|---------|
 | `docs/rules/architecture.md` | Clean Architecture layers and dependency rules |
 | `docs/rules/repository-pattern.md` | IRepository\<T\> and specification usage |
-| `docs/rules/specification-pattern.md` | FilterSpecification composition and patterns |
 | `docs/rules/domain-events.md` | Domain event dispatch and handler patterns |
 | `docs/rules/handler-design.md` | MediatR handler conventions |
 | `docs/rules/validation.md` | FluentValidation request and domain rules |
@@ -40,7 +39,6 @@ Detailed documentation is available in the `docs/` directory:
 | `docs/rules/code-organization.md` | Feature folder layout and endpoint grouping |
 | `docs/rules/additional-practices.md` | Aggregate roots, value objects, private constructors |
 | `docs/infra/aws-architecture.html` | AWS infrastructure — incl. the image-resizing pipeline |
-| `docs/flows/secure-authentication-cookies.md` | Auth cookie security flow |
 
 ## Technologies
 

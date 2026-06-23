@@ -220,7 +220,7 @@
 <span class="m">  ── Image pipeline (event-driven, ap-northeast-1) ─────────────────────────────────────────</span>
 
    upload ──▶ <span class="g">┌─────────────────────┐</span>  ObjectCreated   <span class="t">┌──────────────────────┐</span>      <span class="g">┌──────────────────┐</span>
-              <span class="g">│ private-notism-     │</span> ───avatars/───▶  <span class="t">│ image-resizing       │</span> ──avatar 200²─────▶<span class="g">│ public-notism-   │</span>
+              <span class="g">│ private-notism-     │</span> ───avatar/────▶  <span class="t">│ image-resizing       │</span> ──avatar 200²─────▶<span class="g">│ public-notism-   │</span>
               <span class="g">│ storage             │</span> ───food/──────▶  <span class="t">│  (RESIZE_JOBS, 1×)   │</span> ──food 400²───────▶<span class="g">│ storage (public) │</span>
               <span class="g">└─────────────────────┘</span>                  <span class="t">└──────────────────────┘</span> ──food-detail 800²─▶<span class="g">└──────────────────┘</span>
 
@@ -330,7 +330,7 @@
         <li><span class="k">Public access block</span> ALL OFF (false)</li>
         <li><span class="k">CORS</span> PUT/GET/DELETE/HEAD from localhost:4200 + CloudFront domain</li>
         <li><span class="k">Policy</span> Allow Get/Put/Delete to <code>*</code> <em>gated by <code>aws:Referer</code></em> (localhost + CF domain)</li>
-        <li><span class="k">Notifications</span> ObjectCreated → Lambda (avatars/, food/)</li>
+        <li><span class="k">Notifications</span> ObjectCreated → Lambda (avatar/, food/)</li>
       </ul>
     </div>
     <div class="card green">
@@ -398,7 +398,7 @@
     <tr><th>Function</th><th>Trigger</th><th>Mem / Timeout</th><th>Key env</th></tr>
     <tr>
       <td><code>notism-image-resizing</code></td>
-      <td>S3 <code>avatars/</code> + <code>food/</code> ObjectCreated</td>
+      <td>S3 <code>avatar/</code> + <code>food/</code> ObjectCreated</td>
       <td>256 MB / 30 s</td>
       <td>DESTINATION_BUCKET=public-notism-storage, RESIZE_JOBS (per-prefix variants)</td>
     </tr>
@@ -414,7 +414,7 @@
       <li><code>REGION</code> env passed to Node AWS SDK so S3 clients target ap-northeast-1.</li>
     </ul>
   </div>
-  <p class="note">Pipeline shape: a single upload-triggered function. <code>RESIZE_JOBS</code> (JSON env) maps a source prefix to the variants written in one invocation — <code>avatars/</code> → <code>avatar</code> 200²; <code>food/</code> → <code>food</code> 400² + <code>food-detail</code> 800². A new size or surface is a config edit, not new infrastructure.</p>
+  <p class="note">Pipeline shape: a single upload-triggered function. <code>RESIZE_JOBS</code> (JSON env) maps a source prefix to the variants written in one invocation — <code>avatar/</code> → <code>avatar</code> 200²; <code>food/</code> → <code>food</code> 400² + <code>food-detail</code> 800². A new size or surface is a config edit, not new infrastructure.</p>
 </section>
 
 <!-- ===================================================== -->
@@ -423,12 +423,12 @@
   <p>Source: <code>s3.tf</code> (notification) + <code>lambda.tf</code> (permissions).</p>
   <table>
     <tr><th>Resource</th><th>What it wires</th></tr>
-    <tr><td><code>aws_s3_bucket_notification.private_storage</code></td><td>On <code>private-notism-storage</code>: <code>s3:ObjectCreated:*</code> with <code>filter_prefix=avatars/</code> and <code>filter_prefix=food/</code> → both wired to image-resizing</td></tr>
+    <tr><td><code>aws_s3_bucket_notification.private_storage</code></td><td>On <code>private-notism-storage</code>: <code>s3:ObjectCreated:*</code> with <code>filter_prefix=avatar/</code> and <code>filter_prefix=food/</code> → both wired to image-resizing</td></tr>
     <tr><td><code>aws_lambda_permission.s3_invoke_image_resizing</code></td><td>Resource policy: principal <code>s3.amazonaws.com</code>, source = private bucket ARN + account guard. Notification <code>depends_on</code> this permission.</td></tr>
   </table>
   <div class="diagram">
 upload → <span class="g">private-notism-storage</span>
-            ├── <span class="m">avatars/*</span>  ──ObjectCreated──┐
+            ├── <span class="m">avatar/*</span>   ──ObjectCreated──┐
             └── <span class="m">food/*</span>     ──ObjectCreated──┴─▶ <span class="t">image-resizing</span> ──▶ <span class="g">public-notism-storage</span>
                                                                   avatar 200² · food 400² · food-detail 800²
   </div>
@@ -524,7 +524,7 @@ upload → <span class="g">private-notism-storage</span>
 
   <div class="card teal">
     <h3 style="margin-top:0">C. Image upload &amp; resize</h3>
-    Client/API uploads original to <code>private-notism-storage</code> under <code>avatars/</code> or <code>food/</code> → S3 ObjectCreated event → <code>image-resizing</code> resizes (sharp) and writes every variant for that prefix to <code>public-notism-storage</code> in one invocation (<code>avatars/</code> → avatar 200²; <code>food/</code> → food 400² + food-detail 800²). Public resized images served directly (public-read) or referenced by the SPA.
+    Client/API uploads original to <code>private-notism-storage</code> under <code>avatar/</code> or <code>food/</code> → S3 ObjectCreated event → <code>image-resizing</code> resizes (sharp) and writes every variant for that prefix to <code>public-notism-storage</code> in one invocation (<code>avatar/</code> → avatar 200²; <code>food/</code> → food 400² + food-detail 800²). Public resized images served directly (public-read) or referenced by the SPA.
   </div>
 
   <div class="card purple">

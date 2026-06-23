@@ -8,9 +8,10 @@
 # The REGION environment variable tells the Node.js AWS SDK which region to use
 # when initialising S3 clients.
 #
-# Code packages are deployed by CI/CD and are excluded from Terraform management
-# via ignore_changes.  Terraform only owns configuration (env vars, IAM role,
-# memory, timeout).
+# Handler source lives in lambda-src/image-resizing/ (see its README for the
+# package build). The deployment zip is built and uploaded out of band and is
+# excluded from Terraform management via ignore_changes — Terraform owns only
+# configuration (env vars, IAM role, memory, timeout).
 #
 # runtime is set to nodejs22.x here because the current AWS provider version
 # (5.100.0) does not yet enumerate nodejs24.x in its validation schema.
@@ -39,14 +40,16 @@ resource "aws_lambda_function" "image_resizing" {
   layers = [local.sharp_layer_arn]
 
   # RESIZE_JOBS maps a source upload prefix to the resize variants written to
-  # DESTINATION_BUCKET in a single invocation. Output prefixes are byte-identical
-  # to the consuming StorageTypeConstants (avatar, food, food-detail).
+  # DESTINATION_BUCKET in a single invocation. The handler replaces the source
+  # key's first path segment with outputPrefix, so output prefixes match the
+  # consuming StorageTypeConstants (avatar, food, food-detail). Keys mirror the
+  # app's real upload folders (avatar/, food/ — see GenerateUploadUrlHandler).
   environment {
     variables = {
       DESTINATION_BUCKET = "public-notism-storage"
       REGION             = var.aws_region
       RESIZE_JOBS = jsonencode({
-        "avatars/" = [{ outputPrefix = "avatar", width = 200, height = 200 }]
+        "avatar/" = [{ outputPrefix = "avatar", width = 200, height = 200 }]
         "food/" = [
           { outputPrefix = "food", width = 400, height = 400 },
           { outputPrefix = "food-detail", width = 800, height = 800 },
