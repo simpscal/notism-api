@@ -219,15 +219,10 @@
 
 <span class="m">  ── Image pipeline (event-driven, ap-northeast-1) ─────────────────────────────────────────</span>
 
-   upload ──▶ <span class="g">┌─────────────────────┐</span>  ObjectCreated   <span class="t">┌──────────────────────┐</span>  resized
-              <span class="g">│ private-notism-     │</span> ───avatars/───▶  <span class="t">│ avatar-resizing 200² │</span> ───┐
-              <span class="g">│ storage             │</span> ───food/──────▶  <span class="t">│ food-resizing   400² │</span> ──┐│
-              <span class="g">└─────────────────────┘</span>                  <span class="t">└──────────┬───────────┘</span>   ││
-                                                      │ lambda:Invoke      ││
-                                            <span class="t">┌─────────▼────────────┐</span>   ││   <span class="g">┌──────────────────┐</span>
-                                            <span class="t">│ food-detail-rsz 800² │</span> ──┼┴──▶<span class="g">│ public-notism-   │</span>
-                                            <span class="t">└──────────────────────┘</span>   └────▶<span class="g">│ storage (public) │</span>
-                                                                          <span class="g">└──────────────────┘</span>
+   upload ──▶ <span class="g">┌─────────────────────┐</span>  ObjectCreated   <span class="t">┌──────────────────────┐</span>      <span class="g">┌──────────────────┐</span>
+              <span class="g">│ private-notism-     │</span> ───avatars/───▶  <span class="t">│ image-resizing       │</span> ──avatar 200²─────▶<span class="g">│ public-notism-   │</span>
+              <span class="g">│ storage             │</span> ───food/──────▶  <span class="t">│  (RESIZE_JOBS, 1×)   │</span> ──food 400²───────▶<span class="g">│ storage (public) │</span>
+              <span class="g">└─────────────────────┘</span>                  <span class="t">└──────────────────────┘</span> ──food-detail 800²─▶<span class="g">└──────────────────┘</span>
 
 <span class="m">  ── CI/CD (keyless, GitHub OIDC → sts:AssumeRoleWithWebIdentity) ───────────────────────────</span>
 
@@ -397,32 +392,20 @@
 <!-- ===================================================== -->
 <section id="lambda">
   <h2><span class="num">9</span>Lambda — Image Resizing Pipeline</h2>
-  <p>Source: <code>lambda.tf</code>. Three Node.js <code>arm64</code> functions sharing one execution role and a <code>sharp</code> layer. Co-located in ap-northeast-1 with the S3 buckets.</p>
+  <p>Source: <code>lambda.tf</code>. One Node.js <code>arm64</code> function with an execution role and a <code>sharp</code> layer. Co-located in ap-northeast-1 with the S3 buckets.</p>
 
   <table>
     <tr><th>Function</th><th>Trigger</th><th>Mem / Timeout</th><th>Key env</th></tr>
     <tr>
-      <td><code>notism-avatar-resizing</code></td>
-      <td>S3 <code>avatars/</code> ObjectCreated</td>
-      <td>128 MB / 3 s</td>
-      <td>DESTINATION_BUCKET=public-notism-storage, 200×200</td>
-    </tr>
-    <tr>
-      <td><code>notism-food-resizing</code></td>
-      <td>S3 <code>food/</code> ObjectCreated</td>
+      <td><code>notism-image-resizing</code></td>
+      <td>S3 <code>avatars/</code> + <code>food/</code> ObjectCreated</td>
       <td>256 MB / 30 s</td>
-      <td>dest=public, 400×400, INVOKE_NEXT_FUNCTION=food-detail</td>
-    </tr>
-    <tr>
-      <td><code>notism-food-detail-resizing</code></td>
-      <td>Invoked by food-resizing (chain)</td>
-      <td>256 MB / 30 s</td>
-      <td>dest=public, prefix=food-detail, 800×800</td>
+      <td>DESTINATION_BUCKET=public-notism-storage, RESIZE_JOBS (per-prefix variants)</td>
     </tr>
   </table>
 
   <div class="card teal">
-    <strong>Common config</strong>
+    <strong>Config</strong>
     <ul>
       <li>Runtime declared <code>nodejs22.x</code> in TF, but actual runtime is <code>nodejs24.x</code> — <code>ignore_changes = [runtime]</code> because provider 5.100.0 schema doesn't yet enumerate nodejs24.</li>
       <li>Handler <code>index.handler</code>, architecture <code>arm64</code>.</li>
@@ -431,7 +414,7 @@
       <li><code>REGION</code> env passed to Node AWS SDK so S3 clients target ap-northeast-1.</li>
     </ul>
   </div>
-  <p class="note">Pipeline shape: <strong>avatar</strong> is a single resize (200²). <strong>food</strong> is a two-stage chain — <code>food-resizing</code> (400²) writes output then directly invokes <code>food-detail-resizing</code> (800²) via <code>lambda:InvokeFunction</code>.</p>
+  <p class="note">Pipeline shape: a single upload-triggered function. <code>RESIZE_JOBS</code> (JSON env) maps a source prefix to the variants written in one invocation — <code>avatars/</code> → <code>avatar</code> 200²; <code>food/</code> → <code>food</code> 400² + <code>food-detail</code> 800². A new size or surface is a config edit, not new infrastructure.</p>
 </section>
 
 <!-- ===================================================== -->
@@ -440,17 +423,14 @@
   <p>Source: <code>s3.tf</code> (notification) + <code>lambda.tf</code> (permissions).</p>
   <table>
     <tr><th>Resource</th><th>What it wires</th></tr>
-    <tr><td><code>aws_s3_bucket_notification.private_storage</code></td><td>On <code>private-notism-storage</code>: <code>s3:ObjectCreated:*</code> with <code>filter_prefix=avatars/</code> → avatar-resizing; <code>food/</code> → food-resizing</td></tr>
-    <tr><td><code>aws_lambda_permission.s3_invoke_avatar_resizing</code></td><td>Resource policy: principal <code>s3.amazonaws.com</code>, source = private bucket ARN + account guard</td></tr>
-    <tr><td><code>aws_lambda_permission.s3_invoke_food_resizing</code></td><td>Same, for food-resizing. Notification <code>depends_on</code> both permissions.</td></tr>
+    <tr><td><code>aws_s3_bucket_notification.private_storage</code></td><td>On <code>private-notism-storage</code>: <code>s3:ObjectCreated:*</code> with <code>filter_prefix=avatars/</code> and <code>filter_prefix=food/</code> → both wired to image-resizing</td></tr>
+    <tr><td><code>aws_lambda_permission.s3_invoke_image_resizing</code></td><td>Resource policy: principal <code>s3.amazonaws.com</code>, source = private bucket ARN + account guard. Notification <code>depends_on</code> this permission.</td></tr>
   </table>
   <div class="diagram">
 upload → <span class="g">private-notism-storage</span>
-            ├── <span class="m">avatars/*</span>  ──ObjectCreated──▶ <span class="t">avatar-resizing</span> ──200²──▶ <span class="g">public-notism-storage</span>
-            └── <span class="m">food/*</span>     ──ObjectCreated──▶ <span class="t">food-resizing</span>  ──400²──▶ <span class="g">public-notism-storage</span>
-                                                       │ lambda:InvokeFunction
-                                                       ▼
-                                              <span class="t">food-detail-resizing</span> ──800²──▶ <span class="g">public-notism-storage/food-detail</span>
+            ├── <span class="m">avatars/*</span>  ──ObjectCreated──┐
+            └── <span class="m">food/*</span>     ──ObjectCreated──┴─▶ <span class="t">image-resizing</span> ──▶ <span class="g">public-notism-storage</span>
+                                                                  avatar 200² · food 400² · food-detail 800²
   </div>
 </section>
 
@@ -462,7 +442,7 @@ upload → <span class="g">private-notism-storage</span>
   <h3>Lambda execution role — <code>notism-image-resizing-role</code></h3>
   <ul>
     <li>Trust: <code>lambda.amazonaws.com</code> assume role.</li>
-    <li>Inline <code>notism-s3-actions</code>: <code>s3:GetObject/PutObject/DeleteObject</code> on both storage buckets (<code>/*</code>); <code>lambda:InvokeFunction</code> on <code>food-detail-resizing</code> (the chain hop).</li>
+    <li>Inline <code>notism-s3-actions</code>: <code>s3:GetObject/PutObject/DeleteObject</code> on both storage buckets (<code>/*</code>).</li>
     <li>Managed: <code>AWSLambdaBasicExecutionRole</code> (CloudWatch Logs).</li>
   </ul>
 
@@ -544,7 +524,7 @@ upload → <span class="g">private-notism-storage</span>
 
   <div class="card teal">
     <h3 style="margin-top:0">C. Image upload &amp; resize</h3>
-    Client/API uploads original to <code>private-notism-storage</code> under <code>avatars/</code> or <code>food/</code> → S3 ObjectCreated event → Lambda resizes (sharp) → writes to <code>public-notism-storage</code>. <code>food</code> chains into <code>food-detail-resizing</code> (800²). Public resized images served directly (public-read) or referenced by the SPA.
+    Client/API uploads original to <code>private-notism-storage</code> under <code>avatars/</code> or <code>food/</code> → S3 ObjectCreated event → <code>image-resizing</code> resizes (sharp) and writes every variant for that prefix to <code>public-notism-storage</code> in one invocation (<code>avatars/</code> → avatar 200²; <code>food/</code> → food 400² + food-detail 800²). Public resized images served directly (public-read) or referenced by the SPA.
   </div>
 
   <div class="card purple">
@@ -581,23 +561,21 @@ upload → <span class="g">private-notism-storage</span>
     <tr><td>26–28</td><td><code>aws_s3_bucket_policy.*</code></td><td>Bucket policies ×3</td><td>region</td></tr>
     <tr><td>29</td><td><code>aws_cloudfront_origin_access_control.web_prod</code></td><td>CloudFront OAC</td><td>global</td></tr>
     <tr><td>30</td><td><code>aws_cloudfront_distribution.web_prod</code></td><td>CloudFront distribution</td><td>global</td></tr>
-    <tr><td>31</td><td><code>aws_lambda_function.avatar_resizing</code></td><td>Lambda 128MB/3s</td><td>region</td></tr>
-    <tr><td>32</td><td><code>aws_lambda_function.food_resizing</code></td><td>Lambda 256MB/30s</td><td>region</td></tr>
-    <tr><td>33</td><td><code>aws_lambda_function.food_detail_resizing</code></td><td>Lambda 256MB/30s</td><td>region</td></tr>
-    <tr><td>34–35</td><td><code>aws_lambda_permission.s3_invoke_*</code></td><td>Lambda resource policies ×2</td><td>region</td></tr>
-    <tr><td>36</td><td><code>aws_iam_role.lambda_image_resizing</code></td><td>IAM role (Lambda)</td><td>global</td></tr>
-    <tr><td>37</td><td><code>aws_iam_role_policy.lambda_image_resizing_s3</code></td><td>IAM inline (S3+invoke)</td><td>global</td></tr>
-    <tr><td>38</td><td><code>aws_iam_role_policy_attachment.lambda_image_resizing_basic_execution</code></td><td>AWSLambdaBasicExecutionRole</td><td>global</td></tr>
-    <tr><td>39</td><td><code>aws_iam_role.ec2</code></td><td>IAM role (EC2)</td><td>global</td></tr>
-    <tr><td>40</td><td><code>aws_iam_role_policy.ec2_s3</code></td><td>IAM inline (S3)</td><td>global</td></tr>
-    <tr><td>41</td><td><code>aws_iam_role_policy_attachment.ec2_ecr</code></td><td>AmazonEC2ContainerRegistryReadOnly</td><td>global</td></tr>
-    <tr><td>42</td><td><code>aws_iam_instance_profile.ec2</code></td><td>EC2 instance profile</td><td>global</td></tr>
-    <tr><td>43</td><td><code>aws_iam_openid_connect_provider.github_actions</code></td><td>IAM OIDC provider</td><td>global</td></tr>
-    <tr><td>44</td><td><code>aws_iam_role.api_deploy</code></td><td>IAM role (GH OIDC, API)</td><td>global</td></tr>
-    <tr><td>45–47</td><td><code>aws_iam_role_policy_attachment.api_deploy_*</code></td><td>CloudFront/ECR/ECS managed ×3</td><td>global</td></tr>
-    <tr><td>48</td><td><code>aws_iam_role_policy.api_deploy_ec2_start</code></td><td>IAM inline (ec2:StartInstances)</td><td>global</td></tr>
-    <tr><td>49</td><td><code>aws_iam_role.web_deploy</code></td><td>IAM role (GH OIDC, web)</td><td>global</td></tr>
-    <tr><td>50–51</td><td><code>aws_iam_role_policy_attachment.web_deploy_*</code></td><td>CloudFront/S3 managed ×2</td><td>global</td></tr>
+    <tr><td>31</td><td><code>aws_lambda_function.image_resizing</code></td><td>Lambda 256MB/30s</td><td>region</td></tr>
+    <tr><td>32</td><td><code>aws_lambda_permission.s3_invoke_image_resizing</code></td><td>Lambda resource policy</td><td>region</td></tr>
+    <tr><td>33</td><td><code>aws_iam_role.lambda_image_resizing</code></td><td>IAM role (Lambda)</td><td>global</td></tr>
+    <tr><td>34</td><td><code>aws_iam_role_policy.lambda_image_resizing_s3</code></td><td>IAM inline (S3)</td><td>global</td></tr>
+    <tr><td>35</td><td><code>aws_iam_role_policy_attachment.lambda_image_resizing_basic_execution</code></td><td>AWSLambdaBasicExecutionRole</td><td>global</td></tr>
+    <tr><td>36</td><td><code>aws_iam_role.ec2</code></td><td>IAM role (EC2)</td><td>global</td></tr>
+    <tr><td>37</td><td><code>aws_iam_role_policy.ec2_s3</code></td><td>IAM inline (S3)</td><td>global</td></tr>
+    <tr><td>38</td><td><code>aws_iam_role_policy_attachment.ec2_ecr</code></td><td>AmazonEC2ContainerRegistryReadOnly</td><td>global</td></tr>
+    <tr><td>39</td><td><code>aws_iam_instance_profile.ec2</code></td><td>EC2 instance profile</td><td>global</td></tr>
+    <tr><td>40</td><td><code>aws_iam_openid_connect_provider.github_actions</code></td><td>IAM OIDC provider</td><td>global</td></tr>
+    <tr><td>41</td><td><code>aws_iam_role.api_deploy</code></td><td>IAM role (GH OIDC, API)</td><td>global</td></tr>
+    <tr><td>42–44</td><td><code>aws_iam_role_policy_attachment.api_deploy_*</code></td><td>CloudFront/ECR/ECS managed ×3</td><td>global</td></tr>
+    <tr><td>45</td><td><code>aws_iam_role_policy.api_deploy_ec2_start</code></td><td>IAM inline (ec2:StartInstances)</td><td>global</td></tr>
+    <tr><td>46</td><td><code>aws_iam_role.web_deploy</code></td><td>IAM role (GH OIDC, web)</td><td>global</td></tr>
+    <tr><td>47–48</td><td><code>aws_iam_role_policy_attachment.web_deploy_*</code></td><td>CloudFront/S3 managed ×2</td><td>global</td></tr>
   </table>
 
   <h3>Data sources (read-only lookups)</h3>

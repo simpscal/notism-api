@@ -39,7 +39,7 @@ Detailed documentation is available in the `docs/` directory:
 | `docs/rules/naming.md` | Naming conventions for aggregates, handlers, requests |
 | `docs/rules/code-organization.md` | Feature folder layout and endpoint grouping |
 | `docs/rules/additional-practices.md` | Aggregate roots, value objects, private constructors |
-| `docs/flows/image-resizing.md` | Image upload and resizing flow |
+| `docs/infra/aws-architecture.html` | AWS infrastructure — incl. the image-resizing pipeline |
 | `docs/flows/secure-authentication-cookies.md` | Auth cookie security flow |
 
 ## Technologies
