@@ -16,17 +16,20 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
 {
     private readonly ICartItemRepository _cartItemRepository;
     private readonly IReadDbContext _readDbContext;
+    private readonly IStorageService _storageService;
     private readonly ILogger<UpdateCartItemCustomisationsHandler> _logger;
     private readonly IMessages _messages;
 
     public UpdateCartItemCustomisationsHandler(
         ICartItemRepository cartItemRepository,
         IReadDbContext readDbContext,
+        IStorageService storageService,
         ILogger<UpdateCartItemCustomisationsHandler> logger,
         IMessages messages)
     {
         _cartItemRepository = cartItemRepository;
         _readDbContext = readDbContext;
+        _storageService = storageService;
         _logger = logger;
         _messages = messages;
     }
@@ -86,6 +89,6 @@ public class UpdateCartItemCustomisationsHandler : IRequestHandler<UpdateCartIte
             cartItem.Id,
             request.UserId);
 
-        return UpdateCartItemCustomisationsResponse.FromDomain(cartItem);
+        return UpdateCartItemCustomisationsResponse.FromDomain(cartItem, _storageService);
     }
 }

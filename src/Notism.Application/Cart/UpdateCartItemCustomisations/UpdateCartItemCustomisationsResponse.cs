@@ -1,4 +1,6 @@
 using Notism.Application.Cart.Common;
+using Notism.Application.Common.Constants;
+using Notism.Application.Common.Services;
 using Notism.Domain.Cart;
 using Notism.Shared.Extensions;
 
@@ -6,7 +8,9 @@ namespace Notism.Application.Cart.UpdateCartItemCustomisations;
 
 public sealed record UpdateCartItemCustomisationsResponse : CartItemResponse
 {
-    public static UpdateCartItemCustomisationsResponse FromDomain(CartItem cartItem)
+    public static UpdateCartItemCustomisationsResponse FromDomain(
+        CartItem cartItem,
+        IStorageService storageService)
     {
         var customisations = cartItem.Customisations
             .Select(c =>
@@ -25,7 +29,7 @@ public sealed record UpdateCartItemCustomisationsResponse : CartItemResponse
             Description = cartItem.Food.Description,
             Price = cartItem.Food.Price,
             DiscountPrice = cartItem.Food.DiscountPrice,
-            ImageUrl = cartItem.Food.Images.FirstOrDefault()?.FileKey ?? string.Empty,
+            ImageUrl = GetImageUrl(cartItem.Food.Images, storageService),
             Category = cartItem.Food.Category?.Name ?? string.Empty,
             Quantity = cartItem.Quantity,
             StockQuantity = cartItem.Food.StockQuantity,
@@ -33,5 +37,15 @@ public sealed record UpdateCartItemCustomisationsResponse : CartItemResponse
             Customisations = customisations,
             TotalSurcharge = cartItem.TotalSurcharge,
         };
+    }
+
+    private static string GetImageUrl(
+        IReadOnlyCollection<Domain.Food.FoodImage> images,
+        IStorageService storageService)
+    {
+        var firstImage = images.OrderBy(img => img.DisplayOrder).FirstOrDefault();
+        return firstImage == null
+            ? string.Empty
+            : storageService.GetPublicUrl(firstImage.FileKey, StorageTypeConstants.Food);
     }
 }

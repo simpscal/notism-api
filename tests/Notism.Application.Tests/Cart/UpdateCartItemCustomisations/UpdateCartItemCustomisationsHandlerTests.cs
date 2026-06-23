@@ -5,6 +5,7 @@ using FluentAssertions;
 using Microsoft.Extensions.Logging;
 
 using Notism.Application.Cart.UpdateCartItemCustomisations;
+using Notism.Application.Common.Constants;
 using Notism.Application.Common.Services;
 using Notism.Application.Tests.Common;
 using Notism.Domain.Cart;
@@ -21,6 +22,7 @@ public class UpdateCartItemCustomisationsHandlerTests : IDisposable
 {
     private readonly WriteHandlerContext _context;
     private readonly IMessages _messages;
+    private readonly IStorageService _storageService;
     private readonly UpdateCartItemCustomisationsHandler _handler;
 
     public UpdateCartItemCustomisationsHandlerTests()
@@ -32,9 +34,15 @@ public class UpdateCartItemCustomisationsHandlerTests : IDisposable
         _messages.CustomisationOptionNotFound.Returns("Customisation option not found");
         _messages.CartItemNotBelongToUser.Returns("Cart item does not belong to the user");
 
+        _storageService = Substitute.For<IStorageService>();
+        _storageService
+            .GetPublicUrl(Arg.Any<string>(), Arg.Any<string>())
+            .Returns(call => $"https://cdn.test/{call.ArgAt<string>(0)}");
+
         _handler = new UpdateCartItemCustomisationsHandler(
             new CartItemRepository(_context.DbContext),
             _context.DbContext,
+            _storageService,
             Substitute.For<ILogger<UpdateCartItemCustomisationsHandler>>(),
             _messages);
     }
@@ -72,6 +80,37 @@ public class UpdateCartItemCustomisationsHandlerTests : IDisposable
             .Where(c => c.CartItemId == cartItem.Id)
             .ToList();
         persisted.Should().ContainSingle(c => c.CustomisationOptionId == option.Id);
+    }
+
+    [Fact]
+    public async Task Handle_WhenFoodHasImage_ReturnsPublicImageUrlNotRawFileKey()
+    {
+        var userId = Guid.NewGuid();
+        var food = CreateFood();
+        food.AddImage("food/raw-key.jpg", 0);
+        var group = FoodCustomisationGroup.Create(food.Id, "Size", true, 1);
+        group.AddOption("Large", 5000m, 1);
+        food.AddCustomisationGroup(group);
+        var cartItem = CreateCartItem(userId, food);
+        await _context.SeedAsync(food, cartItem);
+
+        var option = group.Options.First();
+
+        var request = new UpdateCartItemCustomisationsRequest
+        {
+            CartItemId = cartItem.Id,
+            UserId = userId,
+            Customisations = new List<CartItemCustomisationSelection>
+            {
+                new CartItemCustomisationSelection { GroupId = group.Id, OptionId = option.Id },
+            },
+        };
+
+        var result = await _handler.Handle(request, CancellationToken.None);
+
+        result.ImageUrl.Should().Be("https://cdn.test/food/raw-key.jpg");
+        result.ImageUrl.Should().NotBe("food/raw-key.jpg");
+        _storageService.Received().GetPublicUrl("food/raw-key.jpg", StorageTypeConstants.Food);
     }
 
     [Fact]

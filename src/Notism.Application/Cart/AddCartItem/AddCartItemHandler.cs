@@ -141,7 +141,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             newQuantity,
             existingCartItem.UserId);
 
-        return AddCartItemResponse.FromDomain(existingCartItem, existingCartItem.Food, food);
+        return AddCartItemResponse.FromDomain(existingCartItem, existingCartItem.Food, food, _storageService);
     }
 
     private async Task<AddCartItemResponse> CreateNewCartItemAsync(Domain.Food.Food food)
@@ -171,7 +171,7 @@ public class AddCartItemHandler : IRequestHandler<AddCartItemRequest, AddCartIte
             cartItem.Id,
             _request.UserId);
 
-        return AddCartItemResponse.FromDomain(cartItem, food, food);
+        return AddCartItemResponse.FromDomain(cartItem, food, food, _storageService);
     }
 
     private static IEnumerable<FoodCustomisationOption> GetRequiredGroupDefaults(
