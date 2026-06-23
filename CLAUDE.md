@@ -60,8 +60,22 @@ docs/                       # Architecture and feature documentation
 
 ## Infrastructure (Terraform)
 
-`terraform/` (`main.tf`, `variables.tf`, `outputs.tf`). Deploy: `terraform apply -var="key_name=notism-api"`.
-Resources: VPC, EC2 (t4g.micro), RDS PostgreSQL (optional), ECR, S3, CloudFront.
+`terraform/` is split into reusable modules, per-env roots, and shared global IAM:
+
+```
+terraform/
+  modules/{vpc,storage,compute}/   # reusable, no provider/backend blocks
+  environments/{production,staging,development}/  # module calls + glue + backend
+  global/                          # GitHub OIDC + api/web deploy roles (own state)
+```
+
+- DB is external Supabase — no RDS resource.
+- `storage` = S3 buckets only; the S3↔CloudFront↔Lambda glue (bucket policies, CORS,
+  notification, lambda permission) lives at each env root to break the module cycle.
+- Remote state: S3 bucket `notism-terraform-state` + DynamoDB lock `notism-terraform-locks`
+  (ap-northeast-1), one key per root. `global` keeps `import {}` blocks for the
+  pre-existing IAM. Per-env root carries `moved.tf` (zero-recreation relocation).
+- Deploy (production): `cd terraform/environments/production && terraform apply`.
 
 ## CI/CD
 

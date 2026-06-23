@@ -1,3 +1,5 @@
+data "aws_caller_identity" "current" {}
+
 # ------------------------------------------------------------------------------
 # GitHub Actions OIDC Provider
 #
@@ -64,9 +66,11 @@ resource "aws_iam_role_policy_attachment" "api_deploy_ecr" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
 }
 
-# NEW (the only intended apply-time change): grant the deploy role permission to
-# start the API EC2 instance for the deploy auto-start step.
-#   - ec2:StartInstances is scoped to the api instance ARN.
+# Grant the deploy role permission to start the API EC2 instance for the deploy
+# auto-start step.
+#   - ec2:StartInstances is scoped to the api instance ARN. The instance lives
+#     in environments/production state; its id is passed via var.api_instance_id
+#     to avoid a cross-state circular reference (see variables.tf).
 #   - ec2:DescribeInstances / ec2:DescribeInstanceStatus do NOT support
 #     resource-level scoping and must use "*".
 resource "aws_iam_role_policy" "api_deploy_ec2_start" {
@@ -79,7 +83,7 @@ resource "aws_iam_role_policy" "api_deploy_ec2_start" {
       {
         Effect   = "Allow"
         Action   = "ec2:StartInstances"
-        Resource = "arn:aws:ec2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:instance/${aws_instance.api.id}"
+        Resource = "arn:aws:ec2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:instance/${var.api_instance_id}"
       },
       {
         Effect = "Allow"
@@ -143,8 +147,13 @@ resource "aws_iam_role_policy_attachment" "web_deploy_s3" {
 # ------------------------------------------------------------------------------
 # Config-driven imports (Terraform >= 1.5) for the resources that already exist
 # in the AWS account. These reconcile the live state into Terraform with no
-# create. The new inline policy (api_deploy_ec2_start) has NO import block — it
-# is the one intended create.
+# create.
+#
+# At cutover these resources are first removed from the production state
+# (terraform state rm) since this global root takes ownership of them in a
+# separate state file. The api_deploy_ec2_start inline policy carries no import
+# block because it is managed by name as part of the api_deploy role; if it does
+# not yet exist in the live account it will be created on the first global apply.
 # ------------------------------------------------------------------------------
 
 # NOTE: Terraform 1.5 import block ids must be literal strings (no variable or
@@ -164,6 +173,15 @@ import {
 import {
   to = aws_iam_role.web_deploy
   id = "notism-web-deploy"
+}
+
+# api_deploy_ec2_start exists live once the production root has been applied at
+# least once (it was the original "intended create" in the flat layout). On the
+# first global apply it is removed from the production state and imported here so
+# it is adopted, not recreated. Inline role policy import id is "<role>:<policy>".
+import {
+  to = aws_iam_role_policy.api_deploy_ec2_start
+  id = "notism-api-deploy-role:notism-api-deploy-ec2-start"
 }
 
 import {

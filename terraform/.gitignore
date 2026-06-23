@@ -4,6 +4,9 @@
 *.tfstate.*
 *.tfvars
 !example.tfvars
+# Per-environment tfvars hold non-secret config (region, environment tag,
+# key pair name) and are committed so each root is reproducible.
+!environments/*/terraform.tfvars
 .db_password
 .terraform.tfstate.lock.info
 crash.log
@@ -13,6 +16,8 @@ override.tf.json
 *_override.tf
 *_override.tf.json
 
-lambda-packages/
-lambda-src/*/package-lock.json
+# Lambda build artifacts (zip is built + uploaded out of band).
+modules/compute/lambda-packages/
+modules/compute/lambda-src/*/package-lock.json
+modules/compute/lambda-src/*/node_modules/
 tfplan*
