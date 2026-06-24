@@ -1,38 +1,10 @@
 data "aws_caller_identity" "current" {}
 
 # ------------------------------------------------------------------------------
-# Modules
-# ------------------------------------------------------------------------------
-
-module "vpc" {
-  source = "../../modules/vpc"
-
-  vpc_cidr           = var.vpc_cidr
-  public_subnet_cidr = var.public_subnet_cidr
-}
-
-module "storage" {
-  source = "../../modules/storage"
-}
-
-module "compute" {
-  source = "../../modules/compute"
-
-  aws_region                           = var.aws_region
-  vpc_id                               = module.vpc.vpc_id
-  public_subnet_id                     = module.vpc.public_subnet_id
-  key_name                             = var.key_name
-  private_storage_arn                  = module.storage.private_storage_arn
-  public_storage_arn                   = module.storage.public_storage_arn
-  web_prod_bucket_regional_domain_name = module.storage.web_prod_bucket_regional_domain_name
-}
-
-# ------------------------------------------------------------------------------
 # Glue — cross-cutting resources that reference BOTH storage and compute.
 #
 # These wire the S3 ↔ CloudFront ↔ Lambda relationships at the root to break the
-# module dependency cycle. They keep their original top-level addresses, so no
-# moved {} blocks are required for them.
+# module dependency cycle.
 # ------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------

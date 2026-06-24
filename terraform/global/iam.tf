@@ -5,7 +5,6 @@ data "aws_caller_identity" "current" {}
 #
 # Shared by the notism-api and notism-web deploy roles so GitHub Actions can
 # assume those roles via web identity federation (no long-lived AWS keys).
-# Created originally by hand in the console; imported into Terraform below.
 # ------------------------------------------------------------------------------
 
 resource "aws_iam_openid_connect_provider" "github_actions" {
@@ -142,64 +141,4 @@ resource "aws_iam_role_policy_attachment" "web_deploy_cloudfront" {
 resource "aws_iam_role_policy_attachment" "web_deploy_s3" {
   role       = aws_iam_role.web_deploy.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-}
-
-# ------------------------------------------------------------------------------
-# Config-driven imports (Terraform >= 1.5) for the resources that already exist
-# in the AWS account. These reconcile the live state into Terraform with no
-# create.
-#
-# At cutover these resources are first removed from the production state
-# (terraform state rm) since this global root takes ownership of them in a
-# separate state file. The api_deploy_ec2_start inline policy carries no import
-# block because it is managed by name as part of the api_deploy role; if it does
-# not yet exist in the live account it will be created on the first global apply.
-# ------------------------------------------------------------------------------
-
-# NOTE: Terraform 1.5 import block ids must be literal strings (no variable or
-# data-source interpolation), so the account id is inlined here. This is only an
-# import locator for an existing resource, not infrastructure config — the
-# policy/trust ARNs above still derive the account from aws_caller_identity.
-import {
-  to = aws_iam_openid_connect_provider.github_actions
-  id = "arn:aws:iam::249550149516:oidc-provider/token.actions.githubusercontent.com"
-}
-
-import {
-  to = aws_iam_role.api_deploy
-  id = "notism-api-deploy-role"
-}
-
-import {
-  to = aws_iam_role.web_deploy
-  id = "notism-web-deploy"
-}
-
-# api_deploy_ec2_start exists live once the production root has been applied at
-# least once (it was the original "intended create" in the flat layout). On the
-# first global apply it is removed from the production state and imported here so
-# it is adopted, not recreated. Inline role policy import id is "<role>:<policy>".
-import {
-  to = aws_iam_role_policy.api_deploy_ec2_start
-  id = "notism-api-deploy-role:notism-api-deploy-ec2-start"
-}
-
-import {
-  to = aws_iam_role_policy_attachment.api_deploy_cloudfront
-  id = "notism-api-deploy-role/arn:aws:iam::aws:policy/CloudFrontFullAccess"
-}
-
-import {
-  to = aws_iam_role_policy_attachment.api_deploy_ecr
-  id = "notism-api-deploy-role/arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
-}
-
-import {
-  to = aws_iam_role_policy_attachment.web_deploy_cloudfront
-  id = "notism-web-deploy/arn:aws:iam::aws:policy/CloudFrontFullAccess"
-}
-
-import {
-  to = aws_iam_role_policy_attachment.web_deploy_s3
-  id = "notism-web-deploy/arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }
