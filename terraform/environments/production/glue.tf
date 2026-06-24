@@ -1,7 +1,7 @@
 data "aws_caller_identity" "current" {}
 
 # ------------------------------------------------------------------------------
-# Glue — cross-cutting resources that reference BOTH storage and compute.
+# Glue — cross-cutting resources that wire storage to the cdn and compute modules.
 #
 # These wire the S3 ↔ CloudFront ↔ Lambda relationships at the root to break the
 # module dependency cycle.
@@ -19,8 +19,8 @@ resource "aws_s3_bucket_cors_configuration" "private_storage" {
     allowed_methods = ["PUT", "GET", "DELETE", "HEAD"]
     allowed_origins = [
       "http://localhost:4200",
-      "https://${module.compute.cloudfront_web_prod_domain_name}",
-      "http://${module.compute.cloudfront_web_prod_domain_name}",
+      "https://${module.cdn.cloudfront_web_prod_domain_name}",
+      "http://${module.cdn.cloudfront_web_prod_domain_name}",
     ]
     expose_headers  = ["ETag", "x-amz-server-side-encryption", "x-amz-request-id", "x-amz-id-2"]
     max_age_seconds = 3000
@@ -103,8 +103,8 @@ resource "aws_s3_bucket_policy" "private_storage" {
           StringLike = {
             "aws:Referer" = [
               "http://localhost:4200/*",
-              "https://${module.compute.cloudfront_web_prod_domain_name}/*",
-              "http://${module.compute.cloudfront_web_prod_domain_name}/*",
+              "https://${module.cdn.cloudfront_web_prod_domain_name}/*",
+              "http://${module.cdn.cloudfront_web_prod_domain_name}/*",
             ]
           }
         }
@@ -147,7 +147,7 @@ resource "aws_s3_bucket_policy" "web_prod" {
         Resource = "${module.storage.web_prod_arn}/*"
         Condition = {
           ArnLike = {
-            "AWS:SourceArn" = module.compute.cloudfront_web_prod_arn
+            "AWS:SourceArn" = module.cdn.cloudfront_web_prod_arn
           }
         }
       }

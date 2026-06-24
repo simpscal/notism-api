@@ -74,10 +74,10 @@ output "s3_web_prod_arn" {
 
 output "cloudfront_web_prod_domain_name" {
   description = "CloudFront domain name for prod frontend"
-  value       = module.compute.cloudfront_web_prod_domain_name
+  value       = module.cdn.cloudfront_web_prod_domain_name
 }
 
 output "cloudfront_web_prod_distribution_id" {
   description = "CloudFront distribution ID for prod frontend"
-  value       = module.compute.cloudfront_web_prod_distribution_id
+  value       = module.cdn.cloudfront_web_prod_distribution_id
 }

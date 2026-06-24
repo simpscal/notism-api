@@ -29,8 +29,3 @@ variable "public_storage_arn" {
   description = "ARN of the public storage S3 bucket (for EC2 + Lambda IAM policies)"
   type        = string
 }
-
-variable "web_prod_bucket_regional_domain_name" {
-  description = "Regional domain name of the prod frontend bucket (CloudFront origin)"
-  type        = string
-}
