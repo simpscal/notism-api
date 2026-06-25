@@ -14,13 +14,13 @@ namespace Notism.Application.Order.EventHandlers;
 public class RefundPaidHandler : INotificationHandler<RefundPaidEvent>
 {
     private readonly IReadDbContext _readDbContext;
-    private readonly IPaymentNotifier _paymentNotifier;
+    private readonly INotifier _paymentNotifier;
     private readonly IEmailService _emailService;
     private readonly ILogger<RefundPaidHandler> _logger;
 
     public RefundPaidHandler(
         IReadDbContext readDbContext,
-        IPaymentNotifier paymentNotifier,
+        INotifier paymentNotifier,
         IEmailService emailService,
         ILogger<RefundPaidHandler> logger)
     {

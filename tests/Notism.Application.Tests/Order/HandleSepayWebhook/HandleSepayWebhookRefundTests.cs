@@ -31,7 +31,7 @@ public class HandleSepayWebhookRefundTests : IDisposable
             new OrderRepository(_context.DbContext),
             _context.DbContext,
             Substitute.For<ISender>(),
-            Substitute.For<IPaymentNotifier>(),
+            Substitute.For<INotifier>(),
             Substitute.For<ILogger<HandleSepayWebhookHandler>>());
     }
 

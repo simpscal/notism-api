@@ -16,14 +16,14 @@ namespace Notism.Application.Order.EventHandlers;
 public class OrderPlacedHandler : INotificationHandler<OrderCreatedEvent>
 {
     private readonly IReadDbContext _readDbContext;
-    private readonly IPaymentNotifier _paymentNotifier;
+    private readonly INotifier _paymentNotifier;
     private readonly IEmailService _emailService;
     private readonly EmailSettings _emailSettings;
     private readonly ILogger<OrderPlacedHandler> _logger;
 
     public OrderPlacedHandler(
         IReadDbContext readDbContext,
-        IPaymentNotifier paymentNotifier,
+        INotifier paymentNotifier,
         IEmailService emailService,
         IOptions<EmailSettings> emailSettings,
         ILogger<OrderPlacedHandler> logger)

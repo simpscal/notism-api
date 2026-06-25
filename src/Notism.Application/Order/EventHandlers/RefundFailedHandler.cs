@@ -9,11 +9,11 @@ namespace Notism.Application.Order.EventHandlers;
 
 public class RefundFailedHandler : INotificationHandler<RefundFailedEvent>
 {
-    private readonly IPaymentNotifier _paymentNotifier;
+    private readonly INotifier _paymentNotifier;
     private readonly ILogger<RefundFailedHandler> _logger;
 
     public RefundFailedHandler(
-        IPaymentNotifier paymentNotifier,
+        INotifier paymentNotifier,
         ILogger<RefundFailedHandler> logger)
     {
         _paymentNotifier = paymentNotifier;

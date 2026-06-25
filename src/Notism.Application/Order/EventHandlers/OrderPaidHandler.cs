@@ -7,9 +7,9 @@ namespace Notism.Application.Order.EventHandlers;
 
 public class OrderPaidHandler : INotificationHandler<OrderPaidEvent>
 {
-    private readonly IPaymentNotifier _paymentNotifier;
+    private readonly INotifier _paymentNotifier;
 
-    public OrderPaidHandler(IPaymentNotifier paymentNotifier)
+    public OrderPaidHandler(INotifier paymentNotifier)
         => _paymentNotifier = paymentNotifier;
 
     public Task Handle(OrderPaidEvent notification, CancellationToken cancellationToken)

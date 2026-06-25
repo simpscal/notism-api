@@ -20,7 +20,7 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
     private readonly IOrderRepository _orderRepository;
     private readonly IReadDbContext _readDbContext;
     private readonly ISender _sender;
-    private readonly IPaymentNotifier _paymentNotifier;
+    private readonly INotifier _paymentNotifier;
     private readonly ILogger<HandleSepayWebhookHandler> _logger;
 
     public HandleSepayWebhookHandler(
@@ -28,7 +28,7 @@ public class HandleSepayWebhookHandler : IRequestHandler<HandleSepayWebhookReque
         IOrderRepository orderRepository,
         IReadDbContext readDbContext,
         ISender sender,
-        IPaymentNotifier paymentNotifier,
+        INotifier paymentNotifier,
         ILogger<HandleSepayWebhookHandler> logger)
     {
         _bankingCheckoutRepository = bankingCheckoutRepository;
