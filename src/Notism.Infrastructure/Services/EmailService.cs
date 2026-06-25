@@ -86,11 +86,40 @@ public class EmailService : IEmailService
         _logger.LogInformation("Refund-paid email sent successfully to {Email} for order {OrderRef}", email.Value, orderRef);
     }
 
+    public async Task SendNewOrderEmailAsync(
+        string? opsRecipient,
+        string orderNumber,
+        DateTime placedAt,
+        decimal total)
+    {
+        if (string.IsNullOrWhiteSpace(opsRecipient))
+        {
+            _logger.LogWarning(
+                "Ops recipient is not configured; skipping new-order email for order {OrderNumber}", orderNumber);
+            return;
+        }
+
+        var subject = $"New order {orderNumber} placed";
+
+        var htmlContent = LoadEmailTemplate("OrderPlaced.html")
+            .Replace("{{ORDER_NUMBER}}", orderNumber)
+            .Replace("{{PLACED_AT}}", FormatDateTime(placedAt))
+            .Replace("{{TOTAL}}", FormatVnd(total))
+            .Replace("{{YEAR}}", DateTime.UtcNow.Year.ToString());
+
+        await SendEmailAsync(opsRecipient, subject, htmlContent);
+
+        _logger.LogInformation("New-order email sent successfully to ops for order {OrderNumber}", orderNumber);
+    }
+
     private static string FormatVnd(decimal amount)
         => $"{amount.ToString("#,##0", CultureInfo.InvariantCulture)} ₫";
 
     private static string FormatDate(DateTime date)
         => date.ToString("dd MMM yyyy", CultureInfo.InvariantCulture);
+
+    private static string FormatDateTime(DateTime date)
+        => date.ToString("dd MMM yyyy HH:mm", CultureInfo.InvariantCulture);
 
     private async Task SendEmailAsync(string toEmail, string subject, string htmlContent)
     {

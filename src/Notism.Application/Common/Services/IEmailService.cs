@@ -14,4 +14,9 @@ public interface IEmailService
         string transferReference,
         DateTime sentDate,
         string orderSlugId);
+    Task SendNewOrderEmailAsync(
+        string? opsRecipient,
+        string orderNumber,
+        DateTime placedAt,
+        decimal total);
 }
