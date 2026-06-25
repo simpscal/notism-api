@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New order placed</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .container {
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            padding: 30px;
+            border: 1px solid #e0e0e0;
+        }
+
+        h2 {
+            color: #2c3e50;
+            margin-top: 0;
+        }
+
+        .order-banner {
+            background: linear-gradient(135deg, #2c3e50 0%, #4a6491 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .order-banner h1 {
+            margin: 0;
+            font-size: 28px;
+        }
+
+        .order-badge {
+            display: inline-block;
+            background-color: #dde6f5;
+            color: #2c3e50;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .facts {
+            background-color: #ffffff;
+            border-radius: 4px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .facts table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .facts td {
+            padding: 10px 0;
+            border-bottom: 1px solid #e0e0e0;
+            vertical-align: top;
+        }
+
+        .facts tr:last-child td {
+            border-bottom: none;
+        }
+
+        .facts .label {
+            color: #666666;
+            width: 45%;
+        }
+
+        .facts .value {
+            font-weight: bold;
+            text-align: right;
+        }
+
+        .footer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            font-size: 12px;
+            color: #666666;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="order-banner">
+            <div class="order-badge">New order</div>
+            <h1>Order {{ORDER_NUMBER}} placed</h1>
+        </div>
+
+        <h2>A new order has just been placed.</h2>
+        <p>Review the details below and start preparing it.</p>
+
+        <div class="facts">
+            <table>
+                <tr>
+                    <td class="label">Order number</td>
+                    <td class="value">{{ORDER_NUMBER}}</td>
+                </tr>
+                <tr>
+                    <td class="label">Placed at</td>
+                    <td class="value">{{PLACED_AT}}</td>
+                </tr>
+                <tr>
+                    <td class="label">Total</td>
+                    <td class="value">{{TOTAL}}</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p>This is an automated email, please do not reply.</p>
+            <p>&copy; {{YEAR}} Notism. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+
+</html>
