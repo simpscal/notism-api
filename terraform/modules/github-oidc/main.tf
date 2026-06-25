@@ -1,10 +1,16 @@
 # ------------------------------------------------------------------------------
 # GitHub Actions OIDC Provider
 #
+# Account-shared singleton: one OIDC provider + deploy roles per AWS account.
+# Instantiated by the prod env root only (see environments/prod/main.tf).
+#
 # Shared by the notism-api and notism-web deploy roles so GitHub Actions can
 # assume those roles via web identity federation (no long-lived AWS keys).
-# Created originally by hand in the console; imported into Terraform below.
+# Created originally by hand in the console; adopted into Terraform via import
+# blocks in the prod root.
 # ------------------------------------------------------------------------------
+
+data "aws_caller_identity" "current" {}
 
 resource "aws_iam_openid_connect_provider" "github_actions" {
   url             = "https://token.actions.githubusercontent.com"
@@ -64,8 +70,8 @@ resource "aws_iam_role_policy_attachment" "api_deploy_ecr" {
   policy_arn = "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
 }
 
-# NEW (the only intended apply-time change): grant the deploy role permission to
-# start the API EC2 instance for the deploy auto-start step.
+# Grant the deploy role permission to start the API EC2 instance for the deploy
+# auto-start step.
 #   - ec2:StartInstances is scoped to the api instance ARN.
 #   - ec2:DescribeInstances / ec2:DescribeInstanceStatus do NOT support
 #     resource-level scoping and must use "*".
@@ -79,7 +85,7 @@ resource "aws_iam_role_policy" "api_deploy_ec2_start" {
       {
         Effect   = "Allow"
         Action   = "ec2:StartInstances"
-        Resource = "arn:aws:ec2:${var.aws_region}:${data.aws_caller_identity.current.account_id}:instance/${aws_instance.api.id}"
+        Resource = var.api_instance_arn
       },
       {
         Effect = "Allow"
@@ -138,50 +144,4 @@ resource "aws_iam_role_policy_attachment" "web_deploy_cloudfront" {
 resource "aws_iam_role_policy_attachment" "web_deploy_s3" {
   role       = aws_iam_role.web_deploy.name
   policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-}
-
-# ------------------------------------------------------------------------------
-# Config-driven imports (Terraform >= 1.5) for the resources that already exist
-# in the AWS account. These reconcile the live state into Terraform with no
-# create. The new inline policy (api_deploy_ec2_start) has NO import block — it
-# is the one intended create.
-# ------------------------------------------------------------------------------
-
-# NOTE: Terraform 1.5 import block ids must be literal strings (no variable or
-# data-source interpolation), so the account id is inlined here. This is only an
-# import locator for an existing resource, not infrastructure config — the
-# policy/trust ARNs above still derive the account from aws_caller_identity.
-import {
-  to = aws_iam_openid_connect_provider.github_actions
-  id = "arn:aws:iam::249550149516:oidc-provider/token.actions.githubusercontent.com"
-}
-
-import {
-  to = aws_iam_role.api_deploy
-  id = "notism-api-deploy-role"
-}
-
-import {
-  to = aws_iam_role.web_deploy
-  id = "notism-web-deploy"
-}
-
-import {
-  to = aws_iam_role_policy_attachment.api_deploy_cloudfront
-  id = "notism-api-deploy-role/arn:aws:iam::aws:policy/CloudFrontFullAccess"
-}
-
-import {
-  to = aws_iam_role_policy_attachment.api_deploy_ecr
-  id = "notism-api-deploy-role/arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
-}
-
-import {
-  to = aws_iam_role_policy_attachment.web_deploy_cloudfront
-  id = "notism-web-deploy/arn:aws:iam::aws:policy/CloudFrontFullAccess"
-}
-
-import {
-  to = aws_iam_role_policy_attachment.web_deploy_s3
-  id = "notism-web-deploy/arn:aws:iam::aws:policy/AmazonS3FullAccess"
 }

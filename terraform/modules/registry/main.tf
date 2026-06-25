@@ -1,5 +1,9 @@
+locals {
+  ecr_repo_name = "notism-api${var.name_suffix}"
+}
+
 resource "aws_ecr_repository" "api" {
-  name                 = "notism-api"
+  name                 = local.ecr_repo_name
   image_tag_mutability = "MUTABLE"
 
   image_scanning_configuration {
@@ -7,6 +11,6 @@ resource "aws_ecr_repository" "api" {
   }
 
   tags = {
-    Name = "notism-api"
+    Name = local.ecr_repo_name
   }
 }

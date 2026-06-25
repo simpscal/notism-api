@@ -1,17 +1,23 @@
+locals {
+  private_storage_bucket = "private-notism-storage${var.name_suffix}"
+  public_storage_bucket  = "public-notism-storage${var.name_suffix}"
+  web_bucket             = "notism-web-prod${var.name_suffix}"
+}
+
 # ------------------------------------------------------------------------------
 # S3 Buckets
 # ------------------------------------------------------------------------------
 
 resource "aws_s3_bucket" "private_storage" {
-  bucket = "private-notism-storage"
+  bucket = local.private_storage_bucket
 }
 
 resource "aws_s3_bucket" "public_storage" {
-  bucket = "public-notism-storage"
+  bucket = local.public_storage_bucket
 }
 
 resource "aws_s3_bucket" "web_prod" {
-  bucket = "notism-web-prod"
+  bucket = local.web_bucket
 }
 
 # ------------------------------------------------------------------------------
@@ -122,8 +128,8 @@ resource "aws_s3_bucket_cors_configuration" "private_storage" {
     allowed_methods = ["PUT", "GET", "DELETE", "HEAD"]
     allowed_origins = [
       "http://localhost:4200",
-      "https://${aws_cloudfront_distribution.web_prod.domain_name}",
-      "http://${aws_cloudfront_distribution.web_prod.domain_name}",
+      "https://${var.cloudfront_domain_name}",
+      "http://${var.cloudfront_domain_name}",
     ]
     expose_headers  = ["ETag", "x-amz-server-side-encryption", "x-amz-request-id", "x-amz-id-2"]
     max_age_seconds = 3000
@@ -146,26 +152,26 @@ resource "aws_s3_bucket_cors_configuration" "public_storage" {
 # S3 Event Notifications
 #
 # private-notism-storage triggers the image-resizing pipeline:
-#   - ObjectCreated under avatar/ or food/ → notism-image-resizing
+#   - ObjectCreated under avatar/ or food/ -> notism-image-resizing
 # ------------------------------------------------------------------------------
 
 resource "aws_s3_bucket_notification" "private_storage" {
   bucket = aws_s3_bucket.private_storage.id
 
   lambda_function {
-    lambda_function_arn = aws_lambda_function.image_resizing.arn
+    lambda_function_arn = var.image_resizing_lambda_arn
     events              = ["s3:ObjectCreated:*"]
     filter_prefix       = "avatar/"
   }
 
   lambda_function {
-    lambda_function_arn = aws_lambda_function.image_resizing.arn
+    lambda_function_arn = var.image_resizing_lambda_arn
     events              = ["s3:ObjectCreated:*"]
     filter_prefix       = "food/"
   }
 
   depends_on = [
-    aws_lambda_permission.s3_invoke_image_resizing,
+    var.image_resizing_lambda_permission_id,
   ]
 }
 
@@ -193,8 +199,8 @@ resource "aws_s3_bucket_policy" "private_storage" {
           StringLike = {
             "aws:Referer" = [
               "http://localhost:4200/*",
-              "https://${aws_cloudfront_distribution.web_prod.domain_name}/*",
-              "http://${aws_cloudfront_distribution.web_prod.domain_name}/*",
+              "https://${var.cloudfront_domain_name}/*",
+              "http://${var.cloudfront_domain_name}/*",
             ]
           }
         }
@@ -237,7 +243,7 @@ resource "aws_s3_bucket_policy" "web_prod" {
         Resource = "${aws_s3_bucket.web_prod.arn}/*"
         Condition = {
           ArnLike = {
-            "AWS:SourceArn" = aws_cloudfront_distribution.web_prod.arn
+            "AWS:SourceArn" = var.cloudfront_distribution_arn
           }
         }
       }

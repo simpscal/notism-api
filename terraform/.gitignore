@@ -3,7 +3,8 @@
 *.tfstate
 *.tfstate.*
 *.tfvars
-!example.tfvars
+# Per-env roots carry non-secret tfvars (environment, suffix, CIDRs) as code.
+!environments/*/terraform.tfvars
 .db_password
 .terraform.tfstate.lock.info
 crash.log

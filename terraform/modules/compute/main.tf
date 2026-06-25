@@ -1,3 +1,11 @@
+locals {
+  instance_name         = "notism-api${var.name_suffix}"
+  eip_name              = "notism-api-eip${var.name_suffix}"
+  role_name             = "notism-ec2-role${var.name_suffix}"
+  s3_policy_name        = "notism-ec2-s3-access${var.name_suffix}"
+  instance_profile_name = "notism-ec2-profile${var.name_suffix}"
+}
+
 data "aws_ami" "amazon_linux_2023_arm" {
   most_recent = true
   owners      = ["amazon"]
@@ -31,9 +39,9 @@ EOT
 
 resource "aws_instance" "api" {
   ami                    = data.aws_ami.amazon_linux_2023_arm.id
-  instance_type          = "t4g.micro"
-  subnet_id              = aws_subnet.public.id
-  vpc_security_group_ids = [aws_security_group.ec2.id]
+  instance_type          = var.instance_type
+  subnet_id              = var.subnet_id
+  vpc_security_group_ids = [var.security_group_id]
   iam_instance_profile   = aws_iam_instance_profile.ec2.name
   user_data              = local.user_data
 
@@ -44,14 +52,14 @@ resource "aws_instance" "api" {
     volume_type = "gp3"
 
     tags = {
-      Environment = "prod"
+      Environment = var.environment
       ManagedBy   = "terraform"
       Project     = "notism"
     }
   }
 
   tags = {
-    Name = "notism-api"
+    Name = local.instance_name
   }
 
   # Prevent AMI version bumps from triggering an instance replacement.
@@ -64,11 +72,28 @@ resource "aws_instance" "api" {
 }
 
 # ------------------------------------------------------------------------------
+# Elastic IP
+# ------------------------------------------------------------------------------
+
+resource "aws_eip" "api" {
+  domain = "vpc"
+
+  tags = {
+    Name = local.eip_name
+  }
+}
+
+resource "aws_eip_association" "api" {
+  instance_id   = aws_instance.api.id
+  allocation_id = aws_eip.api.id
+}
+
+# ------------------------------------------------------------------------------
 # EC2 Role
 # ------------------------------------------------------------------------------
 
 resource "aws_iam_role" "ec2" {
-  name = "notism-ec2-role"
+  name = local.role_name
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
@@ -84,12 +109,12 @@ resource "aws_iam_role" "ec2" {
   })
 
   tags = {
-    Name = "notism-ec2-role"
+    Name = local.role_name
   }
 }
 
 resource "aws_iam_role_policy" "ec2_s3" {
-  name = "notism-ec2-s3-access"
+  name = local.s3_policy_name
   role = aws_iam_role.ec2.id
 
   policy = jsonencode({
@@ -104,10 +129,10 @@ resource "aws_iam_role_policy" "ec2_s3" {
           "s3:ListBucket",
         ]
         Resource = [
-          aws_s3_bucket.private_storage.arn,
-          "${aws_s3_bucket.private_storage.arn}/*",
-          aws_s3_bucket.public_storage.arn,
-          "${aws_s3_bucket.public_storage.arn}/*",
+          var.private_storage_arn,
+          "${var.private_storage_arn}/*",
+          var.public_storage_arn,
+          "${var.public_storage_arn}/*",
         ]
       }
     ]
@@ -120,10 +145,10 @@ resource "aws_iam_role_policy_attachment" "ec2_ecr" {
 }
 
 resource "aws_iam_instance_profile" "ec2" {
-  name = "notism-ec2-profile"
+  name = local.instance_profile_name
   role = aws_iam_role.ec2.name
 
   tags = {
-    Name = "notism-ec2-profile"
+    Name = local.instance_profile_name
   }
 }
