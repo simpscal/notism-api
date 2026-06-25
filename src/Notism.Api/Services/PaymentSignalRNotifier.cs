@@ -28,6 +28,12 @@ public class PaymentSignalRNotifier : IPaymentNotifier
         }
     }
 
+    public Task NotifyOrderPlacedAsync(Guid orderId, string orderNumber, DateTime placedAt, decimal total, int itemCount, CancellationToken cancellationToken)
+        => _hubContext.Clients.Group(PaymentHub.AdminsGroup).SendAsync(
+            "ReceivePaymentNotification",
+            new { type = "order-placed", orderId, orderNumber, placedAt, total, itemCount, timestamp = DateTime.UtcNow },
+            cancellationToken);
+
     public Task NotifyPaymentSuccessAsync(Guid orderId, Guid userId, DateTime paidAt, string slugId, CancellationToken cancellationToken)
         => _hubContext.Clients.Group(userId.ToString()).SendAsync(
             "ReceivePaymentNotification",
