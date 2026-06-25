@@ -4,7 +4,7 @@
 
 output "vpc_id" {
   description = "ID of the notism VPC"
-  value       = aws_vpc.main.id
+  value       = module.network.vpc_id
 }
 
 # ------------------------------------------------------------
@@ -13,12 +13,12 @@ output "vpc_id" {
 
 output "ec2_instance_id" {
   description = "ID of the notism-api EC2 instance"
-  value       = aws_instance.api.id
+  value       = module.compute.instance_id
 }
 
 output "ec2_public_ip" {
   description = "Public IP of the API (Elastic IP)."
-  value       = aws_eip.api.public_ip
+  value       = module.compute.public_ip
 }
 
 # ------------------------------------------------------------
@@ -27,7 +27,7 @@ output "ec2_public_ip" {
 
 output "ecr_repository_url" {
   description = "ECR repository URL for notism-api image"
-  value       = aws_ecr_repository.api.repository_url
+  value       = module.registry.repository_url
 }
 
 # ------------------------------------------------------------
@@ -46,7 +46,7 @@ output "connection_string_hint" {
 
 output "api_url" {
   description = "API base URL (HTTP)."
-  value       = "http://${aws_eip.api.public_ip}:5000"
+  value       = "http://${module.compute.public_ip}:5000"
 }
 
 # ------------------------------------------------------------
@@ -55,17 +55,17 @@ output "api_url" {
 
 output "s3_private_storage_arn" {
   description = "ARN of the private storage S3 bucket"
-  value       = aws_s3_bucket.private_storage.arn
+  value       = module.storage.private_storage_arn
 }
 
 output "s3_public_storage_arn" {
   description = "ARN of the public storage S3 bucket"
-  value       = aws_s3_bucket.public_storage.arn
+  value       = module.storage.public_storage_arn
 }
 
 output "s3_web_prod_arn" {
   description = "ARN of the prod frontend S3 bucket"
-  value       = aws_s3_bucket.web_prod.arn
+  value       = module.storage.web_bucket_arn
 }
 
 # ------------------------------------------------------------
@@ -74,10 +74,10 @@ output "s3_web_prod_arn" {
 
 output "cloudfront_web_prod_domain_name" {
   description = "CloudFront domain name for prod frontend"
-  value       = aws_cloudfront_distribution.web_prod.domain_name
+  value       = module.cdn.domain_name
 }
 
 output "cloudfront_web_prod_distribution_id" {
   description = "CloudFront distribution ID for prod frontend"
-  value       = aws_cloudfront_distribution.web_prod.id
+  value       = module.cdn.distribution_id
 }

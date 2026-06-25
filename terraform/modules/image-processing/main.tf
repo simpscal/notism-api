@@ -22,11 +22,15 @@
 data "aws_caller_identity" "current" {}
 
 locals {
+  function_name  = "notism-image-resizing${var.name_suffix}"
+  role_name      = "notism-image-resizing-role${var.name_suffix}"
+  s3_policy_name = "notism-s3-actions${var.name_suffix}"
+
   sharp_layer_arn = "arn:aws:lambda:${var.aws_region}:${data.aws_caller_identity.current.account_id}:layer:sharp:1"
 }
 
 resource "aws_lambda_function" "image_resizing" {
-  function_name = "notism-image-resizing"
+  function_name = local.function_name
   role          = aws_iam_role.lambda_image_resizing.arn
   handler       = "index.handler"
   runtime       = "nodejs22.x"
@@ -35,7 +39,7 @@ resource "aws_lambda_function" "image_resizing" {
   architectures = ["arm64"]
 
   # Code is deployed by CI/CD; Terraform manages configuration only.
-  filename = "./lambda-packages/notism-image-resizing.zip"
+  filename = var.lambda_package_path
 
   layers = [local.sharp_layer_arn]
 
@@ -46,7 +50,7 @@ resource "aws_lambda_function" "image_resizing" {
   # app's real upload folders (avatar/, food/ — see GenerateUploadUrlHandler).
   environment {
     variables = {
-      DESTINATION_BUCKET = "public-notism-storage"
+      DESTINATION_BUCKET = var.destination_bucket
       REGION             = var.aws_region
       RESIZE_JOBS = jsonencode({
         "avatar/" = [{ outputPrefix = "avatar", width = 200, height = 200 }]
@@ -63,7 +67,7 @@ resource "aws_lambda_function" "image_resizing" {
   }
 
   tags = {
-    Name = "notism-image-resizing"
+    Name = local.function_name
   }
 }
 
@@ -76,7 +80,7 @@ resource "aws_lambda_permission" "s3_invoke_image_resizing" {
   action         = "lambda:InvokeFunction"
   function_name  = aws_lambda_function.image_resizing.function_name
   principal      = "s3.amazonaws.com"
-  source_arn     = aws_s3_bucket.private_storage.arn
+  source_arn     = var.private_storage_arn
   source_account = data.aws_caller_identity.current.account_id
 }
 
@@ -85,7 +89,7 @@ resource "aws_lambda_permission" "s3_invoke_image_resizing" {
 # ------------------------------------------------------------------------------
 
 resource "aws_iam_role" "lambda_image_resizing" {
-  name        = "notism-image-resizing-role"
+  name        = local.role_name
   description = "Execution role for the Notism image-resizing Lambda"
 
   assume_role_policy = jsonencode({
@@ -102,12 +106,12 @@ resource "aws_iam_role" "lambda_image_resizing" {
   })
 
   tags = {
-    Name = "notism-image-resizing-role"
+    Name = local.role_name
   }
 }
 
 resource "aws_iam_role_policy" "lambda_image_resizing_s3" {
-  name = "notism-s3-actions"
+  name = local.s3_policy_name
   role = aws_iam_role.lambda_image_resizing.id
 
   policy = jsonencode({
@@ -121,8 +125,8 @@ resource "aws_iam_role_policy" "lambda_image_resizing_s3" {
           "s3:DeleteObject",
         ]
         Resource = [
-          "${aws_s3_bucket.public_storage.arn}/*",
-          "${aws_s3_bucket.private_storage.arn}/*",
+          "${var.public_storage_arn}/*",
+          "${var.private_storage_arn}/*",
         ]
       }
     ]

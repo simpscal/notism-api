@@ -1,0 +1,6 @@
+aws_region         = "ap-northeast-1"
+environment        = "prod"
+name_suffix        = ""
+vpc_cidr           = "10.0.0.0/16"
+public_subnet_cidr = "10.0.1.0/24"
+key_name           = "notism-api"

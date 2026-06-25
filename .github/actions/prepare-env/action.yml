@@ -1,17 +1,42 @@
 name: Prepare Environment
-description: Emit prod environment context.
+description: Resolve deployment environment context (GitHub environment name + ASPNETCORE_ENVIRONMENT) from an environment input.
+
+inputs:
+  environment:
+    description: Target environment (prod, staging). Defaults to prod to preserve current behavior.
+    required: false
+    default: prod
 
 outputs:
   environment:
     description: GitHub environment name
-    value: prod
+    value: ${{ steps.resolve.outputs.environment }}
   dotnet-env:
     description: ASPNETCORE_ENVIRONMENT value
-    value: Production
+    value: ${{ steps.resolve.outputs.dotnet-env }}
 
 runs:
   using: composite
   steps:
-    - name: Noop
+    - name: Resolve environment
+      id: resolve
       shell: bash
-      run: 'true'
+      env:
+        TARGET_ENV: ${{ inputs.environment }}
+      run: |
+        case "$TARGET_ENV" in
+          prod)
+            dotnet_env="Production"
+            ;;
+          staging)
+            dotnet_env="Staging"
+            ;;
+          *)
+            echo "Unsupported environment: $TARGET_ENV" >&2
+            exit 1
+            ;;
+        esac
+        {
+          echo "environment=$TARGET_ENV"
+          echo "dotnet-env=$dotnet_env"
+        } >> "$GITHUB_OUTPUT"
