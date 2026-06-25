@@ -6,6 +6,12 @@ public interface IPaymentNotifier
     Task NotifyPaymentFailureAsync(Guid orderId, Guid userId, CancellationToken cancellationToken);
 
     /// <summary>
+    /// Pushes a newly placed order to the admins group on the shared payment channel so the live
+    /// order board reflects it immediately.
+    /// </summary>
+    Task NotifyOrderPlacedAsync(Guid orderId, string orderNumber, DateTime placedAt, decimal total, int itemCount, CancellationToken cancellationToken);
+
+    /// <summary>
     /// Pushes a refund status change on the shared payment channel to both audiences: always the
     /// admins group (live ledger/detail), and the owning customer only when <paramref name="status"/>
     /// is "paid" (customers are never notified of a failed refund). The customer-facing fields
