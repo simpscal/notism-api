@@ -20,14 +20,14 @@ public class HandleSepayWebhookHandlerTests : IDisposable
 {
     private readonly WriteHandlerContext _context;
     private readonly ISender _sender;
-    private readonly IPaymentNotifier _paymentNotifier;
+    private readonly INotifier _paymentNotifier;
     private readonly HandleSepayWebhookHandler _handler;
 
     public HandleSepayWebhookHandlerTests()
     {
         _context = new WriteHandlerContext();
         _sender = Substitute.For<ISender>();
-        _paymentNotifier = Substitute.For<IPaymentNotifier>();
+        _paymentNotifier = Substitute.For<INotifier>();
 
         _handler = new HandleSepayWebhookHandler(
             new BankingCheckoutRepository(_context.DbContext),

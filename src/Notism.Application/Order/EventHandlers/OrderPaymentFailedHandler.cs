@@ -7,9 +7,9 @@ namespace Notism.Application.Order.EventHandlers;
 
 public class OrderPaymentFailedHandler : INotificationHandler<OrderPaymentFailedEvent>
 {
-    private readonly IPaymentNotifier _paymentNotifier;
+    private readonly INotifier _paymentNotifier;
 
-    public OrderPaymentFailedHandler(IPaymentNotifier paymentNotifier)
+    public OrderPaymentFailedHandler(INotifier paymentNotifier)
         => _paymentNotifier = paymentNotifier;
 
     public Task Handle(OrderPaymentFailedEvent notification, CancellationToken cancellationToken)

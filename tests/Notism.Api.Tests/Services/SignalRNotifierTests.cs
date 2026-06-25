@@ -7,28 +7,28 @@ using NSubstitute;
 
 namespace Notism.Api.Tests.Services;
 
-public class PaymentSignalRNotifierTests
+public class SignalRNotifierTests
 {
-    private readonly IHubContext<PaymentHub> _hubContext;
+    private readonly IHubContext<NotificationHub> _hubContext;
     private readonly IHubClients _clients;
     private readonly IClientProxy _adminsGroup;
     private readonly IClientProxy _customerGroup;
     private readonly Guid _customerUserId;
-    private readonly PaymentSignalRNotifier _notifier;
+    private readonly SignalRNotifier _notifier;
 
-    public PaymentSignalRNotifierTests()
+    public SignalRNotifierTests()
     {
-        _hubContext = Substitute.For<IHubContext<PaymentHub>>();
+        _hubContext = Substitute.For<IHubContext<NotificationHub>>();
         _clients = Substitute.For<IHubClients>();
         _adminsGroup = Substitute.For<IClientProxy>();
         _customerGroup = Substitute.For<IClientProxy>();
         _customerUserId = Guid.NewGuid();
 
         _hubContext.Clients.Returns(_clients);
-        _clients.Group(PaymentHub.AdminsGroup).Returns(_adminsGroup);
+        _clients.Group(NotificationHub.AdminsGroup).Returns(_adminsGroup);
         _clients.Group(_customerUserId.ToString()).Returns(_customerGroup);
 
-        _notifier = new PaymentSignalRNotifier(_hubContext);
+        _notifier = new SignalRNotifier(_hubContext);
     }
 
     [Fact]
@@ -41,11 +41,11 @@ public class PaymentSignalRNotifierTests
             refundId, "paid", _customerUserId, "ORD-123", 485_000m, sentDate, CancellationToken.None);
 
         await _adminsGroup.Received(1).SendCoreAsync(
-            "ReceivePaymentNotification",
+            "ReceiveNotification",
             Arg.Is<object?[]>(args => MatchesStatusChanged(args, refundId, "paid")),
             Arg.Any<CancellationToken>());
         await _customerGroup.Received(1).SendCoreAsync(
-            "ReceivePaymentNotification",
+            "ReceiveNotification",
             Arg.Is<object?[]>(args => MatchesCustomerPaid(args, refundId, "ORD-123", 485_000m)),
             Arg.Any<CancellationToken>());
     }
@@ -59,7 +59,7 @@ public class PaymentSignalRNotifierTests
             refundId, "failed", _customerUserId, string.Empty, 0m, null, CancellationToken.None);
 
         await _adminsGroup.Received(1).SendCoreAsync(
-            "ReceivePaymentNotification",
+            "ReceiveNotification",
             Arg.Is<object?[]>(args => MatchesStatusChanged(args, refundId, "failed")),
             Arg.Any<CancellationToken>());
         await _customerGroup.DidNotReceive().SendCoreAsync(

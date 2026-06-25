@@ -31,7 +31,7 @@ public static class DependencyInjection
         services.AddProblemDetails();
 
         services.AddScoped<ICookieService, CookieService>();
-        services.AddScoped<IPaymentNotifier, PaymentSignalRNotifier>();
+        services.AddScoped<INotifier, SignalRNotifier>();
         services.AddScoped<ICacheInvalidator, OutputCacheInvalidator>();
 
         return services;

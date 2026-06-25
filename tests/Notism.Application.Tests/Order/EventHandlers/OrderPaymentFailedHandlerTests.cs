@@ -10,12 +10,12 @@ namespace Notism.Application.Tests.Order.EventHandlers;
 
 public class OrderPaymentFailedHandlerTests
 {
-    private readonly IPaymentNotifier _paymentNotifier;
+    private readonly INotifier _paymentNotifier;
     private readonly OrderPaymentFailedHandler _handler;
 
     public OrderPaymentFailedHandlerTests()
     {
-        _paymentNotifier = Substitute.For<IPaymentNotifier>();
+        _paymentNotifier = Substitute.For<INotifier>();
         _handler = new OrderPaymentFailedHandler(_paymentNotifier);
     }
 

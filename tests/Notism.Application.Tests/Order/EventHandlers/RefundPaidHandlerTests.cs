@@ -18,14 +18,14 @@ namespace Notism.Application.Tests.Order.EventHandlers;
 public class RefundPaidHandlerTests
 {
     private readonly AppDbContext _dbContext;
-    private readonly IPaymentNotifier _paymentNotifier;
+    private readonly INotifier _paymentNotifier;
     private readonly IEmailService _emailService;
     private readonly RefundPaidHandler _handler;
 
     public RefundPaidHandlerTests()
     {
         _dbContext = ReadDbContextFactory.Create();
-        _paymentNotifier = Substitute.For<IPaymentNotifier>();
+        _paymentNotifier = Substitute.For<INotifier>();
         _emailService = Substitute.For<IEmailService>();
 
         _handler = new RefundPaidHandler(

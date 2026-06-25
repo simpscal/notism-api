@@ -22,14 +22,14 @@ public class OrderPlacedHandlerTests
     private const string OpsRecipient = "ops@example.com";
 
     private readonly AppDbContext _dbContext;
-    private readonly IPaymentNotifier _paymentNotifier;
+    private readonly INotifier _paymentNotifier;
     private readonly IEmailService _emailService;
     private readonly OrderPlacedHandler _handler;
 
     public OrderPlacedHandlerTests()
     {
         _dbContext = ReadDbContextFactory.Create();
-        _paymentNotifier = Substitute.For<IPaymentNotifier>();
+        _paymentNotifier = Substitute.For<INotifier>();
         _emailService = Substitute.For<IEmailService>();
 
         _handler = new OrderPlacedHandler(

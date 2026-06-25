@@ -6,11 +6,11 @@ using Notism.Api.Extensions;
 namespace Notism.Api.Hubs;
 
 [Authorize]
-public class PaymentHub : Hub
+public class NotificationHub : Hub
 {
     public const string AdminsGroup = "admins";
 
-    public async Task SubscribeToPaymentEvents()
+    public async Task SubscribeToNotifications()
     {
         var userId = Context.User!.GetUserId();
         await Groups.AddToGroupAsync(Context.ConnectionId, userId.ToString());
