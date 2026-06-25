@@ -73,6 +73,47 @@ public class OrderPlacedHandlerTests
     }
 
     [Fact]
+    public async Task Handle_WhenOrderPlaced_EmailIdentifiesOrderByNumberPlacedAtAndTotal()
+    {
+        var (order, _) = await SeedOrderAsync();
+        var notification = BuildEvent(order);
+
+        await _handler.Handle(notification, CancellationToken.None);
+
+        await _emailService.Received(1).SendNewOrderEmailAsync(
+            OpsRecipient,
+            order.SlugId,
+            order.CreatedAt,
+            order.TotalAmount);
+        order.SlugId.Should().NotBeNullOrWhiteSpace();
+        order.TotalAmount.Should().Be(150_000m);
+    }
+
+    [Fact]
+    public async Task Handle_WhenNoDashboardConnection_StillSendsOpsEmail()
+    {
+        var (order, _) = await SeedOrderAsync();
+        var notification = BuildEvent(order);
+        _paymentNotifier
+            .NotifyOrderPlacedAsync(
+                Arg.Any<Guid>(),
+                Arg.Any<string>(),
+                Arg.Any<DateTime>(),
+                Arg.Any<decimal>(),
+                Arg.Any<int>(),
+                Arg.Any<CancellationToken>())
+            .Returns(Task.FromException(new InvalidOperationException("no dashboard subscribers")));
+
+        await _handler.Handle(notification, CancellationToken.None);
+
+        await _emailService.Received(1).SendNewOrderEmailAsync(
+            OpsRecipient,
+            order.SlugId,
+            order.CreatedAt,
+            order.TotalAmount);
+    }
+
+    [Fact]
     public async Task Handle_WhenEmailThrows_StillPushesNotificationAndDoesNotRethrow()
     {
         var (order, _) = await SeedOrderAsync();
