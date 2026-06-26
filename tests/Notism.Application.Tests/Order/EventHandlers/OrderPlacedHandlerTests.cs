@@ -167,7 +167,7 @@ public class OrderPlacedHandlerTests
     public async Task Handle_WhenOrderNotFound_DoesNotNotifyOrEmailAndDoesNotThrow()
     {
         var notification = new OrderCreatedEvent(
-            Guid.NewGuid(), Guid.NewGuid(), 100_000m, new List<Guid>());
+            "ORD-NONEXISTENT", Guid.NewGuid(), 100_000m, new List<Guid>());
 
         var act = async () => await _handler.Handle(notification, CancellationToken.None);
 
@@ -219,7 +219,7 @@ public class OrderPlacedHandlerTests
     }
 
     private static OrderCreatedEvent BuildEvent(DomainOrder order)
-        => new(order.Id, order.UserId, order.TotalAmount, new List<Guid>());
+        => new(order.SlugId, order.UserId, order.TotalAmount, new List<Guid>());
 
     private async Task<(DomainOrder Order, Guid UserId)> SeedOrderAsync()
     {

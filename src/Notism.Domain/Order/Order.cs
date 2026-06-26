@@ -34,7 +34,6 @@ public class Order : AggregateRoot
         List<Guid> cartItemIds,
         string? deliveryNotes = null)
     {
-        Id = Guid.NewGuid();
         UserId = userId;
         SlugId = SlugGenerator.Generate(Slugs.OrderPrefix);
         PaymentMethod = paymentMethod;
@@ -44,7 +43,7 @@ public class Order : AggregateRoot
 
         _statusHistory.Add(DeliveryStatusHistory.Create(Id, DeliveryStatus.OrderPlaced));
 
-        AddDomainEvent(new OrderCreatedEvent(Id, UserId, TotalAmount, cartItemIds));
+        AddDomainEvent(new OrderCreatedEvent(SlugId, UserId, TotalAmount, cartItemIds));
     }
 
     public static Order Create(Guid userId, PaymentMethod paymentMethod, List<Guid> cartItemIds, string? deliveryNotes = null)
