@@ -34,6 +34,7 @@ public class Order : AggregateRoot
         List<Guid> cartItemIds,
         string? deliveryNotes = null)
     {
+        Id = Guid.NewGuid();
         UserId = userId;
         SlugId = SlugGenerator.Generate(Slugs.OrderPrefix);
         PaymentMethod = paymentMethod;
