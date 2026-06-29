@@ -31,13 +31,13 @@ public class UnitOfWork : IUnitOfWork
         try
         {
             var result = await operation();
-            await _dbContext.SaveChangesAsync();
-            await transaction.CommitAsync();
+            await _dbContext.SaveChangesAndCommitAsync(transaction);
 
             return result;
         }
         catch (Exception ex)
         {
+            _dbContext.ClearPendingDomainEvents();
             _logger.LogError(ex, "Transaction failed, rolling back");
 
             try

@@ -4,6 +4,7 @@ using MediatR;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Storage;
 
 using Notism.Domain.Cart;
 using Notism.Domain.Common;
@@ -39,14 +40,63 @@ public partial class AppDbContext(DbContextOptions<AppDbContext> options, IMedia
     public DbSet<BankAccount> BankAccounts { get; set; }
     public DbSet<BankingCheckout> BankingCheckouts { get; set; }
 
+    private readonly List<IDomainEvent> _pendingDomainEvents = [];
+
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        var domainEvents = CollectDomainEvents();
-        var result = await base.SaveChangesAsync(cancellationToken);
+        // An outer scope (the UnitOfWork) owns the transaction; buffer the events and persist.
+        // The owner commits and dispatches through SaveChangesAndCommitAsync.
+        if (Database.CurrentTransaction is not null)
+        {
+            _pendingDomainEvents.AddRange(CollectDomainEvents());
 
-        await DispatchDomainEventsAsync(domainEvents, cancellationToken);
+            return await base.SaveChangesAsync(cancellationToken);
+        }
 
-        return result;
+        // Non-relational providers (in-memory test stores) cannot open a transaction;
+        // keep the original persist-then-dispatch behaviour.
+        if (!Database.IsRelational())
+        {
+            var domainEvents = CollectDomainEvents();
+            var saved = await base.SaveChangesAsync(cancellationToken);
+
+            await DispatchDomainEventsAsync(domainEvents, cancellationToken);
+
+            return saved;
+        }
+
+        await using var transaction = await Database.BeginTransactionAsync(cancellationToken);
+
+        return await SaveChangesAndCommitAsync(transaction, cancellationToken);
+    }
+
+    // The single seam where persist, commit and dispatch happen together. Dispatch runs only
+    // after the commit succeeds, so a commit failure fires no emails or notifications.
+    public async Task<int> SaveChangesAndCommitAsync(IDbContextTransaction transaction, CancellationToken cancellationToken = default)
+    {
+        _pendingDomainEvents.AddRange(CollectDomainEvents());
+
+        try
+        {
+            var result = await base.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+
+            await DispatchDomainEventsAsync(_pendingDomainEvents, cancellationToken);
+            _pendingDomainEvents.Clear();
+
+            return result;
+        }
+        catch
+        {
+            ClearPendingDomainEvents();
+
+            throw;
+        }
+    }
+
+    public void ClearPendingDomainEvents()
+    {
+        _pendingDomainEvents.Clear();
     }
 
     public override int SaveChanges()
