@@ -26,29 +26,20 @@ public class UnitOfWork : IUnitOfWork
 
     public async Task<T> ExecuteInTransactionAsync<T>(Func<Task<T>> operation)
     {
-        using var transaction = await _dbContext.Database.BeginTransactionAsync();
+        await _dbContext.BeginTransactionAsync();
 
         try
         {
             var result = await operation();
-            await _dbContext.SaveChangesAndCommitAsync(transaction);
+            await _dbContext.SaveChangesAsync();
+            await _dbContext.CommitTransactionAsync();
 
             return result;
         }
         catch (Exception ex)
         {
-            _dbContext.ClearPendingDomainEvents();
             _logger.LogError(ex, "Transaction failed, rolling back");
-
-            try
-            {
-                await transaction.RollbackAsync();
-                _logger.LogDebug("Transaction rolled back successfully");
-            }
-            catch (Exception rollbackEx)
-            {
-                _logger.LogError(rollbackEx, "Failed to rollback transaction");
-            }
+            await _dbContext.RollbackTransactionAsync();
 
             throw;
         }

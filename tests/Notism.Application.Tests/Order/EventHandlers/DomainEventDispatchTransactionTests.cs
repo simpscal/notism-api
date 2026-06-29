@@ -22,9 +22,9 @@ using DomainOrder = Notism.Domain.Order.Order;
 
 namespace Notism.Application.Tests.Order.EventHandlers;
 
-// Exercises the SaveChangesAndCommitAsync seam against a real Postgres transaction: a buffered
-// domain event must dispatch (firing the email + SignalR handlers) only after the commit succeeds,
-// across both the direct SaveChangesAsync path and the UnitOfWork path.
+// Exercises domain-event dispatch against a real Postgres transaction: a buffered domain event must
+// dispatch (firing the email + SignalR handlers) only after the commit succeeds, across both the
+// direct SaveChangesAsync path and the UnitOfWork begin/commit/rollback path.
 public sealed class DomainEventDispatchTransactionTests : IClassFixture<PostgresReadDbContextFixture>, IAsyncLifetime
 {
     private const string OpsRecipient = "ops@example.com";

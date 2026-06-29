@@ -41,62 +41,74 @@ public partial class AppDbContext(DbContextOptions<AppDbContext> options, IMedia
     public DbSet<BankingCheckout> BankingCheckouts { get; set; }
 
     private readonly List<IDomainEvent> _pendingDomainEvents = [];
+    private IDbContextTransaction? _currentTransaction;
 
-    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
     {
-        // An outer scope (the UnitOfWork) owns the transaction; buffer the events and persist.
-        // The owner commits and dispatches through SaveChangesAndCommitAsync.
-        if (Database.CurrentTransaction is not null)
-        {
-            _pendingDomainEvents.AddRange(CollectDomainEvents());
-
-            return await base.SaveChangesAsync(cancellationToken);
-        }
-
-        // Non-relational providers (in-memory test stores) cannot open a transaction;
-        // keep the original persist-then-dispatch behaviour.
-        if (!Database.IsRelational())
-        {
-            var domainEvents = CollectDomainEvents();
-            var saved = await base.SaveChangesAsync(cancellationToken);
-
-            await DispatchDomainEventsAsync(domainEvents, cancellationToken);
-
-            return saved;
-        }
-
-        await using var transaction = await Database.BeginTransactionAsync(cancellationToken);
-
-        return await SaveChangesAndCommitAsync(transaction, cancellationToken);
+        _currentTransaction ??= await Database.BeginTransactionAsync(cancellationToken);
     }
 
-    // The single seam where persist, commit and dispatch happen together. Dispatch runs only
-    // after the commit succeeds, so a commit failure fires no emails or notifications.
-    public async Task<int> SaveChangesAndCommitAsync(IDbContextTransaction transaction, CancellationToken cancellationToken = default)
+    public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
     {
-        _pendingDomainEvents.AddRange(CollectDomainEvents());
-
         try
         {
-            var result = await base.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
+            if (_currentTransaction is not null)
+            {
+                await _currentTransaction.CommitAsync(cancellationToken);
 
-            await DispatchDomainEventsAsync(_pendingDomainEvents, cancellationToken);
-            _pendingDomainEvents.Clear();
-
-            return result;
+                await DispatchDomainEventsAsync(_pendingDomainEvents, cancellationToken);
+                _pendingDomainEvents.Clear();
+            }
         }
         catch
         {
-            ClearPendingDomainEvents();
+            _pendingDomainEvents.Clear();
 
             throw;
         }
+        finally
+        {
+            await DisposeTransactionAsync();
+        }
     }
 
-    public void ClearPendingDomainEvents()
+    public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
     {
+        try
+        {
+            if (_currentTransaction is not null)
+            {
+                await _currentTransaction.RollbackAsync(cancellationToken);
+            }
+        }
+        finally
+        {
+            _pendingDomainEvents.Clear();
+
+            await DisposeTransactionAsync();
+        }
+    }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        _pendingDomainEvents.AddRange(CollectDomainEvents());
+
+        // An outer scope (the UnitOfWork) owns the transaction; persist only.
+        // It commits and dispatches through CommitTransactionAsync.
+        if (_currentTransaction is not null || Database.CurrentTransaction is not null)
+        {
+            return await base.SaveChangesAsync(cancellationToken);
+        }
+
+        // No explicit transaction: EF wraps these changes in its own implicit transaction
+        // that commits before SaveChangesAsync returns, so dispatching here is already
+        // after the commit. A failed commit throws from base and dispatch never runs.
+        var result = await base.SaveChangesAsync(cancellationToken);
+
+        await DispatchDomainEventsAsync(_pendingDomainEvents, cancellationToken);
         _pendingDomainEvents.Clear();
+
+        return result;
     }
 
     public override int SaveChanges()
@@ -779,6 +791,15 @@ public partial class AppDbContext(DbContextOptions<AppDbContext> options, IMedia
 
             entity.HasIndex(o => o.GroupId);
         });
+    }
+
+    private async Task DisposeTransactionAsync()
+    {
+        if (_currentTransaction is not null)
+        {
+            await _currentTransaction.DisposeAsync();
+            _currentTransaction = null;
+        }
     }
 
     private List<IDomainEvent> CollectDomainEvents()
