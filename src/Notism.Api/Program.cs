@@ -76,7 +76,7 @@ var app = builder.Build();
     app.MapOrderEndpoints();
     app.MapPaymentEndpoints();
 
-    app.MapHub<PaymentHub>("/hubs/payment");
+    app.MapHub<NotificationHub>("/hubs/notification");
 
     app.Run();
 }

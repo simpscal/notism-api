@@ -4,6 +4,7 @@ using MediatR;
 
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
+using Microsoft.EntityFrameworkCore.Storage;
 
 using Notism.Domain.Cart;
 using Notism.Domain.Common;
@@ -39,12 +40,70 @@ public partial class AppDbContext(DbContextOptions<AppDbContext> options, IMedia
     public DbSet<BankAccount> BankAccounts { get; set; }
     public DbSet<BankingCheckout> BankingCheckouts { get; set; }
 
+    private readonly List<IDomainEvent> _pendingDomainEvents = [];
+    private IDbContextTransaction? _currentTransaction;
+
+    public async Task BeginTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        _currentTransaction ??= await Database.BeginTransactionAsync(cancellationToken);
+    }
+
+    public async Task CommitTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (_currentTransaction is not null)
+            {
+                await _currentTransaction.CommitAsync(cancellationToken);
+
+                await DispatchDomainEventsAsync(_pendingDomainEvents, cancellationToken);
+                _pendingDomainEvents.Clear();
+            }
+        }
+        catch
+        {
+            _pendingDomainEvents.Clear();
+
+            throw;
+        }
+        finally
+        {
+            await DisposeTransactionAsync();
+        }
+    }
+
+    public async Task RollbackTransactionAsync(CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (_currentTransaction is not null)
+            {
+                await _currentTransaction.RollbackAsync(cancellationToken);
+            }
+        }
+        finally
+        {
+            _pendingDomainEvents.Clear();
+
+            await DisposeTransactionAsync();
+        }
+    }
+
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        var domainEvents = CollectDomainEvents();
+        _pendingDomainEvents.AddRange(CollectDomainEvents());
+
+        // An outer scope (the UnitOfWork) owns the transaction; persist only.
+        // It commits and dispatches through CommitTransactionAsync.
+        if (_currentTransaction is not null || Database.CurrentTransaction is not null)
+        {
+            return await base.SaveChangesAsync(cancellationToken);
+        }
+
         var result = await base.SaveChangesAsync(cancellationToken);
 
-        await DispatchDomainEventsAsync(domainEvents, cancellationToken);
+        await DispatchDomainEventsAsync(_pendingDomainEvents, cancellationToken);
+        _pendingDomainEvents.Clear();
 
         return result;
     }
@@ -729,6 +788,15 @@ public partial class AppDbContext(DbContextOptions<AppDbContext> options, IMedia
 
             entity.HasIndex(o => o.GroupId);
         });
+    }
+
+    private async Task DisposeTransactionAsync()
+    {
+        if (_currentTransaction is not null)
+        {
+            await _currentTransaction.DisposeAsync();
+            _currentTransaction = null;
+        }
     }
 
     private List<IDomainEvent> CollectDomainEvents()

@@ -20,15 +20,17 @@ public sealed class PostgresReadDbContextFixture : IAsyncLifetime
 
     public AppDbContext DbContext { get; private set; } = null!;
 
+    public string ConnectionString { get; private set; } = null!;
+
     public async Task InitializeAsync()
     {
         await _container.StartAsync();
 
-        var connectionString = _container.GetConnectionString();
-        await WaitForConnectionAsync(connectionString);
+        ConnectionString = _container.GetConnectionString();
+        await WaitForConnectionAsync(ConnectionString);
 
         var options = new DbContextOptionsBuilder<AppDbContext>()
-            .UseNpgsql(connectionString)
+            .UseNpgsql(ConnectionString)
             .Options;
 
         DbContext = new AppDbContext(options, Substitute.For<IMediator>());
