@@ -100,9 +100,6 @@ public partial class AppDbContext(DbContextOptions<AppDbContext> options, IMedia
             return await base.SaveChangesAsync(cancellationToken);
         }
 
-        // No explicit transaction: EF wraps these changes in its own implicit transaction
-        // that commits before SaveChangesAsync returns, so dispatching here is already
-        // after the commit. A failed commit throws from base and dispatch never runs.
         var result = await base.SaveChangesAsync(cancellationToken);
 
         await DispatchDomainEventsAsync(_pendingDomainEvents, cancellationToken);
