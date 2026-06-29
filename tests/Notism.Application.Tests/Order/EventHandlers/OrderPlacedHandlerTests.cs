@@ -167,7 +167,7 @@ public class OrderPlacedHandlerTests
     public async Task Handle_WhenOrderNotFound_DoesNotNotifyOrEmailAndDoesNotThrow()
     {
         var notification = new OrderCreatedEvent(
-            Guid.NewGuid(), Guid.NewGuid(), 100_000m, new List<Guid>());
+            "ORD-NONEXISTENT", Guid.NewGuid(), 100_000m, new List<Guid>());
 
         var act = async () => await _handler.Handle(notification, CancellationToken.None);
 
@@ -186,8 +186,40 @@ public class OrderPlacedHandlerTests
             Arg.Any<decimal>());
     }
 
+    [Fact]
+    public async Task Handle_WithEventRaisedAtConstruction_NotifiesAndEmailsOps()
+    {
+        var user = Domain.User.User.Create("regression@example.com", "hashedpassword", UserRole.User, "Jane", "Doe");
+        user.ClearDomainEvents();
+        _dbContext.Users.Add(user);
+        await _dbContext.SaveChangesAsync();
+
+        var order = DomainOrder.Create(user.Id, Domain.Order.Enums.PaymentMethod.Banking, new List<Guid>());
+        var raisedEvent = order.DomainEvents.OfType<OrderCreatedEvent>().Single();
+        order.AddItem(Domain.Order.OrderItem.Create(order.Id, Guid.NewGuid(), "Burger", unitPrice: 150_000m, discountPrice: null, quantity: 1));
+        order.ClearDomainEvents();
+        _dbContext.Orders.Add(order);
+        await _dbContext.SaveChangesAsync();
+        _dbContext.ChangeTracker.Clear();
+
+        await _handler.Handle(raisedEvent, CancellationToken.None);
+
+        await _paymentNotifier.Received(1).NotifyOrderPlacedAsync(
+            order.Id,
+            order.SlugId,
+            Arg.Any<DateTime>(),
+            order.TotalAmount,
+            Arg.Any<int>(),
+            Arg.Any<CancellationToken>());
+        await _emailService.Received(1).SendNewOrderEmailAsync(
+            OpsRecipient,
+            order.SlugId,
+            Arg.Any<DateTime>(),
+            order.TotalAmount);
+    }
+
     private static OrderCreatedEvent BuildEvent(DomainOrder order)
-        => new(order.Id, order.UserId, order.TotalAmount, new List<Guid>());
+        => new(order.SlugId, order.UserId, order.TotalAmount, new List<Guid>());
 
     private async Task<(DomainOrder Order, Guid UserId)> SeedOrderAsync()
     {

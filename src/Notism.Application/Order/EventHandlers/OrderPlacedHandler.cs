@@ -38,14 +38,14 @@ public class OrderPlacedHandler : INotificationHandler<OrderCreatedEvent>
     public async Task Handle(OrderCreatedEvent notification, CancellationToken cancellationToken)
     {
         var order = await _readDbContext.Set<DomainOrder>()
-            .Where(o => o.Id == notification.OrderId)
+            .Where(o => o.SlugId == notification.SlugId)
             .Include(o => o.User)
             .Include(o => o.Items)
             .FirstOrDefaultAsync(cancellationToken);
 
         if (order?.User == null)
         {
-            _logger.LogWarning("Order-placed event for order {OrderId} skipped: order or owning user not found", notification.OrderId);
+            _logger.LogWarning("Order-placed event for order {SlugId} skipped: order or owning user not found", notification.SlugId);
             return;
         }
 
